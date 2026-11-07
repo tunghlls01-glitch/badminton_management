@@ -1,4 +1,4 @@
--- Tạo database app_db + bảng items, payments, invoices + dữ liệu mẫu.
+-- Tạo database app_db + bảng items, users, payments, invoices + dữ liệu mẫu.
 -- Cách chạy bằng MySQL Workbench:
 --   File > Open SQL Script... > chọn file này > bấm nút tia sét (Execute) > Refresh ô SCHEMAS.
 -- Chạy lại nhiều lần không lỗi (đã có thì bỏ qua), chỉ là dữ liệu mẫu sẽ bị thêm lặp.
@@ -17,6 +17,21 @@ CREATE TABLE IF NOT EXISTS items (
   price       DECIMAL(12, 2) NOT NULL DEFAULT 0,
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. Bảng users (Người dùng / Khách hàng / Nhân viên / Admin)
+CREATE TABLE IF NOT EXISTS users (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  full_name       VARCHAR(100) NOT NULL,
+  email           VARCHAR(100) NOT NULL UNIQUE,
+  phone           VARCHAR(15) NOT NULL UNIQUE,
+  hashed_password VARCHAR(255) NOT NULL,
+  role            ENUM('ADMIN', 'STAFF', 'CUSTOMER') NOT NULL DEFAULT 'CUSTOMER',
+  status          ENUM('ACTIVE', 'LOCKED') NOT NULL DEFAULT 'ACTIVE',
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_users_email (email),
+  INDEX idx_users_phone (phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 11. Module Thanh toán
