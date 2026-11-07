@@ -35,7 +35,6 @@ class InvoiceUpdate(BaseModel):
     total_service_amount: Decimal | None = Field(default=None, ge=0)
     grand_total: Decimal | None = Field(default=None, ge=0)
 
-
 class InvoiceOut(InvoiceBase):
     """Dữ liệu API trả về cho FE."""
     model_config = ConfigDict(from_attributes=True)

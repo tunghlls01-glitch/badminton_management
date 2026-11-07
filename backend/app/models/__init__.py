@@ -3,4 +3,5 @@
 from app.models.invoice import Invoice  # noqa: F401
 from app.models.item import Item  # noqa: F401
 from app.models.payment import Payment, PaymentMethod, PaymentStatus  # noqa: F401
+
 from app.models.user import User, UserRole, UserStatus  # noqa: F401

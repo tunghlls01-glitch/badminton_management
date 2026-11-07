@@ -30,7 +30,6 @@ class PaymentUpdate(BaseModel):
     payment_status: PaymentStatus | None = None
     transaction_code: str | None = None
 
-
 class PaymentOut(PaymentBase):
     """Dữ liệu API trả về cho Frontend."""
     model_config = ConfigDict(from_attributes=True)

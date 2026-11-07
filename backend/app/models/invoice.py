@@ -19,3 +19,4 @@ class Invoice(Base):
     total_service_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0, nullable=False)
     grand_total: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
