@@ -1,13 +1,13 @@
 -- ============================================================
--- Khởi tạo Database và 12 Bảng Quản Lý Sân Cầu Lông (RK Badminton)
+-- Khởi tạo Database và các Bảng Quản Lý Sân Cầu Lông (RK Badminton)
 -- ============================================================
-SET NAMES utf8mb4;
+SET NAMES utf8mb4; -- để tiếng Việt không bị lỗi font
 
 CREATE DATABASE IF NOT EXISTS app_db
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE app_db;
 
--- 0. Bảng Items (Base mẫu)
+-- 1. Bảng mẫu items
 CREATE TABLE IF NOT EXISTS items (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   name        VARCHAR(255) NOT NULL,
@@ -17,19 +17,20 @@ CREATE TABLE IF NOT EXISTS items (
   updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 1. Bảng Users
+-- 2. Bảng Users (Người dùng / Khách hàng / Nhân viên / Admin)
 CREATE TABLE IF NOT EXISTS users (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  name          VARCHAR(100) NOT NULL,
-  phone         VARCHAR(15) NULL,
-  email         VARCHAR(100) NULL,
-  password_hash VARCHAR(255) NULL DEFAULT '',
-  role          ENUM('Admin', 'Receptionist', 'Customer') NOT NULL DEFAULT 'Customer',
-  status        ENUM('Active', 'Inactive') NOT NULL DEFAULT 'Active',
-  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  full_name       VARCHAR(100) NOT NULL,
+  email           VARCHAR(100) NOT NULL UNIQUE,
+  phone           VARCHAR(15) NOT NULL UNIQUE,
+  hashed_password VARCHAR(255) NOT NULL DEFAULT '',
+  role            ENUM('ADMIN', 'STAFF', 'CUSTOMER') NOT NULL DEFAULT 'CUSTOMER',
+  status          ENUM('ACTIVE', 'LOCKED') NOT NULL DEFAULT 'ACTIVE',
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Bảng Courts
+-- 3. Bảng Courts (Sân cầu lông)
 CREATE TABLE IF NOT EXISTS courts (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   name        VARCHAR(50) NOT NULL,
@@ -38,7 +39,7 @@ CREATE TABLE IF NOT EXISTS courts (
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. Bảng Price_Rules
+-- 4. Bảng Price_Rules (Bảng giá theo khung giờ & thứ trong tuần)
 CREATE TABLE IF NOT EXISTS price_rules (
   id             INT AUTO_INCREMENT PRIMARY KEY,
   court_id       INT NOT NULL,
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS price_rules (
   FOREIGN KEY (court_id) REFERENCES courts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. Bảng Court_Blocks
+-- 5. Bảng Court_Blocks (Khóa sân để bảo trì / sự kiện)
 CREATE TABLE IF NOT EXISTS court_blocks (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   court_id   INT NOT NULL,
@@ -63,7 +64,7 @@ CREATE TABLE IF NOT EXISTS court_blocks (
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. Bảng Bookings
+-- 6. Bảng Bookings (Đơn đặt sân)
 CREATE TABLE IF NOT EXISTS bookings (
   id              INT AUTO_INCREMENT PRIMARY KEY,
   booking_code    VARCHAR(30) UNIQUE NOT NULL,
@@ -79,7 +80,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. Bảng Booking_Slots
+-- 7. Bảng Booking_Slots (Chi tiết slot giờ đặt của từng sân)
 CREATE TABLE IF NOT EXISTS booking_slots (
   id               INT AUTO_INCREMENT PRIMARY KEY,
   booking_id       INT NOT NULL,
@@ -94,33 +95,37 @@ CREATE TABLE IF NOT EXISTS booking_slots (
   FOREIGN KEY (court_id) REFERENCES courts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Bảng Payments
+-- 8. Bảng Payments (Thanh toán)
 CREATE TABLE IF NOT EXISTS payments (
   id               INT AUTO_INCREMENT PRIMARY KEY,
-  booking_id       INT NOT NULL,
-  amount           DECIMAL(10, 2) NOT NULL,
-  payment_method   ENUM('Cash', 'Transfer', 'Momo', 'Card') NOT NULL DEFAULT 'Cash',
-  payment_status   ENUM('Unpaid', 'Paid', 'Failed', 'Refunded') NOT NULL DEFAULT 'Unpaid',
+  booking_id       INT NULL,
+  service_order_id INT NULL,
+  amount           DECIMAL(12, 2) NOT NULL,
+  payment_method   VARCHAR(20) NOT NULL DEFAULT 'CASH',
+  payment_status   VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',
   transaction_code VARCHAR(100) NULL,
-  payment_date     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+  created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_payments_booking_id (booking_id),
+  INDEX idx_payments_service_order_id (service_order_id),
+  FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Bảng Invoices
+-- 9. Bảng Invoices (Hóa đơn)
 CREATE TABLE IF NOT EXISTS invoices (
-  id              INT AUTO_INCREMENT PRIMARY KEY,
-  booking_id      INT UNIQUE NOT NULL,
-  invoice_number  VARCHAR(50) UNIQUE NOT NULL,
-  subtotal        DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  tax_amount      DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  total_amount    DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  status          ENUM('Draft', 'Issued', 'Cancelled') NOT NULL DEFAULT 'Draft',
-  issued_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+  id                   INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_code         VARCHAR(30) NOT NULL UNIQUE,
+  booking_id           INT NULL,
+  customer_id          INT NOT NULL,
+  total_court_amount   DECIMAL(12, 2) NOT NULL DEFAULT 0,
+  total_service_amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
+  grand_total          DECIMAL(12, 2) NOT NULL,
+  created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_invoices_booking_id (booking_id),
+  INDEX idx_invoices_customer_id (customer_id),
+  FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 9. Bảng Services
+-- 10. Bảng Services (Danh mục nước, thuê vợt, cầu lông, phụ kiện)
 CREATE TABLE IF NOT EXISTS services (
   id             INT AUTO_INCREMENT PRIMARY KEY,
   name           VARCHAR(100) NOT NULL,
@@ -131,7 +136,7 @@ CREATE TABLE IF NOT EXISTS services (
   status         ENUM('Active', 'Inactive') NOT NULL DEFAULT 'Active'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 10. Bảng Service_Orders
+-- 11. Bảng Service_Orders (Đơn gọi dịch vụ theo booking)
 CREATE TABLE IF NOT EXISTS service_orders (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   booking_id  INT NOT NULL,
@@ -143,7 +148,7 @@ CREATE TABLE IF NOT EXISTS service_orders (
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 11. Bảng Service_Order_Items
+-- 12. Bảng Service_Order_Items (Chi tiết từng dịch vụ trong đơn)
 CREATE TABLE IF NOT EXISTS service_order_items (
   id               INT AUTO_INCREMENT PRIMARY KEY,
   service_order_id INT NOT NULL,
@@ -155,7 +160,7 @@ CREATE TABLE IF NOT EXISTS service_order_items (
   FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 12. Bảng Service_Stock_Logs
+-- 13. Bảng Service_Stock_Logs (Nhật ký xuất nhập tồn dịch vụ)
 CREATE TABLE IF NOT EXISTS service_stock_logs (
   id              INT AUTO_INCREMENT PRIMARY KEY,
   service_id      INT NOT NULL,
@@ -173,11 +178,15 @@ CREATE TABLE IF NOT EXISTS service_stock_logs (
 -- ============================================================
 -- DỮ LIỆU MẪU BAN ĐẦU
 -- ============================================================
-INSERT IGNORE INTO users (id, name, phone, email, role, status) VALUES
-  (1, 'Khách vãng lai', '0901234567', 'khach@gmail.com', 'Customer', 'Active'),
-  (2, 'Minh Anh', '0987654321', 'minhanh@gmail.com', 'Customer', 'Active'),
-  (3, 'Ngô Tiến Khang', '0912345678', 'khang@badminton.com', 'Receptionist', 'Active'),
-  (4, 'Admin Quản Trị', '0999888777', 'admin@badminton.com', 'Admin', 'Active');
+INSERT INTO items (name, description, price) VALUES
+  ('Cơm rang dưa bò', 'Món mẫu để kiểm tra API', 45000),
+  ('Trà đá', 'Dữ liệu mẫu số 2', 5000);
+
+INSERT IGNORE INTO users (id, full_name, email, phone, hashed_password, role, status) VALUES
+  (1, 'Khách vãng lai', 'khach@gmail.com', '0901234567', '', 'CUSTOMER', 'ACTIVE'),
+  (2, 'Minh Anh', 'minhanh@gmail.com', '0987654321', '', 'CUSTOMER', 'ACTIVE'),
+  (3, 'Ngô Tiến Khang', 'khang@badminton.com', '0912345678', '', 'STAFF', 'ACTIVE'),
+  (4, 'Admin Quản Trị', 'admin@badminton.com', '0999888777', '', 'ADMIN', 'ACTIVE');
 
 INSERT IGNORE INTO courts (id, name, description, status) VALUES
   (1, 'Sân 1', 'Sân tiêu chuẩn thảm PVC', 'Active'),

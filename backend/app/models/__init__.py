@@ -1,6 +1,8 @@
 # Import mọi model ở đây để Base.metadata.create_all() "nhìn thấy" và tạo bảng.
 from app.models.item import Item  # noqa: F401
 from app.models.user import User, UserRole, UserStatus  # noqa: F401
+from app.models.payment import Payment, PaymentMethod, PaymentStatus  # noqa: F401
+from app.models.invoice import Invoice  # noqa: F401
 from app.models.court import (  # noqa: F401
     Court,
     CourtBlock,
@@ -15,11 +17,7 @@ from app.models.booking import (  # noqa: F401
     BookingSlot,
     BookingSlotStatus,
     BookingStatus,
-    Invoice,
     InvoiceStatus,
-    Payment,
-    PaymentMethod,
-    PaymentStatus,
 )
 from app.models.service import (  # noqa: F401
     Service,
