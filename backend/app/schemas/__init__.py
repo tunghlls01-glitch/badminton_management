@@ -1,5 +1,7 @@
-# Import mọi schema ở đây để các tầng router, crud, seed có thể import trực tiếp.
+# Import schemas để dễ dàng import từ app.schemas
+from app.schemas.invoice import InvoiceCreate, InvoiceOut, InvoiceUpdate
 from app.schemas.item import ItemCreate, ItemOut, ItemUpdate
+from app.schemas.payment import PaymentCreate, PaymentOut, PaymentUpdate
 from app.schemas.service import (
     ServiceBase,
     ServiceCreate,
@@ -19,3 +21,30 @@ from app.schemas.service_stock_log import (
     ServiceStockLogCreate,
     ServiceStockLogOut,
 )
+from app.schemas.user import UserBase, UserCreate, UserResponse
+
+__all__ = [
+    "ItemCreate",
+    "ItemUpdate",
+    "ItemOut",
+    "PaymentCreate",
+    "PaymentUpdate",
+    "PaymentOut",
+    "InvoiceCreate",
+    "InvoiceUpdate",
+    "InvoiceOut",
+    "UserBase",
+    "UserCreate",
+    "UserResponse",
+    "ServiceBase",
+    "ServiceCreate",
+    "ServiceOut",
+    "ServiceUpdate",
+    "ServiceOrderCreate",
+    "ServiceOrderOut",
+    "ServiceOrderStatusUpdate",
+    "ServiceOrderItemCreate",
+    "ServiceOrderItemOut",
+    "ServiceStockLogCreate",
+    "ServiceStockLogOut",
+]
