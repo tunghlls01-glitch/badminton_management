@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RK badminton - Quản lý đặt sân</title>
+    <link rel="stylesheet" href="css/admin_booking.css">
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <h1>RK badminton</h1>
+        <a href="index.html">🏠 Bảng điều khiển</a>
+        <a href="admin_booking.html" style="background-color: var(--hover-red);">🏸 Quản lý đặt sân</a>
+        <a href="#">📊 Trạng thái sân</a>
+        <a href="#">🛒 Dịch vụ & Bán hàng</a>
+        <a href="#">💳 Hóa đơn & Thanh toán</a>
+        <a href="#">📝 Khách hàng</a>
+
+        <div class="admin-section">
+            <a href="#">👥 Quản lý nhân viên (Admin)</a>
+            <a href="#">⚙️ Cài đặt hệ thống (Admin)</a>
+            <a href="#">📈 Báo cáo doanh thu (Admin)</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2>Trạng thái sân hôm nay</h2>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span>👤 Lễ tân: <strong>Ngô Tiến Khang</strong></span> |
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;">Đăng xuất</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="action-bar">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <button id="btn-open-create-modal" class="btn" style="padding: 12px 24px; font-size: 15px;">+ Tạo Đặt Sân Mới</button>
+                    <input type="date" id="filter-date" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: inherit;">
+                    <button id="btn-refresh" class="btn btn-secondary" style="padding: 10px 16px;">🔄 Làm mới</button>
+                </div>
+                <div style="background: var(--white); padding: 10px 16px; border-radius: 4px; border: 1px solid #ddd; font-size: 14px;">
+                    <span style="color: #2e7d32; font-weight: bold;">■ Trống</span> &nbsp;|&nbsp;
+                    <span style="color: var(--primary-red); font-weight: bold;">■ Đang chơi</span> &nbsp;|&nbsp;
+                    <span style="color: #f57c00; font-weight: bold;">■ Đã đặt</span>
+                </div>
+            </div>
+
+            <!-- Grid danh sách sân được load động từ Database -->
+            <div class="court-grid" id="court-grid">
+                <p style="color: #666; font-style: italic;">Đang tải danh sách sân...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: TẠO ĐẶT SÂN MỚI -->
+    <div class="modal-overlay" id="modal-booking">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>+ Đặt sân cầu lông mới</h3>
+                <button class="modal-close" id="btn-close-modal">&times;</button>
+            </div>
+            <form id="form-create-booking">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="booking-court">Chọn sân (*):</label>
+                        <select id="booking-court" required>
+                            <!-- Render bằng JS -->
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="booking-date">Ngày đặt (*):</label>
+                            <input type="date" id="booking-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="booking-status">Trạng thái:</label>
+                            <select id="booking-status">
+                                <option value="Pending">Đã đặt trước (Pending)</option>
+                                <option value="Confirmed">Xác nhận / Check-in ngay (Confirmed)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="booking-start">Giờ bắt đầu (*):</label>
+                            <input type="time" id="booking-start" value="14:00" step="1800" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="booking-end">Giờ kết thúc (*):</label>
+                            <input type="time" id="booking-end" value="15:30" step="1800" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="booking-customer-name">Tên khách hàng (*):</label>
+                        <input type="text" id="booking-customer-name" placeholder="Ví dụ: Minh Anh" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="booking-customer-phone">Số điện thoại:</label>
+                        <input type="tel" id="booking-customer-phone" placeholder="Ví dụ: 0987654321">
+                    </div>
+
+                    <div class="price-preview-box">
+                        <span>💰 Dự kiến thanh toán:</span>
+                        <span class="price-amount" id="preview-price">0 ₫</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="btn-cancel-create">Hủy bỏ</button>
+                    <button type="submit" class="btn" id="btn-submit-booking">Lưu đơn đặt sân</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: XEM CHI TIẾT & CHECK-IN / CHECK-OUT -->
+    <div class="modal-overlay" id="modal-detail">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="detail-title">Chi tiết đơn đặt sân</h3>
+                <button class="modal-close" id="btn-close-detail">&times;</button>
+            </div>
+            <div class="modal-body" id="detail-content">
+                <!-- Nội dung chi tiết render bằng JS -->
+            </div>
+            <div class="modal-footer" id="detail-actions">
+                <!-- Nút hành động render bằng JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts cần thiết -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/admin_booking.js"></script>
+</body>
+
+</html>
