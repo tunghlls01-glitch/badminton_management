@@ -1,29 +1,10 @@
-"""Pydantic Schemas cho Bookings và BookingSlots."""
 from datetime import date, datetime, time
 from decimal import Decimal
-import enum
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-try:
-    from app.models.booking import BookingChannel, BookingSlotStatus, BookingStatus
-except ImportError:
-    class BookingChannel(str, enum.Enum):
-        Online = "Online"
-        Counter = "Counter"
-        Admin = "Admin"
-
-    class BookingStatus(str, enum.Enum):
-        Pending = "Pending"
-        Confirmed = "Confirmed"
-        Completed = "Completed"
-        Cancelled = "Cancelled"
-        Expired = "Expired"
-
-    class BookingSlotStatus(str, enum.Enum):
-        Active = "Active"
-        Cancelled = "Cancelled"
+from app.models.booking import BookingChannel, BookingSlotStatus, BookingStatus
 
 
 class BookingSlotBase(BaseModel):
