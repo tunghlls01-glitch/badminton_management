@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.models.service import ServiceCategory, ServiceStatus
 
 class ServiceBase(BaseModel):
@@ -8,7 +8,7 @@ class ServiceBase(BaseModel):
     category: Optional[ServiceCategory] = ServiceCategory.KHAC
     description: Optional[str] = None
     unit: str
-    price: float = 0.0
+    price: float = Field(..., gt=0, description="Giá dịch vụ phải lớn hơn 0")
     stock_quantity: int = 0
     status: Optional[ServiceStatus] = ServiceStatus.ACTIVE
 
@@ -20,7 +20,7 @@ class ServiceUpdate(BaseModel):
     category: Optional[ServiceCategory] = None
     description: Optional[str] = None
     unit: Optional[str] = None
-    price: Optional[float] = None
+    price: Optional[float] = Field(None, gt=0, description="Giá dịch vụ phải lớn hơn 0")
     stock_quantity: Optional[int] = None
     status: Optional[ServiceStatus] = None
 

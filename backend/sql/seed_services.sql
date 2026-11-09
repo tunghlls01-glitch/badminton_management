@@ -1,7 +1,5 @@
 -- ====================================================================
 -- SCRIPT KHỞI TẠO BẢNG & SEED 15 DỊCH VỤ MẪU SÂN CẦU LÔNG
-=======
--- SCRIPT KHỞI TẠO BẢNG & SEED DỮ LIỆU DỊCH VỤ, KHO HÀNG, ĐƠN DỊCH VỤ
 -- Hệ thống Quản lý Sân Cầu Lông (Badminton Court Management System)
 -- ====================================================================
 
@@ -65,7 +63,6 @@ CREATE TABLE IF NOT EXISTS service_orders (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Bảng service_order_items
->>>>>>> b272ffb38b458850d16e547c0636e3f52cfb9f1c
 CREATE TABLE IF NOT EXISTS service_order_items (
     id               INT AUTO_INCREMENT PRIMARY KEY,
     service_order_id INT NOT NULL,
