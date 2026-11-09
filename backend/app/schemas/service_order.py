@@ -15,6 +15,9 @@ class ServiceOrderCreate(BaseModel):
     note: Optional[str] = None
     items: List[ServiceOrderItemCreate]
 
+class ServiceOrderStatusUpdate(BaseModel):
+    status: ServiceOrderStatus
+
 class ServiceOrderResponse(ServiceOrderBase):
     id: int
     created_at: datetime

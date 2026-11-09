@@ -6,6 +6,25 @@ from app.schemas.service import ServiceCreate, ServiceOut, ServiceUpdate
 from app.schemas.service_order import ServiceOrderCreate, ServiceOrderOut
 from app.schemas.service_order_item import ServiceOrderItemCreate, ServiceOrderItemOut
 from app.schemas.service_stock_log import ServiceStockLogCreate, ServiceStockLogOut
+from app.schemas.service import (
+    ServiceBase,
+    ServiceCreate,
+    ServiceOut,
+    ServiceUpdate,
+)
+from app.schemas.service_order import (
+    ServiceOrderCreate,
+    ServiceOrderOut,
+    ServiceOrderStatusUpdate,
+)
+from app.schemas.service_order_item import (
+    ServiceOrderItemCreate,
+    ServiceOrderItemOut,
+)
+from app.schemas.service_stock_log import (
+    ServiceStockLogCreate,
+    ServiceStockLogOut,
+)
 from app.schemas.user import UserBase, UserCreate, UserResponse
 
 __all__ = [
@@ -21,11 +40,13 @@ __all__ = [
     "UserBase",
     "UserCreate",
     "UserResponse",
+    "ServiceBase",
     "ServiceCreate",
-    "ServiceUpdate",
     "ServiceOut",
+    "ServiceUpdate",
     "ServiceOrderCreate",
     "ServiceOrderOut",
+    "ServiceOrderStatusUpdate",
     "ServiceOrderItemCreate",
     "ServiceOrderItemOut",
     "ServiceStockLogCreate",
