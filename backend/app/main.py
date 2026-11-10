@@ -1,6 +1,6 @@
 """Điểm khởi động của backend.
 
-Chạy:  uvicorn app.main:app --reload
+Chạy:   uvicorn app.main:app --reload
 Tài liệu API tự sinh: http://127.0.0.1:8000/docs
 """
 from contextlib import asynccontextmanager
@@ -12,13 +12,12 @@ from sqlalchemy.exc import OperationalError
 from app import models  # noqa: F401 - import để SQLAlchemy biết các bảng
 from app.core.config import settings
 from app.db.session import Base, engine
-from app.routers import health, items
+from app.routers import auth, health, items  # Đã thêm auth
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Tự tạo các bảng còn thiếu khi server khởi động (bảng đã có thì bỏ qua).
-    # Lưu ý: create_all KHÔNG sửa bảng đã tồn tại. Đổi cột -> sửa bằng SQL hoặc xoá bảng tạo lại.
     try:
         Base.metadata.create_all(bind=engine)
         print(f"[DB] Đã kết nối MySQL {settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
@@ -32,7 +31,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 
-# CORS: cho phép trang FE (khác cổng/khác domain) gọi được API này
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -40,11 +39,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mọi API đều bắt đầu bằng /api. Thêm router mới thì include ở đây.
+# Đăng ký các router
 app.include_router(health.router, prefix="/api")
 app.include_router(items.router, prefix="/api")
+
+# Auth router: khớp chuẩn task POST /auth/register, POST /auth/login, GET /auth/me
+app.include_router(auth.router)
 
 
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} đang chạy. Xem tài liệu API tại /docs"}
+
