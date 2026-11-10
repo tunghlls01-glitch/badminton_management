@@ -1,24 +1,14 @@
-"""Model = cấu trúc 1 bảng trong MySQL. Bảng mẫu: items.
-
-Khi làm đề tài, copy file này để tạo bảng của nhóm (vd: Product, Order, Movie...).
-"""
+"""Model Item mẫu của template (dùng để kiểm tra nhanh CRUD)."""
 from datetime import datetime
-from decimal import Decimal
 
-from sqlalchemy import DateTime, Numeric, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
-
+from sqlalchemy import Column, DateTime, Integer, String, Text, func
 from app.db.session import Base
-
 
 class Item(Base):
     __tablename__ = "items"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(255))
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    price: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now()
-    )
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    title = Column(String(100), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
