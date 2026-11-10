@@ -1,42 +1,42 @@
-"""Schemas (Pydantic models) cho Sản phẩm / Dịch vụ"""
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.service import ServiceCategory, ServiceStatus
 
 
 class ServiceBase(BaseModel):
-    name: str = Field(min_length=1, max_length=100, examples=["Nước khoáng Lavie 500ml"])
-    category: ServiceCategory = Field(default=ServiceCategory.KHAC, examples=[ServiceCategory.NUOC])
-    description: str | None = Field(default=None, max_length=255, examples=["Nước đóng chai ướp lạnh"])
-    unit: str = Field(min_length=1, max_length=30, examples=["Chai"])
-    price: Decimal = Field(ge=0, examples=[10000.0])
-    stock_quantity: int = Field(default=0, ge=0, examples=[100])
+    name: str = Field(..., max_length=150, examples=["Nước suối Aquafina 500ml"])
+    category: ServiceCategory = Field(default=ServiceCategory.OTHER, examples=[ServiceCategory.DRINK])
+    unit_price: Decimal = Field(..., ge=0, examples=[10000.0])
+    stock_quantity: int = Field(default=0, ge=0, examples=[50])
+    unit: str = Field(default="chai", max_length=30, examples=["chai"])
+    image_url: Optional[str] = Field(default=None, max_length=500)
+    description: Optional[str] = Field(default=None)
     status: ServiceStatus = Field(default=ServiceStatus.ACTIVE, examples=[ServiceStatus.ACTIVE])
 
 
 class ServiceCreate(ServiceBase):
-    """FE gửi lên khi tạo mới dịch vụ/sản phẩm"""
     pass
 
 
 class ServiceUpdate(BaseModel):
-    """FE gửi lên khi chỉnh sửa thông tin dịch vụ"""
-    name: str | None = Field(default=None, min_length=1, max_length=100)
-    category: ServiceCategory | None = None
-    description: str | None = None
-    unit: str | None = Field(default=None, min_length=1, max_length=30)
-    price: Decimal | None = Field(default=None, ge=0)
-    stock_quantity: int | None = Field(default=None, ge=0)
-    status: ServiceStatus | None = None
+    name: Optional[str] = Field(default=None, max_length=150)
+    category: Optional[ServiceCategory] = None
+    unit_price: Optional[Decimal] = Field(default=None, ge=0)
+    stock_quantity: Optional[int] = Field(default=None, ge=0)
+    unit: Optional[str] = Field(default=None, max_length=30)
+    image_url: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[ServiceStatus] = None
 
 
-class ServiceOut(ServiceBase):
-    """Response trả về cho Frontend"""
+class ServiceResponse(ServiceBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    price: float
     created_at: datetime
     updated_at: datetime
+
+ServiceOut = ServiceResponse

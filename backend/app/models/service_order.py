@@ -1,16 +1,11 @@
-"""Model Quản lý Đơn đặt dịch vụ (bảng service_orders).
-
-Bao gồm:
-- Đơn bán tại quầy cho khách vãng lai (booking_id = None).
-- Đơn đặt kèm lịch đặt sân (booking_id != None).
-"""
+"""Model ServiceOrder: Đơn đặt dịch vụ / đồ ăn nước uống."""
 import enum
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
-from sqlalchemy import DateTime, Enum, Numeric, String, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 
@@ -19,34 +14,22 @@ if TYPE_CHECKING:
 
 
 class ServiceOrderStatus(str, enum.Enum):
-    PENDING = "Pending"      # Chờ xác nhận / chờ giao
-    CONFIRMED = "Confirmed"  # Đã xác nhận
-    COMPLETED = "Completed"  # Hoàn thành & đã thanh toán
-    CANCELLED = "Cancelled"  # Đã hủy đơn
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 
 class ServiceOrder(Base):
     __tablename__ = "service_orders"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    booking_id = Column(Integer, nullable=True, index=True)
+    customer_id = Column(Integer, nullable=False, index=True)
+    total_amount = Column(Numeric(12, 2), nullable=False, default=0)
+    status = Column(Enum(ServiceOrderStatus), nullable=False, default=ServiceOrderStatus.PENDING, index=True)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    # booking_id: NULL nghĩa là khách vãng lai mua tại quầy; NOT NULL là đi kèm lịch đặt sân
-    booking_id: Mapped[int | None] = mapped_column(nullable=True, index=True)
+    items = relationship("ServiceOrderItem", back_populates="order")
 
-    # created_by: Nhân viên hoặc khách hàng tạo đơn
-    created_by: Mapped[int | None] = mapped_column(nullable=True, index=True)
-
-    total_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
-    status: Mapped[ServiceOrderStatus] = mapped_column(
-        Enum(ServiceOrderStatus), default=ServiceOrderStatus.PENDING, index=True
-    )
-    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now()
-    )
-
-    # Quan hệ
-    items: Mapped[list["ServiceOrderItem"]] = relationship(
-        "ServiceOrderItem", back_populates="order", cascade="all, delete-orphan"
-    )
