@@ -1,5 +1,6 @@
 # Import mọi model ở đây để Base.metadata.create_all() "nhìn thấy" và tạo bảng.
 # Thêm model mới -> nhớ thêm 1 dòng import vào file này.
+
 from app.models.invoice import Invoice  # noqa: F401
 from app.models.item import Item  # noqa: F401
 from app.models.payment import Payment, PaymentMethod, PaymentStatus  # noqa: F401
@@ -8,3 +9,10 @@ from app.models.service_order import ServiceOrder, ServiceOrderStatus  # noqa: F
 from app.models.service_order_item import ServiceOrderItem  # noqa: F401
 from app.models.service_stock_log import ServiceStockLog, StockChangeType  # noqa: F401
 from app.models.user import User, UserRole, UserStatus  # noqa: F401
+
+# Slot & Court Management Models
+from app.models.court import Court, CourtStatus  # noqa: F401
+from app.models.court_block import CourtBlock  # noqa: F401
+from app.models.price_rule import PriceRule  # noqa: F401
+from app.models.booking import Booking, BookingStatus  # noqa: F401
+from app.models.booking_slot import BookingSlot  # noqa: F401

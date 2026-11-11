@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 from decimal import Decimal
 import enum
 from typing import TYPE_CHECKING, List, Optional
@@ -15,9 +15,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
+from app.models.booking_slot import BookingSlot, BookingSlotStatus
 
 if TYPE_CHECKING:
-    from app.models.booking_slot import BookingSlot
     from app.models.invoice import Invoice
     from app.models.payment import Payment
     from app.models.service import ServiceOrder
@@ -66,21 +66,33 @@ class Booking(Base):
         DateTime, server_default=func.now(), onupdate=func.now()
     )
 
+    # Alias để code dùng total_amount hay total_price đều được
+    @property
+    def total_amount(self) -> Decimal:
+        return self.total_price
+
+    @total_amount.setter
+    def total_amount(self, value: Decimal):
+        self.total_price = value
+
+    @property
+    def customer_id(self) -> int:
+        return self.user_id
+
     # Relationships
-    user: Mapped["User"] = relationship("User", foreign_keys=[user_id], back_populates="bookings")
+    user = relationship("User", back_populates="bookings", foreign_keys=[user_id])
     creator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[created_by])
     booking_slots: Mapped[List["BookingSlot"]] = relationship(
         "BookingSlot", back_populates="booking", cascade="all, delete-orphan"
     )
-    payments: Mapped[List["Payment"]] = relationship(
-        "Payment", back_populates="booking", cascade="all, delete-orphan"
-    )
-    invoices: Mapped[List["Invoice"]] = relationship(
-        "Invoice", back_populates="booking", cascade="all, delete-orphan"
-    )
-    service_orders: Mapped[List["ServiceOrder"]] = relationship(
-        "ServiceOrder", back_populates="booking", cascade="all, delete-orphan"
-    )
+    payments = relationship("Payment", back_populates="booking", cascade="all, delete-orphan")
+    invoices = relationship("Invoice", back_populates="booking", cascade="all, delete-orphan")
+    service_orders = relationship("ServiceOrder", back_populates="booking", cascade="all, delete-orphan")
+
+    # Alias slots -> booking_slots
+    @property
+    def slots(self):
+        return self.booking_slots
 
     @property
     def invoice(self) -> Optional["Invoice"]:
