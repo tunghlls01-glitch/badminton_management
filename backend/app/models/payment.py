@@ -3,9 +3,9 @@ import enum
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Column, DateTime, Enum, Integer, Numeric, String, func
+from sqlalchemy import Column, DateTime, Enum, Integer, Numeric, String, func, ForeignKey
 from app.db.session import Base
-
+from sqlalchemy.orm import relationship
 
 class PaymentMethod(str, enum.Enum):
     CASH = "CASH"
@@ -30,3 +30,8 @@ class Payment(Base):
     status = Column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.PENDING)
     transaction_id = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False)
+
+    # Relationship ngược về Booking
+    booking = relationship("Booking", back_populates="payments")

@@ -67,20 +67,16 @@ class Booking(Base):
     )
 
     # Relationships
-    user: Mapped["User"] = relationship("User", foreign_keys=[user_id], back_populates="bookings")
+    user = relationship("User", back_populates="bookings", foreign_keys="Booking.user_id" )
     creator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[created_by])
     booking_slots: Mapped[List["BookingSlot"]] = relationship(
         "BookingSlot", back_populates="booking", cascade="all, delete-orphan"
     )
-    payments: Mapped[List["Payment"]] = relationship(
-        "Payment", back_populates="booking", cascade="all, delete-orphan"
-    )
-    invoices: Mapped[List["Invoice"]] = relationship(
-        "Invoice", back_populates="booking", cascade="all, delete-orphan"
-    )
-    service_orders: Mapped[List["ServiceOrder"]] = relationship(
-        "ServiceOrder", back_populates="booking", cascade="all, delete-orphan"
-    )
+    payments = relationship("Payment", back_populates="booking", cascade="all, delete-orphan")
+    
+    invoices = relationship("Invoice", back_populates="booking", cascade="all, delete-orphan")
+    
+    service_orders = relationship("ServiceOrder", back_populates="booking", cascade="all, delete-orphan")
 
     @property
     def invoice(self) -> Optional["Invoice"]:

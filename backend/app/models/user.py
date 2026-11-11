@@ -1,5 +1,6 @@
 import enum 
 from sqlalchemy import Column, Integer, String, Enum, DateTime, func
+from sqlalchemy.orm import relationship  # 1. Thêm import relationship
 from app.db.session import Base 
 
 class UserRole(str, enum.Enum):
@@ -23,3 +24,6 @@ class User(Base):
     status = Column(Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # 2. Thêm dòng này vào cuối class User để khớp với Booking model
+    bookings = relationship("Booking", back_populates="user", foreign_keys="Booking.user_id")
