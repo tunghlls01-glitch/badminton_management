@@ -17,6 +17,7 @@ from app.db.session import Base, engine
 from app.routers import auth, health, items  # Đã thêm auth
 from app.routers import slot
 from app.routers import booking
+from app.routers import court_management
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Tự tạo các bảng còn thiếu khi server khởi động (bảng đã có thì bỏ qua).
@@ -67,7 +68,7 @@ app.include_router(booking.router, prefix="/api")
 app.include_router(slot.router, prefix="/api/v1")
 # Auth router: khớp chuẩn task POST /auth/register, POST /auth/login, GET /auth/me
 app.include_router(auth.router)
-
+app.include_router(court_management.router, prefix="/api")
 
 @app.get("/")
 def root():
