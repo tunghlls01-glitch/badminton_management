@@ -1,8 +1,8 @@
 """Model Invoice: Module 12 - Hóa đơn tổng kết."""
 from datetime import datetime
 from decimal import Decimal
-
-from sqlalchemy import Column, DateTime, Integer, Numeric, String, func
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, DateTime, Integer, Numeric, String, func, ForeignKey
 from app.db.session import Base
 
 
@@ -17,3 +17,7 @@ class Invoice(Base):
     total_service_amount = Column(Numeric(12, 2), default=0, nullable=False)
     grand_total = Column(Numeric(12, 2), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
+    
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False)
+
+    booking = relationship("Booking", back_populates="invoices")

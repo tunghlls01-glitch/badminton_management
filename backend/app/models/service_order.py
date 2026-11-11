@@ -33,3 +33,7 @@ class ServiceOrder(Base):
 
     items = relationship("ServiceOrderItem", back_populates="order")
 
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=True) 
+
+    booking = relationship("Booking", back_populates="service_orders")
+
