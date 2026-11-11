@@ -302,7 +302,7 @@ def cancel_booking(
         "status": booking.status,
         "refund_percent": refund_percent,
         "refund_amount": float(refund_amount),
-        "policy_message": CANCELLATION_POLICY,
+        "policy_message": CANCELLATION_POLICY, 
         "message": message,
     }
 
