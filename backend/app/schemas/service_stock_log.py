@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel, Field
 from app.models.service_stock_log import StockChangeType
 
 class ServiceStockLogBase(BaseModel):
     service_id: int
-    change_type: StockChangeType
+    change_type: Union[StockChangeType, str]
     quantity_change: int
     quantity_before: int
     quantity_after: int
@@ -13,7 +13,7 @@ class ServiceStockLogBase(BaseModel):
 
 class ServiceStockLogCreate(BaseModel):
     service_id: int
-    change_type: StockChangeType
+    change_type: Union[StockChangeType, str]
     quantity_change: int
     note: Optional[str] = None
 
