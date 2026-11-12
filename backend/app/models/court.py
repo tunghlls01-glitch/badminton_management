@@ -1,4 +1,4 @@
-﻿import enum
+import enum
 from sqlalchemy import Column, Integer, String, Enum, DateTime, func, Text
 from sqlalchemy.orm import relationship
 
@@ -19,13 +19,15 @@ class CourtStatus(str, enum.Enum):
 class Court(Base):
     __tablename__ = "courts"
 
-    id = Column(Integer, primary_key=True, index=True)
-    court_name = Column(String(100), nullable=False)  # Hoặc 'name' tùy bạn chọn
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    court_name = Column(String(100), nullable=False)
     court_type = Column(String(50), nullable=True)
     description = Column(Text, nullable=True)
     image_url = Column(String(255), nullable=True)
     status = Column(String(50), default="HOẠT ĐỘNG")
+    created_at = Column(DateTime, server_default=func.now(), nullable=True)
 
     price_rules = relationship("PriceRule", back_populates="court", cascade="all, delete-orphan")
     blocks = relationship("CourtBlock", back_populates="court", cascade="all, delete-orphan")
     booking_slots = relationship("BookingSlot", back_populates="court")
+    court_blocks = blocks
