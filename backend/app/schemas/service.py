@@ -1,18 +1,18 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel, Field
 from app.models.service import ServiceCategory, ServiceStatus
 
 class ServiceBase(BaseModel):
     name: str = Field(..., max_length=150, examples=["Nước suối Aquafina 500ml"])
-    category: Optional[ServiceCategory] = Field(default=ServiceCategory.OTHER)
+    category: Optional[Union[ServiceCategory, str]] = Field(default=ServiceCategory.OTHER)
     unit_price: Decimal = Field(..., gt=0, examples=[10000.0], description="Giá dịch vụ phải lớn hơn 0")
     stock_quantity: int = Field(default=0, ge=0, examples=[50])
     unit: str = Field(default="chai", max_length=30, examples=["chai"])
     image_url: Optional[str] = Field(default=None, max_length=500)
     description: Optional[str] = Field(default=None)
-    status: Optional[ServiceStatus] = Field(default=ServiceStatus.ACTIVE)
+    status: Optional[Union[ServiceStatus, str]] = Field(default=ServiceStatus.ACTIVE)
 
     @property
     def price(self) -> Decimal:
@@ -23,13 +23,13 @@ class ServiceCreate(ServiceBase):
 
 class ServiceUpdate(BaseModel):
     name: Optional[str] = Field(default=None, max_length=150)
-    category: Optional[ServiceCategory] = None
+    category: Optional[Union[ServiceCategory, str]] = None
     unit_price: Optional[Decimal] = Field(default=None, gt=0, description="Giá dịch vụ phải lớn hơn 0")
     stock_quantity: Optional[int] = Field(default=None, ge=0)
     unit: Optional[str] = Field(default=None, max_length=30)
     image_url: Optional[str] = None
     description: Optional[str] = None
-    status: Optional[ServiceStatus] = None
+    status: Optional[Union[ServiceStatus, str]] = None
 
 class ServiceResponse(ServiceBase):
     id: int

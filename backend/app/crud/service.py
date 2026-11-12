@@ -32,11 +32,41 @@ def get_service(db: Session, service_id: int) -> Optional[Service]:
     return db.get(Service, service_id)
 
 
+def map_category(cat: Optional[str]) -> str:
+    """Chuyển đổi category về chuẩn MySQL: NUOC, ONG_CAU, THUE_VOT, KHAC."""
+    if not cat:
+        return "KHAC"
+    val = str(cat.value if hasattr(cat, "value") else cat).upper()
+    if val in ["DRINK", "NƯỚC", "NUOC"]:
+        return "NUOC"
+    if val in ["SHUTTLECOCK", "ỐNG CẦU", "ONG_CAU", "ONG CAU"]:
+        return "ONG_CAU"
+    if val in ["RACKET_RENTAL", "THUÊ VỢT", "THUE_VOT", "THUE VOT"]:
+        return "THUE_VOT"
+    return "KHAC"
+
+
+def map_status(st: Optional[str]) -> str:
+    """Chuyển đổi status về chuẩn MySQL: ACTIVE, INACTIVE."""
+    if not st:
+        return "ACTIVE"
+    val = str(st.value if hasattr(st, "value") else st).upper()
+    if val in ["ACTIVE", "HOẠT ĐỘNG"]:
+        return "ACTIVE"
+    return "INACTIVE"
+
+
 def create_service(db: Session, data: ServiceCreate) -> Service:
     """Tạo mới một dịch vụ. Nếu có tồn kho ban đầu thì ghi nhận log nhập hàng."""
     service_dict = data.model_dump()
     if "unit_price" in service_dict:
         service_dict["price"] = service_dict.pop("unit_price")
+    service_dict.pop("image_url", None)
+
+    if "category" in service_dict:
+        service_dict["category"] = map_category(service_dict["category"])
+    if "status" in service_dict:
+        service_dict["status"] = map_status(service_dict["status"])
 
     service = Service(**service_dict)
     db.add(service)
@@ -64,6 +94,12 @@ def update_service(db: Session, service: Service, data: ServiceUpdate) -> Servic
     update_data = data.model_dump(exclude_unset=True)
     if "unit_price" in update_data:
         update_data["price"] = update_data.pop("unit_price")
+    update_data.pop("image_url", None)
+
+    if "category" in update_data:
+        update_data["category"] = map_category(update_data["category"])
+    if "status" in update_data:
+        update_data["status"] = map_status(update_data["status"])
 
     for field, value in update_data.items():
         setattr(service, field, value)
@@ -222,7 +258,7 @@ def get_low_stock_services(db: Session, threshold: int = 10) -> list[Service]:
     """Lấy danh sách các dịch vụ đang hoạt động có số lượng tồn kho <= ngưỡng cảnh báo."""
     query = (
         select(Service)
-        .where(Service.status == ServiceStatus.ACTIVE, Service.stock_quantity <= threshold)
+        .where(Service.status.in_(["ACTIVE", "Active"]), Service.stock_quantity <= threshold)
         .order_by(Service.stock_quantity.asc())
     )
     return list(db.scalars(query))
