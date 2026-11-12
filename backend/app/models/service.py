@@ -27,7 +27,7 @@ class Service(Base):
     category = Column(Enum(ServiceCategory), default=ServiceCategory.OTHER, nullable=False, index=True)
     description = Column(Text, nullable=True)
     unit = Column(String(30), nullable=False, default="cai")
-    unit_price = Column(Numeric(12, 2), default=0, nullable=False)
+    price = Column(Numeric(12, 2), default=0, nullable=False)
     stock_quantity = Column(Integer, default=0, nullable=False)
     image_url = Column(String(500), nullable=True)
     status = Column(Enum(ServiceStatus), default=ServiceStatus.ACTIVE, nullable=False, index=True)
@@ -35,12 +35,12 @@ class Service(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     @property
-    def price(self):
-        return self.unit_price
+    def unit_price(self):
+        return self.price
 
-    @price.setter
-    def price(self, val):
-        self.unit_price = val
+    @unit_price.setter
+    def unit_price(self, val):
+        self.price = val
 
     # Relationships
     order_items = relationship("ServiceOrderItem", back_populates="service")
