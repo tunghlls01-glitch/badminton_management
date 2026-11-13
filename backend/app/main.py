@@ -17,8 +17,8 @@ from app.db.session import Base, engine
 from app.routers import auth, health, items, reception, services
 from app.routers import slot
 from app.routers import booking
-from app.routers import court_management, price_rule_management
-
+from app.routers import court_management
+from app.routers import price_rule_management
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Tự tạo các bảng còn thiếu khi server khởi động (bảng đã có thì bỏ qua).

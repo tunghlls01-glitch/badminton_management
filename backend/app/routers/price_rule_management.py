@@ -1,25 +1,27 @@
-from typing import List, Literal, Optional
+from datetime import date, time
+from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.crud import price_rule_service
 from app.db.session import get_db
-from app.schemas.price_rule import (
-    PriceRuleCreate,
-    PriceRuleResponse,
-    PriceRuleUpdate,
-    TinhTienRequest,
-)
+from app.schemas.price_rule import PriceRuleCreate, PriceRuleResponse, PriceRuleUpdate
 
 router = APIRouter(prefix="/price-rules", tags=["Price Rules"])
+
+
+class TinhTienRequest(BaseModel):
+    san_id: int = Field(..., examples=[1], description="ID sân")
+    ngay: date = Field(..., examples=["2026-11-14"], description="Ngày chơi (YYYY-MM-DD)")
+    gio_bat_dau: time = Field(..., examples=["15:00:00"])
+    gio_ket_thuc: time = Field(..., examples=["18:00:00"])
 
 
 @router.get("", response_model=List[PriceRuleResponse])
 def get_all_price_rules(
     court_id: Optional[int] = Query(default=None, description="Lọc theo ID sân"),
-    day_of_week: Optional[Literal["WEEKDAY", "WEEKEND"]] = Query(
-        default=None, description="Lọc theo loại ngày: WEEKDAY hoặc WEEKEND"
-    ),
+    day_of_week: Optional[str] = Query(default=None, description="Lọc theo loại ngày: WEEKDAY hoặc WEEKEND"),
     db: Session = Depends(get_db),
 ):
     """Danh sách quy tắc giá theo khung giờ và ngày thường/cuối tuần"""
