@@ -12,6 +12,14 @@ class ServiceOrderItem(Base):
     unit_price = Column(Numeric(12, 2), nullable=False)  # Giá tại thời điểm đặt món
     amount = Column(Numeric(12, 2), nullable=False)      # Thành tiền = quantity * unit_price
 
+    @property
+    def service_name(self):
+        return self.service.name if self.service else None
+
+    @property
+    def service_unit(self):
+        return self.service.unit if self.service else None
+
     # Relationships
     order = relationship("ServiceOrder", back_populates="items")
     service = relationship("Service", back_populates="order_items")

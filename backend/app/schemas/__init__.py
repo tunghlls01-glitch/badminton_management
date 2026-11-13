@@ -9,13 +9,17 @@ from app.schemas.service import (
     ServiceUpdate,
 )
 from app.schemas.service_order import (
+    BookingServiceSummary,
+    ServiceOrderAddItem,
     ServiceOrderCreate,
     ServiceOrderOut,
+    ServiceOrderResponse,
     ServiceOrderStatusUpdate,
 )
 from app.schemas.service_order_item import (
     ServiceOrderItemCreate,
     ServiceOrderItemOut,
+    ServiceOrderItemResponse,
 )
 from app.schemas.service_stock_log import (
     ServiceStockLogCreate,
@@ -43,9 +47,13 @@ __all__ = [
     "ServiceOut",
     "ServiceUpdate",
     "ServiceOrderCreate",
+    "ServiceOrderAddItem",
+    "ServiceOrderResponse",
     "ServiceOrderOut",
     "ServiceOrderStatusUpdate",
+    "BookingServiceSummary",
     "ServiceOrderItemCreate",
+    "ServiceOrderItemResponse",
     "ServiceOrderItemOut",
     "ServiceStockLogCreate",
     "ServiceStockLogOut",
