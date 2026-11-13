@@ -1,38 +1,30 @@
-"""Schemas (Pydantic models) cho Đơn đặt dịch vụ"""
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
-
+from typing import Optional, List
+from pydantic import BaseModel
 from app.models.service_order import ServiceOrderStatus
-from app.schemas.service_order_item import (
-    ServiceOrderItemCreate,
-    ServiceOrderItemOut,
-)
+from app.schemas.service_order_item import ServiceOrderItemCreate, ServiceOrderItemResponse
 
+class ServiceOrderBase(BaseModel):
+    booking_id: Optional[int] = None
+    total_price: float = 0.0
+    status: Optional[ServiceOrderStatus] = ServiceOrderStatus.PENDING
+    note: Optional[str] = None
 
 class ServiceOrderCreate(BaseModel):
-    """Tạo đơn dịch vụ (khách đặt tại quầy hoặc gộp cùng lịch đặt sân)"""
-    booking_id: int | None = Field(
-        default=None,
-        description="ID lịch đặt sân nếu đi kèm booking, hoặc None nếu là khách vãng lai mua tại quầy",
-    )
-    created_by: int | None = Field(default=None, description="ID nhân viên hoặc user tạo đơn")
-    note: str | None = Field(default=None, max_length=255, examples=["Khách thanh toán tiền mặt"])
-    items: list[ServiceOrderItemCreate] = Field(min_length=1)
-
+    booking_id: Optional[int] = None
+    note: Optional[str] = None
+    items: List[ServiceOrderItemCreate]
 
 class ServiceOrderStatusUpdate(BaseModel):
-    status: ServiceOrderStatus = Field(examples=[ServiceOrderStatus.COMPLETED])
-
-
-class ServiceOrderOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    booking_id: int | None
-    created_by: int | None
-    total_price: float
     status: ServiceOrderStatus
-    note: str | None
+
+class ServiceOrderResponse(ServiceOrderBase):
+    id: int
     created_at: datetime
     updated_at: datetime
-    items: list[ServiceOrderItemOut] = []
+    items: List[ServiceOrderItemResponse] = []
+
+    class Config:
+        from_attributes = True
+
+ServiceOrderOut = ServiceOrderResponse

@@ -154,7 +154,7 @@ def is_slot_available(
             BookingSlot.court_id == court_id,
             BookingSlot.status == BookingSlotStatus.Active,
             Booking.status.in_(
-                [BookingStatus.Pending, BookingStatus.Confirmed]),
+                [BookingStatus.Pending, BookingStatus.Confirmed, BookingStatus.CHECKED_IN]),
             # overlap: slot_start < end_at AND slot_end > start_at
             BookingSlot.start_at < end_at,
             BookingSlot.end_at > start_at,
