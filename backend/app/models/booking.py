@@ -33,6 +33,8 @@ class BookingChannel(str, enum.Enum):
 class BookingStatus(str, enum.Enum):
     Pending = "Pending"
     Confirmed = "Confirmed"
+    CHECKED_IN = "CHECKED_IN"
+    NO_SHOW = "NO_SHOW"
     Completed = "Completed"
     Cancelled = "Cancelled"
     Expired = "Expired"

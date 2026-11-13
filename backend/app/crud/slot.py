@@ -33,7 +33,7 @@ def is_slot_free(db: Session, court_id: int, start_at: datetime, end_at: datetim
         BookingSlot.start_at < end_at,
         BookingSlot.end_at > start_at,
         or_(
-            Booking.status == BookingStatus.Confirmed,
+            Booking.status.in_([BookingStatus.Confirmed, BookingStatus.CHECKED_IN]),
             and_(
                 Booking.status == BookingStatus.Pending,
                 Booking.hold_expires_at > now
@@ -110,7 +110,7 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
 
             if slot_record:
                 booking = slot_record.booking
-                if booking.status == BookingStatus.Confirmed:
+                if booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN):
                     status = SlotDisplayStatus.BOOKED
                 elif booking.status == BookingStatus.Pending and getattr(booking, 'hold_expires_at', None) and booking.hold_expires_at > now:
                     status = SlotDisplayStatus.HOLD

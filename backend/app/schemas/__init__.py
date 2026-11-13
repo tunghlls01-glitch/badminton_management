@@ -20,6 +20,8 @@ from app.schemas.service_order_item import (
 from app.schemas.service_stock_log import (
     ServiceStockLogCreate,
     ServiceStockLogOut,
+    StockAdjustRequest,
+    StockImportRequest,
 )
 from app.schemas.user import UserBase, UserCreate, UserResponse
 
@@ -47,4 +49,6 @@ __all__ = [
     "ServiceOrderItemOut",
     "ServiceStockLogCreate",
     "ServiceStockLogOut",
+    "StockImportRequest",
+    "StockAdjustRequest",
 ]

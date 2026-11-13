@@ -1,43 +1,17 @@
-﻿from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+﻿from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from jose import JWTError, jwt
 
 from app.db.session import get_db
 from app.models.user import User, UserRole, UserStatus
 from app.schemas.user import UserCreate, UserResponse, UserLogin, Token
-from app.core.security import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from app.core.security import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    get_current_user,
+)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-
-security = HTTPBearer()
-
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-) -> User:
-    token = credentials.credentials
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Khong the xac thuc thong tin dang nhap",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: Optional[str] = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    if user is None:
-        raise credentials_exception
-    if user.status == UserStatus.LOCKED:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tai khoan da bi khoa")
-    return user
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

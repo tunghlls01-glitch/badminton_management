@@ -25,13 +25,6 @@ from app.schemas.booking import BookingCreate, BookingOut, BookingUpdate
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
 
-
-
-# ─────────────── helpers ───────────────
-
-
-
-
 def _to_booking_out(booking) -> dict:
     """Map Booking model → BookingOut schema (trích slot đầu tiên)."""
     first_slot = None

@@ -1,33 +1,37 @@
-"""Model ServiceStockLog: Lịch sử nhập/xuất kho dịch vụ."""
 import enum
-from datetime import datetime
-from typing import TYPE_CHECKING
-
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, func
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
-
 from app.db.session import Base
-
-if TYPE_CHECKING:
-    from app.models.service import Service
-
 
 class StockChangeType(str, enum.Enum):
     IMPORT = "IMPORT"
     EXPORT = "EXPORT"
+    SALE = "SALE"
     ADJUSTMENT = "ADJUSTMENT"
-
+    # Tiếng Việt tương thích ngược nếu DB cũ dùng
+    NHAP_HANG = "Nhập hàng"
+    BAN_LE = "Bán lẻ"
+    DIEU_CHINH = "Điều chỉnh"
 
 class ServiceStockLog(Base):
     __tablename__ = "service_stock_logs"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     service_id = Column(Integer, ForeignKey("services.id"), nullable=False, index=True)
-    change_type = Column(Enum(StockChangeType), nullable=False)
-    quantity = Column(Integer, nullable=False)
-    current_stock = Column(Integer, nullable=False)
+    change_type = Column(String(50), nullable=False)
+    quantity_change = Column(Integer, nullable=False, default=0)
+    quantity_before = Column(Integer, nullable=False, default=0)
+    quantity_after = Column(Integer, nullable=False, default=0)
     note = Column(String(255), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
+    @property
+    def quantity(self):
+        return self.quantity_change
+
+    @property
+    def current_stock(self):
+        return self.quantity_after
+
+    # Relationships
     service = relationship("Service", back_populates="stock_logs")
-    

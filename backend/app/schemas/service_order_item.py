@@ -1,21 +1,20 @@
-"""Schemas (Pydantic models) cho Chi tiết món trong đơn dịch vụ."""
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
 
-from app.schemas.service import ServiceOut
-
+class ServiceOrderItemBase(BaseModel):
+    service_id: int
+    quantity: int = 1
+    unit_price: float
+    amount: float
 
 class ServiceOrderItemCreate(BaseModel):
     service_id: int
-    quantity: int = Field(gt=0, default=1, examples=[2])
+    quantity: int = 1
 
-
-class ServiceOrderItemOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class ServiceOrderItemResponse(ServiceOrderItemBase):
     id: int
     service_order_id: int
-    service_id: int
-    quantity: int
-    unit_price: float
-    amount: float
-    service: ServiceOut | None = None
+
+    class Config:
+        from_attributes = True
+
+ServiceOrderItemOut = ServiceOrderItemResponse
