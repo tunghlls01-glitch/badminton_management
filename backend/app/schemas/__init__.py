@@ -1,4 +1,11 @@
 # Import schemas để dễ dàng import từ app.schemas
+from app.schemas.booking import (
+    BookingCheckoutRequest,
+    BookingCheckoutResponse,
+    BookingCreate,
+    BookingOut,
+    BookingUpdate,
+)
 from app.schemas.invoice import InvoiceCreate, InvoiceOut, InvoiceUpdate
 from app.schemas.item import ItemCreate, ItemOut, ItemUpdate
 from app.schemas.payment import PaymentCreate, PaymentOut, PaymentUpdate
@@ -20,6 +27,8 @@ from app.schemas.service_order_item import (
 from app.schemas.service_stock_log import (
     ServiceStockLogCreate,
     ServiceStockLogOut,
+    StockAdjustRequest,
+    StockImportRequest,
 )
 from app.schemas.user import UserBase, UserCreate, UserResponse
 
@@ -47,4 +56,8 @@ __all__ = [
     "ServiceOrderItemOut",
     "ServiceStockLogCreate",
     "ServiceStockLogOut",
+    "StockImportRequest",
+    "StockAdjustRequest",
+    "BookingCheckoutRequest",
+    "BookingCheckoutResponse",
 ]

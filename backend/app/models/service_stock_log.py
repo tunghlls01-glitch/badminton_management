@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, String, Enum, DateTime, ForeignKey, func
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 
@@ -8,13 +8,17 @@ class StockChangeType(str, enum.Enum):
     EXPORT = "EXPORT"
     SALE = "SALE"
     ADJUSTMENT = "ADJUSTMENT"
+    # Tiếng Việt tương thích ngược nếu DB cũ dùng
+    NHAP_HANG = "Nhập hàng"
+    BAN_LE = "Bán lẻ"
+    DIEU_CHINH = "Điều chỉnh"
 
 class ServiceStockLog(Base):
     __tablename__ = "service_stock_logs"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     service_id = Column(Integer, ForeignKey("services.id"), nullable=False, index=True)
-    change_type = Column(Enum(StockChangeType), nullable=False)
+    change_type = Column(String(50), nullable=False)
     quantity_change = Column(Integer, nullable=False, default=0)
     quantity_before = Column(Integer, nullable=False, default=0)
     quantity_after = Column(Integer, nullable=False, default=0)

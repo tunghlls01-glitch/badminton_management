@@ -1,12 +1,17 @@
-"""Nghiệp vụ Lễ tân: tìm booking trong ngày, check-in và đánh dấu NO_SHOW."""
+"""Nghiệp vụ Lễ tân: tìm booking trong ngày, check-in, đánh dấu NO_SHOW và thanh toán checkout."""
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.booking import Booking, BookingStatus
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
+from app.models.invoice import Invoice
+from app.models.payment import Payment, PaymentMethod, PaymentStatus
+from app.models.service_order import ServiceOrder, ServiceOrderStatus
 from app.models.user import User
+from app.schemas.booking import BookingCheckoutRequest, BookingCheckoutResponse
 
 CHECKIN_EARLY_MINUTES = 30
 NO_SHOW_GRACE_MINUTES = 15
@@ -115,3 +120,142 @@ def mark_no_show_booking(db: Session, booking_id: int, now: datetime | None = No
     db.commit()
     db.refresh(booking)
     return booking
+
+
+def checkout_booking(
+    db: Session,
+    booking_id: int,
+    data: BookingCheckoutRequest,
+) -> BookingCheckoutResponse:
+    """Thanh toán tổng kết cho booking (tiền sân + tiền dịch vụ - giảm giá) trong 1 Transaction duy nhất.
+    
+    - Chống thanh toán 2 lần bằng Pessimistic Lock (SELECT ... FOR UPDATE) và Unique DB constraint.
+    - Áp dụng giảm giá thủ công (bắt buộc nhập lý do nếu discount > 0).
+    - Tạo Invoice và Payment (CASH hoặc BANK_TRANSFER).
+    - Đổi trạng thái ServiceOrder -> COMPLETED và Booking -> Completed.
+    """
+    payment_method_str = (data.payment_method or "").strip().upper()
+    if payment_method_str not in ("CASH", "BANK_TRANSFER"):
+        raise ValueError("Phương thức thanh toán chỉ hỗ trợ 'CASH' (tiền mặt) hoặc 'BANK_TRANSFER' (chuyển khoản).")
+
+    discount = data.discount_amount or Decimal(0)
+    if discount < 0:
+        raise ValueError("Số tiền giảm giá không được âm.")
+    if discount > 0 and (not data.discount_reason or not data.discount_reason.strip()):
+        raise ValueError("Bắt buộc phải nhập lý do giảm giá khi có áp dụng giảm giá.")
+
+    try:
+        # Khóa dòng booking (Pessimistic Locking) để tránh race condition thanh toán 2 lần cùng lúc
+        booking = (
+            db.query(Booking)
+            .filter(Booking.id == booking_id)
+            .with_for_update()
+            .first()
+        )
+        if booking is None:
+            raise NotFoundError(f"Booking id={booking_id} không tồn tại")
+
+        # Kiểm tra trạng thái booking
+        if booking.status == BookingStatus.Completed:
+            raise ValueError(f"Booking {booking.booking_code} đã thanh toán và hoàn thành trước đó.")
+
+        # Kiểm tra hóa đơn đã tồn tại chưa
+        existing_invoice = db.query(Invoice).filter(Invoice.booking_id == booking_id).first()
+        if existing_invoice:
+            raise ValueError(
+                f"Booking {booking.booking_code} đã được xuất hóa đơn ({existing_invoice.invoice_code}), "
+                "không thể thanh toán lần 2."
+            )
+
+        if booking.status not in (BookingStatus.CHECKED_IN, BookingStatus.Confirmed):
+            raise ValueError(
+                f"Chỉ có thể thanh toán khi booking ở trạng thái CHECKED_IN hoặc Confirmed. "
+                f"Hiện tại: {booking.status.value}"
+            )
+
+        # 1. Tiền sân
+        total_court_amount = Decimal(str(booking.total_price or 0))
+
+        # 2. Tiền dịch vụ (các ServiceOrder của booking không bị huỷ)
+        service_orders = (
+            db.query(ServiceOrder)
+            .filter(
+                ServiceOrder.booking_id == booking_id,
+                ServiceOrder.status != ServiceOrderStatus.CANCELLED,
+            )
+            .all()
+        )
+        total_service_amount = sum(
+            (Decimal(str(order.total_price or 0)) for order in service_orders),
+            Decimal(0),
+        )
+
+        subtotal = total_court_amount + total_service_amount
+        if discount > subtotal:
+            raise ValueError(
+                f"Số tiền giảm giá ({discount:,.0f}đ) không được vượt quá tổng tiền ({subtotal:,.0f}đ)."
+            )
+
+        grand_total = subtotal - discount
+
+        # 3. Tạo mã hóa đơn duy nhất
+        now = datetime.now()
+        timestamp_str = now.strftime("%Y%m%d%H%M%S")
+        invoice_code = f"INV-{timestamp_str}-{booking.id}"
+
+        # 4. Tạo bản ghi Hóa đơn (Invoice)
+        invoice = Invoice(
+            invoice_code=invoice_code,
+            booking_id=booking.id,
+            customer_id=booking.user_id,
+            total_court_amount=total_court_amount,
+            total_service_amount=total_service_amount,
+            discount_amount=discount,
+            discount_reason=data.discount_reason.strip() if data.discount_reason else None,
+            grand_total=grand_total,
+        )
+        db.add(invoice)
+        db.flush()  # sinh invoice.id
+
+        # 5. Tạo bản ghi Thanh toán (Payment)
+        payment = Payment(
+            booking_id=booking.id,
+            invoice_id=invoice.id,
+            amount=grand_total,
+            payment_method=PaymentMethod(payment_method_str),
+            payment_status=PaymentStatus.SUCCESS,
+            transaction_code=data.transaction_code.strip() if data.transaction_code else None,
+        )
+        db.add(payment)
+
+        # 6. Đổi trạng thái các đơn dịch vụ liên quan -> COMPLETED
+        for order in service_orders:
+            order.status = ServiceOrderStatus.COMPLETED
+
+        # 7. Đổi trạng thái Booking -> Completed
+        booking.status = BookingStatus.Completed
+        if data.note and data.note.strip():
+            existing_note = booking.note or ""
+            booking.note = f"{existing_note} | {data.note.strip()}".strip(" |")
+
+        # Hoàn tất transaction nguyên tử
+        db.commit()
+
+        return BookingCheckoutResponse(
+            message="Thanh toán và hoàn thành booking thành công",
+            booking_id=booking.id,
+            booking_code=booking.booking_code,
+            booking_status=booking.status,
+            total_court_amount=float(total_court_amount),
+            total_service_amount=float(total_service_amount),
+            discount_amount=float(discount),
+            discount_reason=invoice.discount_reason,
+            grand_total=float(grand_total),
+            payment_method=payment_method_str,
+            payment_status="SUCCESS",
+            transaction_code=payment.transaction_code,
+            invoice_code=invoice.invoice_code,
+        )
+    except Exception:
+        db.rollback()
+        raise

@@ -24,14 +24,30 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    invoice_id = Column(Integer, nullable=False, index=True)
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=True)
+    service_order_id = Column(Integer, nullable=True)
+    invoice_id = Column(Integer, nullable=True, index=True)
     amount = Column(Numeric(12, 2), nullable=False)
     payment_method = Column(Enum(PaymentMethod), nullable=False, default=PaymentMethod.CASH)
-    status = Column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.PENDING)
-    transaction_id = Column(String(100), nullable=True)
+    payment_status = Column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.PENDING)
+    transaction_code = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    
-    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False)
+
+    @property
+    def status(self) -> PaymentStatus:
+        return self.payment_status
+
+    @status.setter
+    def status(self, val):
+        self.payment_status = val
+
+    @property
+    def transaction_id(self):
+        return self.transaction_code
+
+    @transaction_id.setter
+    def transaction_id(self, val):
+        self.transaction_code = val
 
     # Relationship ngược về Booking
     booking = relationship("Booking", back_populates="payments")
