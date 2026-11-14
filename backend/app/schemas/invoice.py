@@ -11,13 +11,16 @@ class InvoiceBase(BaseModel):
     customer_id: int = Field(..., gt=0, examples=[1], description="ID khách hàng")
     total_court_amount: Decimal = Field(default=Decimal(0), ge=0, examples=[200000], description="Tổng tiền sân")
     total_service_amount: Decimal = Field(default=Decimal(0), ge=0, examples=[50000], description="Tổng tiền dịch vụ")
-    grand_total: Decimal | None = Field(default=None, ge=0, examples=[250000], description="Tổng tiền thanh toán cuối cùng")
+    discount_amount: Decimal = Field(default=Decimal(0), ge=0, examples=[20000], description="Số tiền giảm giá")
+    discount_reason: str | None = Field(default=None, max_length=255, examples=["Khách quen"], description="Lý do giảm giá")
+    grand_total: Decimal | None = Field(default=None, ge=0, examples=[230000], description="Tổng tiền thanh toán cuối cùng")
 
     @model_validator(mode="after")
     def calculate_grand_total(self):
-        # Tự động tính grand_total = total_court_amount + total_service_amount nếu chưa truyền
+        # Tự động tính grand_total = total_court_amount + total_service_amount - discount_amount nếu chưa truyền
         if self.grand_total is None:
-            self.grand_total = self.total_court_amount + self.total_service_amount
+            calculated = self.total_court_amount + self.total_service_amount - self.discount_amount
+            self.grand_total = max(Decimal(0), calculated)
         return self
 
 
@@ -33,6 +36,8 @@ class InvoiceUpdate(BaseModel):
     customer_id: int | None = Field(default=None, gt=0)
     total_court_amount: Decimal | None = Field(default=None, ge=0)
     total_service_amount: Decimal | None = Field(default=None, ge=0)
+    discount_amount: Decimal | None = Field(default=None, ge=0)
+    discount_reason: str | None = Field(default=None, max_length=255)
     grand_total: Decimal | None = Field(default=None, ge=0)
 
 class InvoiceOut(InvoiceBase):
@@ -42,5 +47,7 @@ class InvoiceOut(InvoiceBase):
     id: int
     total_court_amount: float
     total_service_amount: float
+    discount_amount: float = 0.0
+    discount_reason: str | None = None
     grand_total: float
     created_at: datetime
