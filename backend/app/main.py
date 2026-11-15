@@ -17,7 +17,7 @@ from app.db.session import Base, engine
 from app.routers import auth, health, items, reception, service_orders, services
 from app.routers import slot
 from app.routers import booking
-from app.routers import court_management
+from app.routers import court_management, price_rule_management
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -71,7 +71,7 @@ app.include_router(service_orders.router, prefix="/api")
 app.include_router(slot.router, prefix="/api/v1")
 app.include_router(auth.router)
 app.include_router(court_management.router, prefix="/api")
-
+app.include_router(price_rule_management.router, prefix="/api")
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} đang chạy. Xem tài liệu API tại /docs"}
