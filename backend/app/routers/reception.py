@@ -4,6 +4,7 @@ Phân quyền toàn bộ router: chỉ ADMIN và STAFF.
     GET  /api/reception/bookings                    → Tìm booking trong ngày (mã / SĐT / sân)
     POST /api/reception/bookings/{id}/check-in      → Check-in (chuyển CHECKED_IN)
     POST /api/reception/bookings/{id}/no-show       → Đánh dấu NO_SHOW
+    POST /api/reception/bookings/{id}/checkout      → Thanh toán tổng kết (tiền sân + dịch vụ, giảm giá, tạo hóa đơn, chuyển Completed)
 """
 from datetime import date
 from typing import Optional
@@ -17,7 +18,11 @@ from app.crud.reception import NotFoundError
 from app.db.session import get_db
 from app.models.user import UserRole
 from app.routers.booking import _to_booking_out
-from app.schemas.booking import BookingOut
+from app.schemas.booking import (
+    BookingCheckoutRequest,
+    BookingCheckoutResponse,
+    BookingOut,
+)
 
 router = APIRouter(
     prefix="/reception",
@@ -65,3 +70,18 @@ def check_in_booking(booking_id: int, db: Session = Depends(get_db)):
 def mark_no_show_booking(booking_id: int, db: Session = Depends(get_db)):
     """Đánh dấu NO_SHOW khi quá 15 phút sau giờ bắt đầu mà khách chưa đến."""
     return _handle_reception_action(reception_crud.mark_no_show_booking, db, booking_id)
+
+
+@router.post("/bookings/{booking_id}/checkout", response_model=BookingCheckoutResponse)
+def checkout_booking(
+    booking_id: int,
+    data: BookingCheckoutRequest,
+    db: Session = Depends(get_db),
+):
+    """Thanh toán tổng kết (tiền sân + dịch vụ, giảm giá, tạo hóa đơn, chuyển Completed trong 1 transaction)."""
+    try:
+        return reception_crud.checkout_booking(db, booking_id, data)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

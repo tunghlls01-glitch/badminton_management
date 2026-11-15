@@ -19,7 +19,17 @@ from app.crud import booking as booking_crud
 from app.crud.booking import ConflictError
 from app.db.session import get_db
 from app.models.booking import BookingStatus
-from app.schemas.booking import BookingCreate, BookingOut, BookingUpdate
+from app.schemas.booking import (
+    BookingCreate,
+    BookingOut,
+    BookingUpdate,
+    CancellationPreviewOut,
+    CancelBookingOut,
+    RecurringCheckRequest,
+    RecurringCheckResponse,
+    RecurringBookingCreate,
+    RecurringBookingResponse,
+)
 
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
@@ -85,6 +95,53 @@ def create_booking(data: BookingCreate, db: Session = Depends(get_db)):
     return _to_booking_out(booking)
 
 
+@router.post("/recurring/check", response_model=RecurringCheckResponse)
+def check_recurring(data: RecurringCheckRequest, db: Session = Depends(get_db)):
+    """Kiểm tra tính khả dụng từng tuần cho chuỗi 4–8 tuần."""
+    try:
+        return booking_crud.check_recurring_availability(db, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/recurring", response_model=RecurringBookingResponse, status_code=status.HTTP_201_CREATED)
+def create_recurring(data: RecurringBookingCreate, db: Session = Depends(get_db)):
+    """Tạo đặt sân cố định hàng tuần trong 1 TRANSACTION duy nhất.
+    Nếu có tuần trùng và chưa nằm trong skip_conflict_dates -> HTTP 409 Conflict.
+    Nếu người dùng đồng ý bỏ qua tuần trùng (được đưa vào skip_conflict_dates),
+    tạo booking với các tuần còn lại.
+    """
+    try:
+        booking, booked_dates, skipped_dates = booking_crud.create_recurring_booking(db, data)
+    except ConflictError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    court_name = None
+    if booking.booking_slots and booking.booking_slots[0].court:
+        court_name = getattr(booking.booking_slots[0].court, "name", None) or getattr(booking.booking_slots[0].court, "court_name", None)
+
+    msg = f"Đặt sân cố định thành công {len(booked_dates)}/{data.weeks_count} tuần."
+    if skipped_dates:
+        msg += f" Đã bỏ qua {len(skipped_dates)} tuần bị trùng."
+
+    return RecurringBookingResponse(
+        booking_id=booking.id,
+        booking_code=booking.booking_code,
+        court_id=data.court_id,
+        court_name=court_name,
+        total_weeks_requested=data.weeks_count,
+        booked_weeks_count=len(booked_dates),
+        skipped_weeks_count=len(skipped_dates),
+        total_price=float(booking.total_price),
+        status=booking.status,
+        booked_dates=booked_dates,
+        skipped_dates=skipped_dates,
+        message=msg,
+    )
+
+
 
 
 @router.post("/{booking_id}/confirm", response_model=BookingOut)
@@ -133,6 +190,34 @@ def update_status(
     return _to_booking_out(booking)
 
 
+
+
+@router.get("/{booking_id}/cancellation-preview", response_model=CancellationPreviewOut)
+def cancellation_preview(booking=Depends(_get_or_404), db: Session = Depends(get_db)):
+    """Xem trước chính sách hoàn tiền và số tiền được hoàn trước khi hủy."""
+    try:
+        return booking_crud.get_cancellation_preview(db, booking)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{booking_id}/cancel", response_model=CancelBookingOut)
+def cancel_booking(
+    booking_id: int,
+    reason: Optional[str] = Query(None, description="Lý do hủy lịch đặt"),
+    booking=Depends(_get_or_404),
+    db: Session = Depends(get_db),
+):
+    """Hủy lịch đặt sân theo chính sách:
+    - Trước >= 24 giờ: hoàn 100%
+    - Trước >= 6 giờ (6h – 24h): hoàn 50%
+    - Dưới 6 giờ: không hoàn tiền (0%)
+    - Đã tới/qua giờ vào sân: không được hủy.
+    """
+    try:
+        return booking_crud.cancel_booking(db, booking, reason=reason)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/{booking_id}", status_code=status.HTTP_204_NO_CONTENT)

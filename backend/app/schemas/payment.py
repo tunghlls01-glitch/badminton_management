@@ -9,6 +9,7 @@ from app.models.payment import PaymentMethod, PaymentStatus
 
 class PaymentBase(BaseModel):
     booking_id: int | None = None
+    invoice_id: int | None = None
     service_order_id: int | None = None
     amount: Decimal = Field(gt=0, examples=[250000])
     payment_method: PaymentMethod = PaymentMethod.CASH
