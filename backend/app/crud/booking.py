@@ -12,7 +12,11 @@ from sqlalchemy.orm import Session
 from app.models.booking import Booking, BookingChannel, BookingStatus
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
 from app.models.court_block import CourtBlock
-from app.schemas.booking import BookingCreate
+from app.schemas.booking import (
+    BookingCreate,
+    RecurringCheckRequest,
+    RecurringBookingCreate,
+)
 from app.models.court import Court, CourtStatus
 from app.models.price_rule import PriceRule, PriceRuleStatus
 
@@ -275,6 +279,180 @@ def create_booking(db: Session, data: BookingCreate) -> Booking:
     return booking
 
 
+def check_recurring_availability(db: Session, data: RecurringCheckRequest) -> dict:
+    """Kiểm tra từng tuần trong chuỗi 4–8 tuần xem tuần nào trống, tuần nào trùng."""
+    court = db.get(Court, data.court_id)
+    if court is None:
+        raise ValueError(f"Sân id={data.court_id} không tồn tại")
+
+    court_name = getattr(court, "name", None) or getattr(court, "court_name", None) or f"Sân {court.id}"
+    weeks = []
+    available_count = 0
+    conflict_count = 0
+    estimated_total = Decimal("0")
+
+    dow_names = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+
+    for week_idx in range(data.weeks_count):
+        cur_date = data.start_date + timedelta(days=week_idx * 7)
+        start_at = datetime.combine(cur_date, data.start_time)
+        end_at = datetime.combine(cur_date, data.end_time)
+
+        available = is_slot_available(db, data.court_id, start_at, end_at, lock=False)
+        dow_str = dow_names[cur_date.weekday()]
+
+        price_per_hour, amount, duration_minutes = calculate_slot_amount(
+            db, data.court_id, cur_date, data.start_time, data.end_time
+        )
+
+        reason = None
+        if not available:
+            conflict_count += 1
+            reason = "Khung giờ này đã có người đặt trước hoặc sân bận"
+        else:
+            available_count += 1
+            estimated_total += amount
+
+        weeks.append({
+            "week_number": week_idx + 1,
+            "booking_date": cur_date,
+            "day_of_week": dow_str,
+            "start_time": data.start_time.strftime("%H:%M"),
+            "end_time": data.end_time.strftime("%H:%M"),
+            "is_available": available,
+            "conflict_reason": reason,
+            "price": float(amount),
+        })
+
+    return {
+        "court_id": data.court_id,
+        "court_name": court_name,
+        "total_weeks": data.weeks_count,
+        "available_weeks_count": available_count,
+        "conflict_weeks_count": conflict_count,
+        "has_conflicts": conflict_count > 0,
+        "estimated_total_price": float(estimated_total),
+        "weeks": weeks,
+    }
+
+
+def create_recurring_booking(
+    db: Session, data: RecurringBookingCreate
+) -> tuple[Booking, list[date], list[date]]:
+    """Tạo chuỗi đặt sân cố định hàng tuần trong MỘT transaction duy nhất.
+
+    - Kiểm tra từng tuần.
+    - Tuần nào trùng mà nằm trong `skip_conflict_dates` thì cho phép bỏ qua.
+    - Tuần nào trùng mà chưa được người dùng xác nhận bỏ qua thì rollback và raise ConflictError.
+    - Tạo 1 Booking và nhiều BookingSlot (mỗi tuần 1 slot) trong cùng 1 transaction.
+    """
+    court = db.get(Court, data.court_id)
+    if court is None:
+        raise ValueError(f"Sân id={data.court_id} không tồn tại")
+    if hasattr(court, "status") and court.status not in (
+        "HOẠT ĐỘNG",
+        "Active",
+        CourtStatus.Active if hasattr(CourtStatus, "Active") else "Active",
+    ):
+        raise ValueError(
+            f"Sân '{court.name if hasattr(court, 'name') else court.court_name}' đang không hoạt động"
+        )
+
+    if data.end_time <= data.start_time:
+        raise ValueError("Giờ kết thúc phải sau giờ bắt đầu")
+
+    if data.weeks_count < 4 or data.weeks_count > 8:
+        raise ValueError("Số tuần đặt cố định phải từ 4 đến 8 tuần")
+
+    skip_set = set(data.skip_conflict_dates)
+    booked_dates = []
+    skipped_dates = []
+    slots_to_create = []
+    total_amount = Decimal("0")
+
+    try:
+        # Kiểm tra và lock từng tuần
+        for week_idx in range(data.weeks_count):
+            cur_date = data.start_date + timedelta(days=week_idx * 7)
+            start_at = datetime.combine(cur_date, data.start_time)
+            end_at = datetime.combine(cur_date, data.end_time)
+
+            available = is_slot_available(db, data.court_id, start_at, end_at, lock=True)
+
+            if not available:
+                if cur_date in skip_set:
+                    # Người dùng đồng ý bỏ qua tuần trùng này
+                    skipped_dates.append(cur_date)
+                    continue
+                else:
+                    raise ConflictError(
+                        f"Tuần {week_idx + 1} (ngày {cur_date.strftime('%d/%m/%Y')}) đã bị trùng lịch! "
+                        f"Vui lòng xác nhận bỏ qua tuần này để tiếp tục tạo đơn."
+                    )
+
+            price_per_hour, amount, duration_minutes = calculate_slot_amount(
+                db, data.court_id, cur_date, data.start_time, data.end_time
+            )
+            booked_dates.append(cur_date)
+            total_amount += amount
+            slots_to_create.append({
+                "court_id": data.court_id,
+                "start_at": start_at,
+                "end_at": end_at,
+                "duration_minutes": duration_minutes,
+                "price_per_hour": price_per_hour,
+                "amount": amount,
+            })
+
+        if not slots_to_create:
+            raise ValueError("Không có tuần nào khả dụng để tạo lịch đặt sân cố định!")
+
+        # Tạo hoặc lấy user
+        user = get_or_create_user(
+            db,
+            name=data.customer_name,
+            phone=data.customer_phone,
+        )
+
+        note_prefix = f"Đặt cố định {len(slots_to_create)}/{data.weeks_count} tuần"
+        full_note = f"{note_prefix} | {data.note}" if data.note else note_prefix
+
+        # Tạo Booking
+        booking = Booking(
+            booking_code=generate_booking_code(),
+            user_id=user.id,
+            booking_channel=data.booking_channel,
+            total_price=total_amount,
+            status=BookingStatus.Pending,
+            note=full_note,
+        )
+        db.add(booking)
+        db.flush()
+
+        # Tạo BookingSlot cho từng tuần
+        for s in slots_to_create:
+            slot = BookingSlot(
+                booking_id=booking.id,
+                court_id=s["court_id"],
+                start_at=s["start_at"],
+                end_at=s["end_at"],
+                duration_minutes=s["duration_minutes"],
+                price_per_hour=s["price_per_hour"],
+                amount=s["amount"],
+                status=BookingSlotStatus.Active,
+            )
+            db.add(slot)
+
+        # Commit toàn bộ trong 1 transaction duy nhất
+        db.commit()
+        db.refresh(booking)
+        return booking, booked_dates, skipped_dates
+
+    except Exception:
+        db.rollback()
+        raise
+
+
 
 
 def confirm_booking(db: Session, booking_id: int) -> Booking:
@@ -378,6 +556,98 @@ def update_booking_status(db: Session, booking: Booking, new_status: BookingStat
     return booking
 
 
+def calculate_cancellation_terms(
+    booking: Booking, now: datetime | None = None
+) -> tuple[datetime | None, float, int, float, str]:
+    if now is None:
+        now = datetime.now()
+
+    earliest_start = None
+    if booking.booking_slots:
+        active_slots = [s for s in booking.booking_slots if s.status != BookingSlotStatus.Cancelled]
+        slots_to_check = active_slots if active_slots else booking.booking_slots
+        earliest_start = min(s.start_at for s in slots_to_check)
+
+    if earliest_start is None:
+        raise ValueError("Lịch đặt sân không có khung giờ hợp lệ để tính chính sách hủy")
+
+    diff_seconds = (earliest_start - now).total_seconds()
+    hours_before = round(diff_seconds / 3600.0, 2)
+
+    if hours_before <= 0:
+        raise ValueError("Không thể hủy đặt sân khi đã đến hoặc qua giờ vào sân!")
+
+    if hours_before >= 24:
+        refund_percent = 100
+        policy_message = "Hủy trước 24 giờ: hoàn 100% tổng tiền"
+    elif hours_before >= 6:
+        refund_percent = 50
+        policy_message = "Hủy trước 6 giờ (từ 6h – 24h): hoàn 50% tổng tiền"
+    else:
+        refund_percent = 0
+        policy_message = "Hủy dưới 6 giờ trước giờ vào sân: không hoàn tiền (0%)"
+
+    refund_amount = round(float(booking.total_price) * (refund_percent / 100.0), 2)
+    return earliest_start, hours_before, refund_percent, refund_amount, policy_message
+
+
+def get_cancellation_preview(db: Session, booking: Booking) -> dict:
+    if booking.status == BookingStatus.Cancelled:
+        raise ValueError("Lịch đặt sân này đã được hủy trước đó")
+    if booking.status in (BookingStatus.Completed, BookingStatus.CHECKED_IN):
+        raise ValueError(f"Lịch đặt sân đang ở trạng thái {booking.status.value}, không thể hủy")
+
+    earliest_start, hours_before, refund_percent, refund_amount, policy_message = calculate_cancellation_terms(booking)
+
+    summary_message = (
+        f"Còn {hours_before:.1f} giờ trước giờ vào sân. "
+        f"Chính sách áp dụng: {policy_message}. "
+        f"Hoàn lại: {refund_amount:,.0f}đ ({refund_percent}%)."
+    )
+
+    return {
+        "booking_id": booking.id,
+        "booking_code": booking.booking_code,
+        "earliest_start": earliest_start,
+        "hours_before": hours_before,
+        "refund_percent": refund_percent,
+        "refund_amount": refund_amount,
+        "total_price": float(booking.total_price),
+        "policy_message": policy_message,
+        "summary_message": summary_message,
+    }
+
+
+def cancel_booking(db: Session, booking: Booking, reason: str | None = None) -> dict:
+    if booking.status == BookingStatus.Cancelled:
+        raise ValueError("Lịch đặt sân này đã được hủy trước đó")
+    if booking.status in (BookingStatus.Completed, BookingStatus.CHECKED_IN):
+        raise ValueError(f"Lịch đặt sân đang ở trạng thái {booking.status.value}, không thể hủy")
+
+    earliest_start, hours_before, refund_percent, refund_amount, policy_message = calculate_cancellation_terms(booking)
+
+    # 1. Cập nhật trạng thái booking
+    booking.status = BookingStatus.Cancelled
+    if reason:
+        booking.note = f"{booking.note} | Lý do hủy: {reason}" if booking.note else f"Lý do hủy: {reason}"
+
+    # 2. Hủy các slot để giải phóng sân cho khách khác đặt
+    for slot in booking.booking_slots:
+        slot.status = BookingSlotStatus.Cancelled
+
+    db.commit()
+    db.refresh(booking)
+
+    msg = f"Hủy đặt sân thành công. Hoàn lại: {refund_amount:,.0f}đ ({refund_percent}%)."
+    return {
+        "booking_id": booking.id,
+        "booking_code": booking.booking_code,
+        "status": booking.status,
+        "refund_percent": refund_percent,
+        "refund_amount": refund_amount,
+        "policy_message": policy_message,
+        "message": msg,
+    }
 
 
 def delete_booking(db: Session, booking: Booking) -> None:

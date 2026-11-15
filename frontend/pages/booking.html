@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174c3c">
+  <title>Sân Nhà — Đặt sân thể thao</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/booking.css">
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="i-court" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h18M12 4v16M6 4v16M18 4v16"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2M8 17h2"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m16 8-3 5-5 3 3-5 5-3Z"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><path d="M4 11h16v10H4zM3 7h18v4H3zM12 7v14"/><path d="M12 7S5 8 5 4c0-3 6-2 7 3ZM12 7s7 1 7-3c0-3-6-2-7 3Z"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1-1.5 2M12 16h.01"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  </svg>
+
+  <aside class="sidebar" id="sidebar" aria-label="Điều hướng chính">
+<a class="brand" href="booking.html" aria-label="Sân Nhà — Trang chủ">
+  <img class="logo" src="../assets/images/chatNTK.webp" alt="Logo Web">
+</a>    <p class="brand-caption">RA SÂN. KẾT NỐI. HẾT MÌNH.</p>
+    <div class="nav-label">ĐIỀU HƯỚNG</div>
+    <nav class="nav">
+      <button type="button" id="exploreButton"><svg><use href="#i-compass"/></svg>Khám phá sân</button>
+      <button type="button" class="active" id="scheduleButton" aria-current="page"><svg><use href="#i-calendar"/></svg>Lịch đặt của tôi<span class="count" id="navCount">3</span></button>
+      <button type="button" id="offersButton"><svg><use href="#i-gift"/></svg>Ưu đãi</button>
+      <button type="button" class="supportButton"><svg><use href="#i-help"/></svg>Hỗ trợ</button>
+    </nav>
+    <div class="side-bottom">
+      <div class="help">
+        <svg style="color:var(--green)"><use href="#i-help"/></svg>
+        <strong style="display:block;margin-top:9px;font-size:12px">Cần một chút hỗ trợ?</strong>
+        <p>Đội ngũ Sân Nhà luôn sẵn sàng đồng hành cùng bạn.</p>
+        <button class="supportButton">Liên hệ với chúng tôi <svg><use href="#i-arrow"/></svg></button>
+      </div>
+      <div class="nav-label">TÀI KHOẢN</div>
+      <a href="#" class="profile" id="profileButton">
+        <span class="avatar">MA</span><span><strong>Minh Anh</strong><small>Thành viên Sân Nhà</small></span><svg><use href="#i-chevron"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="breadcrumb"><button class="icon-button mobile-toggle" id="menuButton" aria-label="Mở điều hướng" aria-expanded="false"><svg><use href="#i-menu"/></svg></button><span>Trang chủ</span><span>/</span><span>Lịch đặt của tôi</span></div>
+      <div class="top-tools"><span class="location"><svg><use href="#i-pin"/></svg>TP. Hà Nội</span><button class="icon-button notification" id="notificationButton" aria-label="Xem thông báo"><svg><use href="#i-bell"/></svg></button><span class="avatar" style="width:30px;height:30px;font-size:9px">MA</span></div>
+    </header>
+
+    <div class="content">
+      <section class="intro reveal">
+        <div><div class="eyebrow">QUẢN LÝ LỊCH CHƠI</div><h1>Lịch đặt sân của tôi</h1><p class="subheading">Theo dõi lịch chơi, sẵn sàng cho mỗi trận đấu.</p></div>
+        <button class="primary new-booking"><svg><use href="#i-plus"/></svg>Đặt sân mới</button>
+        <button class="secondary recurring-booking"><svg><use href="#i-calendar"/></svg>Đặt cố định hàng tuần</button>
+      </section>
+
+      <section class="overview reveal" aria-label="Tổng quan lịch chơi">
+        <div class="stat"><div class="stat-top"><strong id="upcomingCount">03</strong><svg><use href="#i-calendar"/></svg></div><small>Sắp diễn ra</small></div>
+        <div class="stat"><div class="stat-top"><strong>01</strong><svg><use href="#i-check"/></svg></div><small>Đã hoàn thành</small></div>
+        <div class="stat"><div class="stat-top"><strong id="hoursCount">6 <span style="font-size:18px;font-weight:600">giờ</span></strong><svg><use href="#i-clock"/></svg></div><small>Thời lượng tuần này</small></div>
+        <div class="week-label" id="weekOverview">TUẦN NÀY · 09–15 TH11</div>
+      </section>
+
+      <div class="workspace reveal">
+        <section aria-label="Lịch đặt sân theo tuần">
+          <div class="section-head"><h2>Lịch đặt sân theo tuần</h2><div class="calendar-controls"><span id="weekTitle">09 – 15 tháng 11, 2026</span><button id="previousWeek" aria-label="Tuần trước"><svg style="transform:rotate(180deg)"><use href="#i-chevron"/></svg></button><button id="nextWeek" aria-label="Tuần sau"><svg><use href="#i-chevron"/></svg></button></div></div>
+          <div class="calendar">
+            <div class="calendar-header" id="calendarHeader"></div>
+            <div class="calendar-body" id="calendarBody"></div>
+            <div class="calendar-footer"><span class="legend"><i></i>Đã xác nhận</span><span class="legend"><i></i>Chờ xác nhận</span><span class="legend"><i></i>Lượt đặt tiếp theo</span></div>
+          </div>
+        </section>
+        <aside class="next-area" aria-label="Lượt đặt tiếp theo">
+          <div class="section-head"><h2>Lượt đặt tiếp theo</h2><svg style="color:#87967d;width:17px"><use href="#i-arrow"/></svg></div>
+          <article class="next-match">
+            <div class="match-top"><span>Lượt đặt sắp tới</span><span class="status">Đã xác nhận</span></div>
+            <div class="court-visual" aria-hidden="true"><div class="court"><div class="net"></div></div></div>
+            <div class="match-details">
+              <span class="sport" id="next-sport">CẦU LÔNG</span>
+              <h3 id="next-venue">Sân cầu lông Phú Thọ</h3>
+              <p class="address" id="next-address">219 Lý Thường Kiệt, Quận 11</p>
+              <div class="match-time">
+                <div><small>NGÀY CHƠI</small><strong id="next-date">--/--/----</strong></div>
+                <div><small>KHUNG GIỜ</small><strong id="next-time">--:-- – --:--</strong></div>
+              </div>
+              <button class="match-button" id="view-schedule" type="button">Xem lịch đặt sân <svg><use href="#i-arrow"/></svg></button>
+            </div>
+          </article>
+          <p class="notice"><svg><use href="#i-help"/></svg>Vui lòng có mặt trước giờ chơi 15 phút để chuẩn bị cho trận đấu.</p>
+        </aside>
+      </div>
+
+      <section class="bookings-section" aria-labelledby="bookings-title">
+        <div class="section-head">
+          <h2 id="bookings-title">Các lượt đặt của bạn <span id="listCount"></span></h2>
+          <div class="tabs" aria-label="Lọc lượt đặt">
+            <button type="button" class="active" aria-pressed="true" data-filter="upcoming">Sắp diễn ra</button>
+            <button type="button" aria-pressed="false" data-filter="done">Lịch sử / Đã hủy</button>
+            <button type="button" aria-pressed="false" data-filter="all">Tất cả</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>SÂN / ĐỊA ĐIỂM</th><th>NGÀY / GIỜ</th><th>THÀNH TIỀN</th><th>TRẠNG THÁI</th><th></th></tr></thead>
+            <tbody id="bookingsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>© 2026 Sân Nhà. Mỗi trận đấu, một niềm vui.</span>
+        <span><a href="court_booking_schedule.html">Lịch sân</a> · <a href="booking_notification.html">Xác nhận đặt sân</a> · <a href="#terms" id="termsButton">Điều khoản</a></span>
+      </footer>
+    </div>
+  </main>
+
+  <dialog id="bookingDialog" aria-labelledby="booking-title">
+    <form id="bookingForm">
+      <div class="dialog-head">
+        <h2 id="booking-title">Đặt sân mới</h2>
+        <button type="button" class="close-dialog" aria-label="Đóng">×</button>
+      </div>
+      <div class="booking-type-toggle">
+        <button type="button" class="type-btn active" id="btnTypeSingle">Đặt theo lượt</button>
+        <button type="button" class="type-btn" id="btnTypeRecurring">
+          <svg style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px"><use href="#i-calendar"/></svg>Đặt cố định hàng tuần (4–8 tuần)
+        </button>
+      </div>
+      <p class="form-note">Chọn địa điểm và khung giờ phù hợp. Lượt đặt sẽ được cập nhật vào lịch của bạn.</p>
+      <div class="form-grid">
+        <label class="field" for="customerName">Họ tên khách hàng
+          <input id="customerName" type="text" value="Minh Anh" required placeholder="Nhập tên người đặt">
+        </label>
+        <label class="field" for="customerPhone">Số điện thoại
+          <input id="customerPhone" type="tel" value="0912345678" required placeholder="Nhập số điện thoại">
+        </label>
+        <label class="field full" for="venueSelect">Địa điểm
+          <select id="venueSelect" required>
+            <option value="phutho">Sân cầu lông Phú Thọ</option>
+            <option value="riverside">Pickleball Riverside</option>
+            <option value="tanphu">Sân cầu lông Tân Phú</option>
+          </select>
+        </label>
+        <label class="field" for="courtSelect">Sân
+          <select id="courtSelect" required>
+            <option value="01">Sân 01</option><option value="02">Sân 02</option>
+            <option value="03" selected>Sân 03</option><option value="05">Sân 05</option>
+          </select>
+        </label>
+        <label class="field" for="bookingDate">Ngày chơi
+          <input id="bookingDate" type="date" required>
+        </label>
+        <label class="field" for="startTime">Giờ bắt đầu
+          <select id="startTime" required>
+            <option>06:00</option><option>08:00</option><option>10:00</option>
+            <option>14:00</option><option>16:00</option><option>18:00</option><option>20:00</option>
+          </select>
+        </label>
+        <label class="field" for="duration">Thời lượng
+          <select id="duration" required>
+            <option value="1">1 giờ</option><option value="1.5">1,5 giờ</option><option value="2" selected>2 giờ</option>
+          </select>
+        </label>
+        <label class="field full" for="bookingNote">Ghi chú
+          <input id="bookingNote" type="text" placeholder="Ghi chú khi đặt sân (tùy chọn)">
+        </label>
+      </div>
+      <div id="dialogError" style="display:none; color: #ba0000; background: #fff0f0; border: 1px solid #ba0000; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; font-weight: 500;"></div>
+      <div class="form-summary"><span>Tạm tính</span><strong id="totalPrice">240.000đ</strong></div>
+      <p class="form-note">Thanh toán trực tiếp tại sân. Thông tin đặt sân sẽ được lưu vào cơ sở dữ liệu.</p>
+      <div class="dialog-actions-row">
+        <button class="primary" id="submitBookingBtn" type="submit" style="flex:1">Xác nhận đặt sân</button>
+        <button class="secondary recurring-switch-btn" id="btnSwitchToRecurring" type="button" style="flex:1">
+          <svg><use href="#i-calendar"/></svg>Đặt cố định hàng tuần
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="infoDialog" aria-labelledby="infoTitle">
+    <div class="dialog-head">
+      <h2 id="infoTitle">Thông tin</h2>
+      <button type="button" class="close-dialog" aria-label="Đóng">×</button>
+    </div>
+    <div class="detail-body" id="infoBody"></div>
+  </dialog>
+
+  <dialog id="cancelConfirmDialog" aria-labelledby="cancelTitle">
+    <div class="dialog-head">
+      <h2 id="cancelTitle" style="color:var(--green)">Xác nhận hủy đặt sân</h2>
+      <button type="button" class="close-dialog" aria-label="Đóng">×</button>
+    </div>
+    <div class="detail-body" id="cancelConfirmBody"></div>
+  </dialog>
+  <dialog id="recurringDialog" aria-labelledby="recurring-title">
+    <div class="dialog-head">
+      <h2 id="recurring-title">Đặt sân cố định hàng tuần</h2>
+      <button type="button" class="close-dialog" aria-label="Đóng">×</button>
+    </div>
+    <div class="booking-type-toggle">
+      <button type="button" class="type-btn" id="rcBtnTypeSingle">Đặt theo lượt</button>
+      <button type="button" class="type-btn active" id="rcBtnTypeRecurring">
+        <svg style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px"><use href="#i-calendar"/></svg>Đặt cố định hàng tuần (4–8 tuần)
+      </button>
+    </div>
+    <p class="form-note">Đặt cùng sân, cùng giờ, cùng thứ trong 4–8 tuần liên tiếp. Hệ thống sẽ kiểm tra từng tuần và cho bạn chọn bỏ qua tuần bị trùng.</p>
+
+    <!-- Bước 1: Form nhập thông tin -->
+    <div id="recurringStep1">
+      <div class="form-grid">
+        <label class="field" for="rcCustomerName">Họ tên khách hàng
+          <input id="rcCustomerName" type="text" value="Minh Anh" required placeholder="Nhập tên người đặt">
+        </label>
+        <label class="field" for="rcCustomerPhone">Số điện thoại
+          <input id="rcCustomerPhone" type="tel" value="0912345678" required placeholder="Nhập số điện thoại">
+        </label>
+        <label class="field" for="rcCourtSelect">Sân
+          <select id="rcCourtSelect" required></select>
+        </label>
+        <label class="field" for="rcWeeksCount">Số tuần
+          <select id="rcWeeksCount" required>
+            <option value="4" selected>4 tuần</option>
+            <option value="5">5 tuần</option>
+            <option value="6">6 tuần</option>
+            <option value="7">7 tuần</option>
+            <option value="8">8 tuần</option>
+          </select>
+        </label>
+        <label class="field" for="rcStartDate">Ngày bắt đầu
+          <input id="rcStartDate" type="date" required>
+        </label>
+        <label class="field" for="rcStartTime">Giờ bắt đầu
+          <select id="rcStartTime" required>
+            <option>06:00</option><option>08:00</option><option>10:00</option>
+            <option>14:00</option><option>16:00</option><option selected>18:00</option><option>20:00</option>
+          </select>
+        </label>
+        <label class="field" for="rcDuration">Thời lượng
+          <select id="rcDuration" required>
+            <option value="1">1 giờ</option><option value="1.5">1,5 giờ</option><option value="2" selected>2 giờ</option>
+          </select>
+        </label>
+        <label class="field full" for="rcNote">Ghi chú
+          <input id="rcNote" type="text" placeholder="Ghi chú (tùy chọn)">
+        </label>
+      </div>
+      <div id="rcError" class="rc-error" style="display:none"></div>
+      <button type="button" class="primary" id="rcCheckBtn" style="width:100%;margin-top:16px">
+        <svg><use href="#i-calendar"/></svg>Kiểm tra lịch trống các tuần
+      </button>
+    </div>
+
+    <!-- Bước 2: Kết quả kiểm tra & xác nhận -->
+    <div id="recurringStep2" style="display:none">
+      <div id="rcSummaryBar" class="rc-summary-bar"></div>
+      <div id="rcWeeksList" class="rc-weeks-list"></div>
+      <div class="form-summary">
+        <span>Tổng tiền (các tuần đã chọn)</span>
+        <strong id="rcTotalPrice">0đ</strong>
+      </div>
+      <div id="rcError2" class="rc-error" style="display:none"></div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button type="button" class="rc-back-btn" id="rcBackBtn">← Quay lại</button>
+        <button type="button" class="primary" id="rcConfirmBtn" style="flex:1">Xác nhận đặt cố định</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/pages/booking.js" defer></script>
+</body>
+</html>

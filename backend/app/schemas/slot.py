@@ -41,3 +41,44 @@ class SlotGridResponse(BaseModel):
         }
     )
     courts: List[CourtSlotGrid] = Field(default_factory=list)
+
+from pydantic import BaseModel, Field, model_validator
+
+
+class SlotTimeRange(BaseModel):
+    start_at: datetime = Field(examples=["2026-11-20T08:00:00"])
+    end_at: datetime = Field(examples=["2026-11-20T09:00:00"])
+
+    @model_validator(mode="after")
+    def check_time_order(self):
+        if self.end_at <= self.start_at:
+            raise ValueError("end_at phải lớn hơn start_at")
+        return self
+
+
+class SlotHoldRequest(BaseModel):
+    court_id: int = Field(gt=0, examples=[1])
+    user_id: int = Field(gt=0, examples=[1])
+    slots: List[SlotTimeRange] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def check_contiguous_slots(self):
+        self.slots.sort(key=lambda s: s.start_at)
+        for i in range(len(self.slots) - 1):
+            if self.slots[i].end_at != self.slots[i + 1].start_at:
+                raise ValueError("Các slot được chọn phải liền nhau")
+        return self
+
+
+class SlotHoldResponse(BaseModel):
+    booking_id: int
+    court_id: int
+    held_slot_ids: List[int]
+    hold_expires_at: datetime
+    message: str
+
+
+class SlotReleaseRequest(BaseModel):
+    booking_id: int = Field(gt=0, examples=[10])
+    user_id: int = Field(gt=0, examples=[1])
+    slots: Optional[List[SlotTimeRange]] = None
