@@ -28,6 +28,10 @@ class ServiceOrder(Base):
     def total_amount(self, val):
         self.total_price = val
 
+    @property
+    def customer_id(self):
+        return self.booking.user_id if self.booking else None
+
     # Relationships
     items = relationship("ServiceOrderItem", back_populates="order", cascade="all, delete-orphan")
     booking = relationship("Booking", back_populates="service_orders")
