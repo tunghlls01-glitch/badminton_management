@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#B91C1C" />
+    <title>Đăng nhập | RK BADMINTON</title>
+    <link rel="stylesheet" href="../css/t3d2096.css" />
+  </head>
+  <body class="rk-app" data-root="../" data-page="login">
+    <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
+    <div class="rk-auth-shell">
+      <header id="rk-header" class="rk-header"></header>
+      <div
+        id="rk-session-state"
+        class="rk-session-state rk-container"
+        role="status"
+        aria-live="polite"
+      >
+        Đang kiểm tra phiên đăng nhập...
+      </div>
+      <main id="main-content" class="rk-auth-main" hidden>
+        <div class="rk-auth-card">
+          <div class="rk-auth-visual">
+            <img
+              src="../assets/images/rk-court-hero.png"
+              alt="Ảnh minh họa sân cầu lông thảm xanh trong nhà"
+            />
+            <div class="rk-auth-quote">
+              <span class="rk-eyebrow">NƠI ĐAM MÊ TÌM THẤY ĐỒNG ĐỘI</span>
+              <h2>Cuộc tập hợp tiếp theo của bạn bắt đầu từ đây.</h2>
+              <p>
+                Đặt sân dễ dàng. Kết nối đồng đội. Tận hưởng từng đường cầu.
+              </p>
+              <small>RK BADMINTON CLUB</small>
+            </div>
+          </div>
+          <div class="rk-auth-panel">
+            <span class="rk-eyebrow">WELCOME TO THE COURT</span>
+            <h1>Chào mừng bạn quay trở lại.</h1>
+            <p class="rk-auth-description">
+              Đăng nhập để đặt sân và sẵn sàng cho trận đấu tiếp theo.
+            </p>
+            <nav class="rk-auth-tabs" aria-label="Lựa chọn xác thực">
+              <a href="login.html" class="active" aria-current="page"
+                >Đăng nhập</a
+              ><a href="register.html">Đăng ký</a>
+            </nav>
+            <div
+              id="rk-auth-notice"
+              class="rk-alert"
+              role="status"
+              hidden
+            ></div>
+            <form id="rk-auth-form" novalidate aria-busy="false">
+              <fieldset class="rk-auth-fields">
+                <div class="rk-field" data-field="email">
+                  <label for="email">Email</label>
+                  <div class="rk-input-wrap">
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="ban@example.com"
+                      autocomplete="email"
+                      required
+                      aria-invalid="false"
+                    /><span
+                      class="rk-input-icon rk-valid-icon"
+                      role="img"
+                      aria-label="Email hợp lệ"
+                      hidden
+                      >✓</span
+                    >
+                  </div>
+                  <p
+                    id="email-error"
+                    class="rk-field-message"
+                    role="alert"
+                    hidden
+                  ></p>
+                </div>
+                <div class="rk-field" data-field="password">
+                  <label for="password">Mật khẩu</label>
+                  <div class="rk-input-wrap">
+                    <input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="Nhập mật khẩu của bạn"
+                      autocomplete="current-password"
+                      required
+                      aria-invalid="false"
+                    /><button
+                      type="button"
+                      class="rk-input-icon rk-password-toggle"
+                      aria-label="Hiện mật khẩu"
+                      aria-pressed="false"
+                    >
+                      ◉
+                    </button>
+                  </div>
+                  <p
+                    id="password-error"
+                    class="rk-field-message"
+                    role="alert"
+                    hidden
+                  ></p>
+                </div>
+                <div class="rk-form-options">
+                  <label class="rk-checkbox"
+                    ><input type="checkbox" name="remember" />Ghi nhớ đăng
+                    nhập</label
+                  ><button id="rk-forgot" type="button" class="rk-link">
+                    Quên mật khẩu?
+                  </button>
+                </div>
+                <p
+                  id="rk-forgot-note"
+                  class="rk-field-hint"
+                  role="status"
+                  hidden
+                >
+                  Vui lòng liên hệ lễ tân hoặc quản trị viên để được hỗ trợ đặt
+                  lại mật khẩu.
+                </p>
+                <div
+                  id="rk-form-error"
+                  class="rk-alert rk-alert-error"
+                  role="alert"
+                  hidden
+                ></div>
+                <button class="rk-btn rk-primary rk-auth-submit" type="submit">
+                  Đăng nhập <span aria-hidden="true">→</span>
+                </button>
+              </fieldset>
+            </form>
+            <p class="rk-auth-switch">
+              Chưa có tài khoản?
+              <a class="rk-link" href="register.html">Gia nhập hội ngay</a>
+            </p>
+            <div class="rk-auth-secure">
+              Đam mê trên sân. An tâm trong từng kết nối.
+            </div>
+          </div>
+        </div>
+        <p class="rk-auth-bottom">
+          RK BADMINTON · Hẹn nhau trên sân, chơi hết mình.
+        </p>
+      </main>
+    </div>
+    <noscript
+      ><p class="rk-container">
+        Vui lòng bật JavaScript để đăng nhập và tải dữ liệu.
+      </p></noscript
+    >
+    <script src="../js/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/t3d2096-config.js"></script>
+    <script src="../js/authStorage.js"></script>
+    <script src="../js/axiosClient.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/ProtectedRoute.js"></script>
+    <script src="../js/t3d2096-ui.js"></script>
+    <script src="../js/rk-layout.js"></script>
+    <script src="../js/pages/auth-page.js"></script>
+  </body>
+</html>
