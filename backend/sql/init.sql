@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- 11. Module Thanh toán
 CREATE TABLE IF NOT EXISTS payments (
   id               INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_id       INT NULL,
   booking_id       INT NULL,
   service_order_id INT NULL,
   amount           DECIMAL(12, 2) NOT NULL,
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS payments (
   payment_status   VARCHAR(20) NOT NULL DEFAULT 'SUCCESS' COMMENT 'PENDING, SUCCESS, FAILED',
   transaction_code VARCHAR(100) NULL,
   created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_payments_invoice_id (invoice_id),
   INDEX idx_payments_booking_id (booking_id),
   INDEX idx_payments_service_order_id (service_order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -52,10 +54,12 @@ CREATE TABLE IF NOT EXISTS payments (
 CREATE TABLE IF NOT EXISTS invoices (
   id                   INT AUTO_INCREMENT PRIMARY KEY,
   invoice_code         VARCHAR(30) NOT NULL UNIQUE,
-  booking_id           INT NULL,
+  booking_id           INT NOT NULL UNIQUE,
   customer_id          INT NOT NULL,
   total_court_amount   DECIMAL(12, 2) NOT NULL DEFAULT 0,
   total_service_amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
+  discount_amount      DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+  discount_reason      VARCHAR(255) NULL,
   grand_total          DECIMAL(12, 2) NOT NULL,
   created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_invoices_booking_id (booking_id),

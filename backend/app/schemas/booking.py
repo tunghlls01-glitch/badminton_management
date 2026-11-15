@@ -84,3 +84,50 @@ class BookingOut(BaseModel):
     note: Optional[str] = None
     created_at: datetime
     slots: List[BookingSlotOut] = []
+
+
+class BookingCheckoutRequest(BaseModel):
+    payment_method: str = Field(
+        default="CASH",
+        examples=["CASH", "BANK_TRANSFER"],
+        description="Phương thức thanh toán: CASH hoặc BANK_TRANSFER"
+    )
+    discount_amount: Decimal = Field(
+        default=Decimal(0),
+        ge=0,
+        examples=[20000],
+        description="Số tiền giảm giá thủ công (>= 0)"
+    )
+    discount_reason: Optional[str] = Field(
+        default=None,
+        max_length=255,
+        examples=["Khách quen giảm 10%"],
+        description="Lý do giảm giá (bắt buộc nếu discount_amount > 0)"
+    )
+    transaction_code: Optional[str] = Field(
+        default=None,
+        max_length=100,
+        examples=["VCB123456789"],
+        description="Mã giao dịch chuyển khoản ngân hàng"
+    )
+    note: Optional[str] = Field(
+        default=None,
+        max_length=255,
+        description="Ghi chú thêm khi thanh toán"
+    )
+
+
+class BookingCheckoutResponse(BaseModel):
+    message: str = "Thanh toán và hoàn thành booking thành công"
+    booking_id: int
+    booking_code: str
+    booking_status: BookingStatus
+    total_court_amount: float
+    total_service_amount: float
+    discount_amount: float
+    discount_reason: Optional[str] = None
+    grand_total: float
+    payment_method: str
+    payment_status: str
+    transaction_code: Optional[str] = None
+    invoice_code: str
