@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#B91C1C" />
+    <title>Không gian quản lý | RK BADMINTON</title>
+    <link rel="stylesheet" href="../css/t3d2096.css" />
+  </head>
+  <body class="rk-app" data-root="../" data-page="dashboard">
+    <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
+    <div
+      id="rk-dashboard-state"
+      class="rk-container rk-session-state"
+      role="status"
+      aria-live="polite"
+    >
+      Đang kiểm tra quyền truy cập...
+    </div>
+    <div id="rk-dashboard" class="rk-dashboard" hidden>
+      <button
+        type="button"
+        id="rk-backdrop"
+        class="rk-backdrop"
+        data-rk-action="sidebar-close"
+        aria-label="Đóng menu"
+        hidden
+      ></button>
+      <aside
+        id="rk-sidebar"
+        class="rk-sidebar"
+        aria-label="Thanh bên quản lý"
+      ></aside>
+      <div class="rk-dashboard-body">
+        <header id="rk-dashboard-header" class="rk-dashboard-header"></header>
+        <main id="main-content" class="rk-dashboard-content">
+          <div class="rk-workspace-title">
+            <span class="rk-eyebrow">KHÔNG GIAN QUẢN LÝ</span>
+            <h1 data-welcome>Chào mừng bạn.</h1>
+            <p>Chọn chức năng trong thanh điều hướng để bắt đầu.</p>
+          </div>
+          <section class="rk-access-card">
+            <span class="rk-access-icon" aria-hidden="true">✓</span>
+            <div>
+              <strong>Phiên đăng nhập đã được xác minh</strong>
+              <p data-role-label></p>
+            </div>
+          </section>
+          <section
+            id="rk-dashboard-outlet"
+            class="rk-workspace-panel"
+            aria-label="Nội dung chức năng"
+          >
+            <h2>Khu vực làm việc của bạn</h2>
+            <p>Một số chức năng đang được hoàn thiện.</p>
+          </section>
+        </main>
+      </div>
+    </div>
+    <noscript
+      ><p class="rk-container">
+        Vui lòng bật JavaScript để đăng nhập và tải dữ liệu.
+      </p></noscript
+    >
+    <script src="../js/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/t3d2096-config.js"></script>
+    <script src="../js/authStorage.js"></script>
+    <script src="../js/axiosClient.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/ProtectedRoute.js"></script>
+    <script src="../js/t3d2096-ui.js"></script>
+    <script src="../js/rk-layout.js"></script>
+    <script src="../js/pages/dashboard-layout.js"></script>
+  </body>
+</html>

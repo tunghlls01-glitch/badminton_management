@@ -1,7 +1,6 @@
 ﻿import enum
 from sqlalchemy import Column, Integer, String, DateTime, Enum, func, Text
 from sqlalchemy.orm import relationship, synonym
-
 from app.db.session import Base
 
 
@@ -21,7 +20,7 @@ class Court(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String(50), nullable=False)
-    court_name = synonym("name")  # Alias giúp tương thích nếu code gọi court.court_name
+    court_name = synonym("name")
 
     description = Column(String(255), nullable=True)
     status = Column(Enum(CourtStatus), default=CourtStatus.Active, server_default="Active", nullable=False)

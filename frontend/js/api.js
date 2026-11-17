@@ -28,7 +28,10 @@ const http = axios.create({
 
 // Tự động gắn token đăng nhập cho mọi request nếu có:
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("access_token") ||
+    sessionStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
