@@ -70,6 +70,7 @@ app.include_router(services.router, prefix="/api")
 app.include_router(service_orders.router, prefix="/api")
 app.include_router(slot.router, prefix="/api/v1")
 app.include_router(auth.router)
+app.include_router(auth.router, prefix="/api")
 app.include_router(court_management.router, prefix="/api")
 
 @app.get("/")

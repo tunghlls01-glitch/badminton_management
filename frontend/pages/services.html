@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý dịch vụ & kho | RK Badminton</title>
+  <link rel="icon" href="../assets/images/logo.svg">
+  <link rel="stylesheet" href="../css/services.css">
+</head>
+<body data-root="../">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar">
+    <a href="../index.html" class="brand-wrap">
+      <div class="brand-icon">RK</div>
+      <span class="brand-name">RK BADMINTON</span>
+    </a>
+
+    <div class="nav-section-title">Quản lý câu lạc bộ</div>
+    <ul class="nav-list">
+      <li class="nav-item">
+        <a href="../index.html">
+          <span class="nav-icon">☵</span>
+          <span>Tổng quan</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="booking.html">
+          <span class="nav-icon">📅</span>
+          <span>Đặt sân</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="court_booking_schedule.html">
+          <span class="nav-icon">🏸</span>
+          <span>Sân</span>
+        </a>
+      </li>
+      <li class="nav-item active">
+        <a href="services.html">
+          <span class="nav-icon">📦</span>
+          <span>Dịch vụ & kho</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="items.html">
+          <span class="nav-icon">👥</span>
+          <span>Hội viên</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#">
+          <span class="nav-icon">📊</span>
+          <span>Báo cáo</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <a href="#"><span class="nav-icon">⚙</span> Cài đặt</a>
+      <a href="#"><span class="nav-icon">❓</span> Trợ giúp & hỗ trợ</a>
+      <div class="copyright">© 2026 RK Badminton</div>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <div class="main-wrapper">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="text-muted">Không gian</span>
+        <div class="space-select">
+          <span>CLB cầu lông Riverside</span>
+          <span>▾</span>
+        </div>
+        <span class="badge-role">QUẢN TRỊ</span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-bell" title="Thông báo">🔔</button>
+        <div class="user-profile">
+          <div class="user-avatar" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#c91818;background:#fee2e2;">AM</div>
+          <div class="user-info">
+            <span class="user-name" id="user-display-name">Alex Morgan</span>
+            <span class="user-role">Quản trị viên CLB</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Container -->
+    <main class="content-container">
+      <!-- Breadcrumb -->
+      <div class="breadcrumb" id="breadcrumb-wrap">
+        <span>Không gian</span>
+        <span>/</span>
+        <a href="services.html">Dịch vụ & kho</a>
+        <span id="breadcrumb-sub" style="display:none">/ <span id="breadcrumb-sub-text">Thêm dịch vụ mới</span></span>
+      </div>
+
+      <!-- Page Header -->
+      <div class="page-header" id="page-header-main">
+        <div>
+          <h1 class="page-title" id="page-title-text">Quản lý dịch vụ</h1>
+          <p class="page-subtitle" id="page-subtitle-text">Quản lý dịch vụ, giá cả và tồn kho tại một nơi.</p>
+        </div>
+        <div id="page-header-actions">
+          <button class="btn-primary-red" id="btn-open-create">
+            <span>+</span>
+            <span>Thêm dịch vụ mới</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3 Tabs Navigation -->
+      <div class="tabs-nav" id="main-tabs-nav">
+        <button class="tab-btn active" data-tab="services">Dịch vụ</button>
+        <button class="tab-btn" data-tab="inventory">Nhập & điều chỉnh kho</button>
+        <button class="tab-btn" data-tab="history">Lịch sử kho</button>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TAB 1: DANH SÁCH DỊCH VỤ -->
+      <!-- ============================================================== -->
+      <section id="tab-services-view">
+        <!-- 4 Summary Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Tổng số dịch vụ</span>
+              <div class="stat-icon box">📦</div>
+            </div>
+            <div class="stat-value" id="stat-total-services">0</div>
+            <div class="stat-desc">Thuộc 4 danh mục</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Dịch vụ đang hoạt động</span>
+              <div class="stat-icon green">✓</div>
+            </div>
+            <div class="stat-value" id="stat-active-services">0</div>
+            <div class="stat-desc">Sẵn sàng đặt trước</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Mặt hàng sắp hết</span>
+              <div class="stat-icon orange">⚠</div>
+            </div>
+            <div class="stat-value" id="stat-low-stock">0</div>
+            <div class="stat-desc">Dưới mức tối thiểu</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Mặt hàng hết kho</span>
+              <div class="stat-icon red">✕</div>
+            </div>
+            <div class="stat-value" id="stat-out-of-stock">0</div>
+            <div class="stat-desc">Cần nhập thêm hàng</div>
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="card-box">
+          <div class="filter-bar">
+            <div class="filter-left">
+              <div class="section-badge-title">
+                <span>Tất cả dịch vụ</span>
+                <span class="counter-badge" id="table-count-badge">0</span>
+              </div>
+
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-keyword" placeholder="Tìm theo tên hoặc mã dịch vụ...">
+              </div>
+
+              <select class="select-filter" id="filter-category">
+                <option value="">Tất cả danh mục</option>
+                <option value="NUOC">Đồ uống (Nước)</option>
+                <option value="ONG_CAU">Ống cầu</option>
+                <option value="THUE_VOT">Thuê vợt</option>
+                <option value="KHAC">Khác</option>
+              </select>
+
+              <select class="select-filter" id="filter-status">
+                <option value="">Tất cả trạng thái</option>
+                <option value="ACTIVE">Đang kinh doanh</option>
+                <option value="INACTIVE">Ngừng kinh doanh</option>
+              </select>
+            </div>
+
+            <div class="filter-right" id="table-pagination-info">
+              Hiển thị 0 trên 0 dịch vụ
+            </div>
+          </div>
+
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">Hình ảnh</th>
+                  <th>Tên dịch vụ</th>
+                  <th>Danh mục</th>
+                  <th>Giá</th>
+                  <th>Số lượng tồn</th>
+                  <th>Trạng thái</th>
+                  <th style="text-align: right;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="services-table-body">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-light);">
+                    Đang tải danh sách dịch vụ...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination-wrap">
+            <span id="page-summary-text">Hiển thị 1 trang</span>
+            <div class="pagination-pages" id="pagination-buttons">
+              <button class="btn-page active">1</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 2: NHẬP & ĐIỀU CHỈNH KHO (Image 4) -->
+      <!-- ============================================================== -->
+      <section id="tab-inventory-view" style="display:none">
+        <div class="info-alert-bar">
+          <span>ℹ</span>
+          <span><strong>Mọi biến động kho đều được ghi lại.</strong> Tồn kho được cập nhật ngay sau khi xác nhận nhập hàng hoặc điều chỉnh.</span>
+        </div>
+
+        <div class="inventory-grid">
+          <!-- CARD 1: NHẬP KHO -->
+          <div class="inventory-card">
+            <div class="inv-header">
+              <div class="inv-icon-wrap">📥</div>
+              <div>
+                <h3 class="inv-title">Nhập kho</h3>
+                <p class="inv-desc">Nhập hàng từ nhà cung cấp vào kho.</p>
+              </div>
+            </div>
+
+            <form id="form-import-stock">
+              <div class="form-group">
+                <label class="form-label">Chọn dịch vụ <span class="req">*</span></label>
+                <select class="form-select" id="import-service-id" required>
+                  <option value="">-- Chọn dịch vụ cần nhập hàng --</option>
+                </select>
+                <span class="service-code-sub" id="import-service-sub">Chọn dịch vụ để xem tồn kho hiện tại</span>
+              </div>
+
+              <div class="grid-2col">
+                <div class="form-group">
+                  <label class="form-label">Số lượng nhập <span class="req">*</span></label>
+                  <input type="number" class="form-input" id="import-quantity" min="1" value="10" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Đơn giá nhập (VNĐ)</label>
+                  <input type="number" class="form-input" id="import-unit-price" placeholder="Không bắt buộc">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Ghi chú</label>
+                <textarea class="form-textarea" id="import-note" rows="2" placeholder="Ví dụ: Nhập hàng từ đại lý..."></textarea>
+              </div>
+
+              <!-- Flow Summary Box -->
+              <div class="flow-summary-box">
+                <div class="flow-step">
+                  <div class="flow-step-label">Tồn kho hiện tại</div>
+                  <div class="flow-step-val" id="import-flow-current">0 đơn vị</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                  <div class="flow-step-label">Số lượng nhập</div>
+                  <div class="flow-step-val green" id="import-flow-add">+10 đơn vị</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                  <div class="flow-step-label">Sau khi nhập</div>
+                  <div class="flow-step-val green" id="import-flow-after">10 đơn vị</div>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary-red" style="width: 100%; justify-content: center;" id="btn-submit-import">
+                <span>📥</span>
+                <span>Xác nhận nhập kho</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- CARD 2: ĐIỀU CHỈNH KHO (KIỂM KÊ) -->
+          <div class="inventory-card">
+            <div class="inv-header">
+              <div class="inv-icon-wrap" style="background:#fee2e2;color:#b91c1c;">⚖</div>
+              <div>
+                <h3 class="inv-title">Điều chỉnh kho</h3>
+                <p class="inv-desc">Điều chỉnh tồn kho kiểm kê kèm lý do cụ thể.</p>
+              </div>
+            </div>
+
+            <form id="form-adjust-stock">
+              <div class="form-group">
+                <label class="form-label">Chọn dịch vụ <span class="req">*</span></label>
+                <select class="form-select" id="adjust-service-id" required>
+                  <option value="">-- Chọn dịch vụ cần kiểm kê --</option>
+                </select>
+                <span class="service-code-sub" id="adjust-service-sub">Chọn dịch vụ để kiểm kê</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Loại điều chỉnh <span class="req">*</span></label>
+                <div class="toggle-btn-group">
+                  <button type="button" class="btn-toggle active" id="btn-adjust-set-exact">Đặt số tồn thực tế</button>
+                  <button type="button" class="btn-toggle" id="btn-adjust-decrease">- Giảm hao hụt</button>
+                  <button type="button" class="btn-toggle" id="btn-adjust-increase">+ Tăng</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" id="label-adjust-qty">Số lượng tồn kho thực tế kiểm kê <span class="req">*</span></label>
+                <input type="number" class="form-input" id="adjust-quantity" min="0" value="0" required>
+                <div class="form-error-msg" id="adjust-error-msg" style="display:none">Vượt quá tồn kho hiện tại.</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Lý do điều chỉnh <span class="req">*</span></label>
+                <input type="text" class="form-input" id="adjust-note" placeholder="Bắt buộc nhập lý do (VD: Kiểm kê định kỳ, vỡ hỏng...)" required>
+              </div>
+
+              <!-- Flow Summary Box -->
+              <div class="flow-summary-box">
+                <div class="flow-step">
+                  <div class="flow-step-label">Tồn kho hiện tại</div>
+                  <div class="flow-step-val" id="adjust-flow-current">0 đơn vị</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                  <div class="flow-step-label">Điều chỉnh</div>
+                  <div class="flow-step-val" id="adjust-flow-delta">0 đơn vị</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                  <div class="flow-step-label">Sau điều chỉnh</div>
+                  <div class="flow-step-val green" id="adjust-flow-after">0 đơn vị</div>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary-red" style="width: 100%; justify-content: center;" id="btn-submit-adjust">
+                <span>⚖</span>
+                <span>Xác nhận điều chỉnh</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 3: LỊCH SỬ KHO & CẢNH BÁO SẮP HẾT HÀNG (Image 5) -->
+      <!-- ============================================================== -->
+      <section id="tab-history-view" style="display:none">
+        <!-- Section Cảnh báo tồn kho -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h2 style="font-size:17px; font-weight:700;">Cảnh báo tồn kho</h2>
+          <span style="font-size:12px; color:var(--primary-red); font-weight:600; cursor:pointer;" id="btn-refresh-alerts">Làm mới cảnh báo ⟳</span>
+        </div>
+
+        <div class="warning-cards-grid" id="warning-cards-container">
+          <!-- Render dynamically -->
+          <div style="grid-column: 1/-1; padding: 20px; background:#fff; border:1px solid #e5e7eb; border-radius:8px; text-align:center; color:#6b7280;">
+            Đang kiểm tra cảnh báo tồn kho...
+          </div>
+        </div>
+
+        <!-- Section Lịch sử biến động kho -->
+        <div class="card-box">
+          <div class="filter-bar">
+            <div>
+              <h2 style="font-size: 17px; font-weight: 700;">Lịch sử kho</h2>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top:2px;">Lưu đầy đủ lịch sử thay đổi tồn kho.</p>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <select class="select-filter" id="history-filter-service">
+                <option value="">Tất cả dịch vụ</option>
+              </select>
+
+              <select class="select-filter" id="history-filter-type">
+                <option value="">Tất cả loại giao dịch</option>
+                <option value="Nhập hàng">Nhập hàng</option>
+                <option value="Bán lẻ">Bán lẻ (POS)</option>
+                <option value="Điều chỉnh">Điều chỉnh</option>
+                <option value="EXPORT">Xuất kho</option>
+              </select>
+
+              <button class="btn-page" id="btn-clear-history-filter" title="Xóa bộ lọc">✕</button>
+            </div>
+          </div>
+
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Ngày & Giờ</th>
+                  <th>Tên dịch vụ</th>
+                  <th>Loại giao dịch</th>
+                  <th>Số lượng thay đổi</th>
+                  <th>Tồn trước → Tồn sau</th>
+                  <th>Lý do / Ghi chú</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <tr>
+                  <td colspan="6" style="text-align:center; padding:30px; color:var(--text-light);">
+                    Chọn dịch vụ để xem lịch sử kho...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW FORM THÊM / SỬA DỊCH VỤ (Image 2 & Image 3) -->
+      <!-- ============================================================== -->
+      <section id="view-form-service" style="display:none">
+        <div class="form-2col-layout">
+          <!-- Cột trái: Form thông tin -->
+          <div class="card-box">
+            <h2 style="font-size: 17px; font-weight: 700; margin-bottom: 6px;">Thông tin dịch vụ</h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Các trường có dấu <span style="color:var(--primary-red)">*</span> là bắt buộc.</p>
+
+            <form id="service-edit-form">
+              <input type="hidden" id="form-service-id" value="">
+
+              <div class="form-group">
+                <label class="form-label">Tên dịch vụ <span class="req">*</span></label>
+                <input type="text" class="form-input" id="form-name" placeholder="VD: Nước khoáng Lavie 500ml" required>
+                <div class="form-error-msg" id="form-name-error" style="display:none">Vui lòng nhập tên dịch vụ.</div>
+              </div>
+
+              <div class="grid-2col">
+                <div class="form-group">
+                  <label class="form-label">Danh mục <span class="req">*</span></label>
+                  <select class="form-select" id="form-category" required>
+                    <option value="NUOC">Đồ uống (Nước)</option>
+                    <option value="ONG_CAU">Ống cầu lông</option>
+                    <option value="THUE_VOT">Thuê vợt</option>
+                    <option value="KHAC">Khác / Phụ kiện</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Đơn vị tính <span class="req">*</span></label>
+                  <input type="text" class="form-input" id="form-unit" placeholder="Chai, Lon, Ống, Cây/Lượt..." required value="Chai">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Mô tả dịch vụ</label>
+                <textarea class="form-textarea" id="form-description" rows="3" placeholder="Thêm mô tả về dịch vụ..."></textarea>
+                <div class="char-counter"><span id="form-desc-len">0</span>/500 ký tự</div>
+              </div>
+
+              <div class="grid-3col">
+                <div class="form-group">
+                  <label class="form-label">Giá bán (VNĐ) <span class="req">*</span></label>
+                  <input type="number" class="form-input" id="form-price" min="1" step="500" value="10000" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Số lượng tồn ban đầu <span class="req">*</span></label>
+                  <input type="number" class="form-input" id="form-stock" min="0" value="50" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Mức tồn kho tối thiểu <span class="req">*</span></label>
+                  <input type="number" class="form-input" id="form-min-stock" min="0" value="10" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Trạng thái kinh doanh</label>
+                <select class="form-select" id="form-status">
+                  <option value="ACTIVE">Đang kinh doanh (Active)</option>
+                  <option value="INACTIVE">Ngừng kinh doanh (Inactive)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Hình ảnh dịch vụ</label>
+                <div class="upload-box" id="upload-dropzone">
+                  <div class="upload-icon">📷</div>
+                  <div class="upload-title">Chọn ảnh hoặc kéo và thả</div>
+                  <div class="upload-hint">PNG, JPG hoặc WebP · Tối đa 5 MB · Đề xuất 800 x 800 px</div>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:28px; padding-top:16px; border-top:1px solid #f3f4f6;">
+                <span style="font-size:12px; color:var(--text-muted);">Dịch vụ sẽ được kích hoạt ngay sau khi lưu.</span>
+                <div style="display:flex; gap:10px;">
+                  <button type="button" class="btn-page" id="btn-cancel-form" style="padding: 10px 18px;">Hủy</button>
+                  <button type="submit" class="btn-primary-red" id="btn-save-service">Lưu dịch vụ</button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Cột phải: Preview Tồn kho ban đầu (Image 2) -->
+          <div>
+            <div class="side-preview-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:14px; font-weight:700;">Tồn kho ban đầu</h3>
+                <span class="status-pill in-stock" id="preview-pill">Còn hàng</span>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                <div>
+                  <div style="font-size:11px; color:var(--text-light);">Số lượng hiện tại</div>
+                  <div style="font-size:20px; font-weight:800; color:var(--text-main);" id="preview-stock-val">50 đơn vị</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:11px; color:var(--text-light);">Mức tồn kho tối thiểu</div>
+                  <div style="font-size:20px; font-weight:800; color:var(--text-main);" id="preview-min-stock-val">10 đơn vị</div>
+                </div>
+              </div>
+
+              <div class="progress-track">
+                <div class="progress-bar" id="preview-progress-bar" style="width: 80%;"></div>
+              </div>
+              <div style="font-size:11px; color:var(--badge-green-text); font-weight:500;" id="preview-stock-status-text">
+                Tồn kho cao hơn mức tối thiểu.
+              </div>
+            </div>
+
+            <div class="side-tip-card">
+              <div class="side-tip-title">💡 Thiết lập nhỏ, lợi ích lớn</div>
+              <div class="side-tip-desc">Đặt mức tồn kho tối thiểu để nhận cảnh báo sớm trước khi hết hàng.</div>
+            </div>
+
+            <div class="side-tip-card">
+              <div class="side-tip-title">📋 Lưu đầy đủ lịch sử kho</div>
+              <div class="side-tip-desc">Dùng mục Nhập & điều chỉnh kho để nhập hàng và điều chỉnh số lượng kèm lý do đối soát.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Modal Chi tiết dịch vụ -->
+  <div class="modal-overlay" id="detail-modal" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-service-name">Chi tiết dịch vụ</h3>
+        <button class="btn-close-modal" id="btn-close-detail-modal">✕</button>
+      </div>
+      <div id="modal-service-body">
+        <!-- Render detail -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts: Thứ tự chuẩn axios -> config -> api -> layout -> services.js -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/pages/services.js"></script>
+</body>
+</html>
