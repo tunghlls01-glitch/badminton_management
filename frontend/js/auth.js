@@ -19,7 +19,7 @@
       !["admin", "staff", "customer"].includes(role)
     )
       throw new Error("Thông tin tài khoản trả về không hợp lệ.");
-    return { id: data.id, full_name: data.full_name, email: data.email, role };
+    return { id: data.id, full_name: data.full_name, email: data.email, role, avatar: data.avatar || null };
   }
   async function me(token, signal) {
     const response = await global.axiosClient.get(

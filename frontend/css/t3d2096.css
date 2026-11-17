@@ -306,7 +306,9 @@
   align-items: center;
   gap: 9px;
 }
+.rk-avatar img { height: 100%; border-radius: inherit; object-fit: cover; }
 .rk-avatar {
+  overflow: hidden;
   display: grid;
   place-items: center;
   width: 35px;

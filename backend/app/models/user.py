@@ -1,5 +1,6 @@
 import enum 
-from sqlalchemy import Column, Integer, String, Enum, DateTime, func
+from sqlalchemy import Column, Integer, String, Enum, DateTime, Text, func
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import relationship  # 1. Thêm import relationship
 from app.db.session import Base 
 
@@ -19,6 +20,7 @@ class User(Base):
     full_name = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False, index=True)
     phone = Column(String(15), unique=True, nullable=False, index=True)
+    avatar = Column(Text().with_variant(MEDIUMTEXT(), 'mysql'), nullable=True)
     hashed_password = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.CUSTOMER, nullable=False)
     status = Column(Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False)

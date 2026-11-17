@@ -29,5 +29,9 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+class CurrentUserResponse(UserResponse):
+    avatar: str | None = None
+
+
 class TokenPayload(BaseModel):
     sub: Optional[str] = None

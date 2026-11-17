@@ -57,6 +57,12 @@
   ];
   const logo = () =>
     `<a class="rk-logo" href="${h(config.homeURL)}"><span class="rk-logo-mark" aria-hidden="true">//</span><span>RK BADMINTON</span></a>`;
+  function renderAvatar(user) {
+    const content = user.avatar
+      ? `<img src="${h(user.avatar)}" alt="">`
+      : h(user.full_name.trim().charAt(0).toUpperCase());
+    return `<span class="rk-avatar">${content}</span>`;
+  }
   const roleLabels = {
     admin: "Quản trị viên",
     staff: "Lễ tân",
@@ -66,7 +72,7 @@
     const target = document.getElementById("rk-header");
     const user = session.user;
     if (target)
-      target.innerHTML = `<div class="rk-header-inner">${logo()}${minimal ? `<a class="rk-back" href="${h(config.homeURL)}">← Quay về trang chủ</a>` : `<button class="rk-icon-button rk-mobile-toggle" type="button" data-rk-action="menu" aria-label="Mở menu" aria-expanded="false" aria-controls="rk-nav">${icon("menu")}</button><nav id="rk-nav" class="rk-nav" aria-label="Điều hướng chính"><a class="active" href="${h(config.homeURL)}">Trang chủ</a><a href="${h(config.homeURL)}#courts">Danh sách sân</a><a href="${h(config.homeURL)}#pricing">Bảng giá</a><a data-require-auth href="${h(config.myBookingsURL)}">Lịch đặt của tôi</a></nav><div class="rk-header-actions">${user ? `<a class="rk-user" href="${h(global.RK_AUTH.home(user.role))}"><span class="rk-avatar">${h(user.full_name.trim().charAt(0).toUpperCase())}</span><span class="rk-user-name">${h(user.full_name)}</span></a><button class="rk-icon-button" type="button" data-rk-action="logout" aria-label="Đăng xuất">${icon("logout")}<span class="rk-logout-label">Đăng xuất</span></button>` : `<a class="rk-login-link" href="${h(config.loginURL)}">Đăng nhập</a><a class="rk-btn rk-primary rk-small" href="${h(config.registerURL)}">Đăng ký</a>`}</div>`}</div>`;
+      target.innerHTML = `<div class="rk-header-inner">${logo()}${minimal ? `<a class="rk-back" href="${h(config.homeURL)}">← Quay về trang chủ</a>` : `<button class="rk-icon-button rk-mobile-toggle" type="button" data-rk-action="menu" aria-label="Mở menu" aria-expanded="false" aria-controls="rk-nav">${icon("menu")}</button><nav id="rk-nav" class="rk-nav" aria-label="Điều hướng chính"><a class="active" href="${h(config.homeURL)}">Trang chủ</a><a href="${h(config.homeURL)}#courts">Danh sách sân</a><a href="${h(config.homeURL)}#pricing">Bảng giá</a><a data-require-auth href="${h(config.myBookingsURL)}">Lịch đặt của tôi</a></nav><div class="rk-header-actions">${user ? `<a class="rk-user" href="${h(config.profileURL)}">${renderAvatar(user)}<span class="rk-user-name">${h(user.full_name)}</span></a><button class="rk-icon-button" type="button" data-rk-action="logout" aria-label="Đăng xuất">${icon("logout")}<span class="rk-logout-label">Đăng xuất</span></button>` : `<a class="rk-login-link" href="${h(config.loginURL)}">Đăng nhập</a><a class="rk-btn rk-primary rk-small" href="${h(config.registerURL)}">Đăng ký</a>`}</div>`}</div>`;
     const footer = document.getElementById("rk-footer");
     if (footer)
       footer.innerHTML = `<div class="rk-container rk-footer-inner"><div><strong>RK BADMINTON</strong><p>Đam mê hết mình. Sân đồng hành tuyệt vời.</p></div><div><p>Giờ mở cửa 06:00 - 23:00 · Hỗ trợ trực tiếp tại quầy lễ tân</p><div class="rk-footer-links"><small>© ${new Date().getFullYear()} RK BADMINTON</small><a href="${h(config.homeURL)}#courts">Danh sách sân</a><a href="${h(config.homeURL)}#pricing">Bảng giá</a><a data-require-auth href="${h(config.myBookingsURL)}">Lịch đặt của tôi</a></div><small class="rk-credit">Ảnh minh họa: AI và Alanands3 / CC BY-SA 4.0.</small></div></div>`;
@@ -91,9 +97,9 @@
       })
       .join(
         "",
-      )}</nav><div class="rk-sidebar-bottom"><a href="${h(config.homeURL)}">Xem trang khách hàng ${icon("arrow")}</a><button type="button" data-rk-action="logout">${icon("logout")}Đăng xuất</button></div>`;
+      )}</nav><div class="rk-sidebar-bottom"><a href="${h(config.profileURL)}">Hồ sơ cá nhân</a><a href="${h(config.homeURL)}">Xem trang khách hàng ${icon("arrow")}</a><button type="button" data-rk-action="logout">${icon("logout")}Đăng xuất</button></div>`;
     document.getElementById("rk-dashboard-header").innerHTML =
-      `<div><button type="button" class="rk-icon-button rk-dashboard-toggle" data-rk-action="sidebar" aria-label="Mở menu quản lý" aria-expanded="false" aria-controls="rk-sidebar">${icon("menu")}</button><strong>${h(active.label)}</strong></div><div class="rk-user"><span class="rk-avatar">${h(user.full_name.trim().charAt(0).toUpperCase())}</span><span><strong>${h(user.full_name)}</strong><small>${roleLabels[user.role]}</small></span><button type="button" class="rk-icon-button" data-rk-action="logout" aria-label="Đăng xuất">${icon("logout")}</button></div>`;
+      `<div><button type="button" class="rk-icon-button rk-dashboard-toggle" data-rk-action="sidebar" aria-label="Mở menu quản lý" aria-expanded="false" aria-controls="rk-sidebar">${icon("menu")}</button><strong>${h(active.label)}</strong></div><div class="rk-user">${renderAvatar(user)}<span><strong>${h(user.full_name)}</strong><small>${roleLabels[user.role]}</small></span><button type="button" class="rk-icon-button" data-rk-action="logout" aria-label="Đăng xuất">${icon("logout")}</button></div>`;
     document.querySelector("[data-welcome]").textContent =
       "Xin chào, " + user.full_name + ".";
     document.querySelector("[data-role-label]").textContent =
