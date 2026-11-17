@@ -78,32 +78,47 @@
       footer.innerHTML = `<div class="rk-container rk-footer-inner"><div><strong>RK BADMINTON</strong><p>Đam mê hết mình. Sân đồng hành tuyệt vời.</p></div><div><p>Giờ mở cửa 06:00 - 23:00 · Hỗ trợ trực tiếp tại quầy lễ tân</p><div class="rk-footer-links"><small>© ${new Date().getFullYear()} RK BADMINTON</small><a href="${h(config.homeURL)}#courts">Danh sách sân</a><a href="${h(config.homeURL)}#pricing">Bảng giá</a><a data-require-auth href="${h(config.myBookingsURL)}">Lịch đặt của tôi</a></div><small class="rk-credit">Ảnh minh họa: AI và Alanands3 / CC BY-SA 4.0.</small></div></div>`;
   }
   function dashboard(user) {
+    const sidebar = document.getElementById("rk-sidebar");
+    const header = document.getElementById("rk-dashboard-header");
+
+    // [CHỐNG NHÁY] Nếu layout đã được vẽ rồi thì giữ nguyên, không render đè lại làm chớp màn hình
+    if (sidebar && sidebar.dataset.rendered === "true") {
+      return;
+    }
+
     const items = menu.filter((item) => item.roles.includes(user.role));
     const view =
       new URLSearchParams(global.location.search).get("view") || items[0].key;
     const active = items.find((item) => item.key === view) || items[0];
-    const sidebar = document.getElementById("rk-sidebar");
-    sidebar.innerHTML = `<div class="rk-sidebar-logo">${logo()}<button class="rk-icon-button rk-sidebar-close" type="button" data-rk-action="sidebar-close" aria-label="Đóng menu">${icon("close")}</button></div><p class="rk-nav-caption">KHÔNG GIAN LÀM VIỆC</p><nav aria-label="Quản lý">${items
-      .map((item) => {
-        const override = config.dashboardLinks[user.role + "." + item.key];
-        const href =
-          override ||
-          (item.key === items[0].key
-            ? config.dashboardURL + "?view=" + item.key
-            : null);
-        return href
-          ? `<a href="${h(href)}" class="${item.key === active.key ? "active" : ""}" ${item.key === active.key ? 'aria-current="page"' : ""}>${icon(item.icon)}<span>${h(item.label)}</span></a>`
-          : `<button type="button" disabled title="Chức năng đang được hoàn thiện">${icon(item.icon)}<span>${h(item.label)}</span></button>`;
-      })
-      .join(
-        "",
-      )}</nav><div class="rk-sidebar-bottom"><a href="${h(config.profileURL)}">Hồ sơ cá nhân</a><a href="${h(config.homeURL)}">Xem trang khách hàng ${icon("arrow")}</a><button type="button" data-rk-action="logout">${icon("logout")}Đăng xuất</button></div>`;
-    document.getElementById("rk-dashboard-header").innerHTML =
-      `<div><button type="button" class="rk-icon-button rk-dashboard-toggle" data-rk-action="sidebar" aria-label="Mở menu quản lý" aria-expanded="false" aria-controls="rk-sidebar">${icon("menu")}</button><strong>${h(active.label)}</strong></div><div class="rk-user">${renderAvatar(user)}<span><strong>${h(user.full_name)}</strong><small>${roleLabels[user.role]}</small></span><button type="button" class="rk-icon-button" data-rk-action="logout" aria-label="Đăng xuất">${icon("logout")}</button></div>`;
-    document.querySelector("[data-welcome]").textContent =
-      "Xin chào, " + user.full_name + ".";
-    document.querySelector("[data-role-label]").textContent =
-      roleLabels[user.role];
+
+    if (sidebar) {
+      sidebar.dataset.rendered = "true";
+      sidebar.innerHTML = `<div class="rk-sidebar-logo">${logo()}<button class="rk-icon-button rk-sidebar-close" type="button" data-rk-action="sidebar-close" aria-label="Đóng menu">${icon("close")}</button></div><p class="rk-nav-caption">KHÔNG GIAN LÀM VIỆC</p><nav aria-label="Quản lý">${items
+        .map((item) => {
+          const override = config.dashboardLinks[user.role + "." + item.key];
+          const href =
+            override ||
+            (item.key === items[0].key
+              ? config.dashboardURL + "?view=" + item.key
+              : null);
+          return href
+            ? `<a href="${h(href)}" class="${item.key === active.key ? "active" : ""}" ${item.key === active.key ? 'aria-current="page"' : ""}>${icon(item.icon)}<span>${h(item.label)}</span></a>`
+            : `<button type="button" disabled title="Chức năng đang được hoàn thiện">${icon(item.icon)}<span>${h(item.label)}</span></button>`;
+        })
+        .join(
+          "",
+        )}</nav><div class="rk-sidebar-bottom"><a href="${h(config.profileURL)}">Hồ sơ cá nhân</a><a href="${h(config.homeURL)}">Xem trang khách hàng ${icon("arrow")}</a><button type="button" data-rk-action="logout">${icon("logout")}Đăng xuất</button></div>`;
+    }
+
+    if (header) {
+      header.innerHTML = `<div><button type="button" class="rk-icon-button rk-dashboard-toggle" data-rk-action="sidebar" aria-label="Mở menu quản lý" aria-expanded="false" aria-controls="rk-sidebar">${icon("menu")}</button><strong>${h(active.label)}</strong></div><div class="rk-user">${renderAvatar(user)}<span><strong>${h(user.full_name)}</strong><small>${roleLabels[user.role]}</small></span><button type="button" class="rk-icon-button" data-rk-action="logout" aria-label="Đăng xuất">${icon("logout")}</button></div>`;
+    }
+
+    const welcomeEl = document.querySelector("[data-welcome]");
+    if (welcomeEl) welcomeEl.textContent = "Xin chào, " + user.full_name + ".";
+
+    const roleEl = document.querySelector("[data-role-label]");
+    if (roleEl) roleEl.textContent = roleLabels[user.role];
   }
   global.RK_LAYOUT = { guest, dashboard, menu };
   document.addEventListener("click", (event) => {

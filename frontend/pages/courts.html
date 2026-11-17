@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#B91C1C" />
+  <title>Quản lý sân cầu lông | RK BADMINTON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/t3d2096.css" />
+  <link rel="stylesheet" href="../css/courts.css" />
+</head>
+<body class="rk-app" data-root="../" data-page="courts">
+  <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
+
+  <div id="rk-dashboard-state" class="rk-container rk-session-state" role="status" aria-live="polite">
+    Đang kiểm tra quyền truy cập...
+  </div>
+
+  <div id="rk-dashboard" class="rk-dashboard" hidden>
+    <button type="button" id="rk-backdrop" class="rk-backdrop" data-rk-action="sidebar-close" aria-label="Đóng menu" hidden></button>
+    <aside id="rk-sidebar" class="rk-sidebar" aria-label="Thanh bên quản lý"></aside>
+
+    <div class="rk-dashboard-body">
+      <header id="rk-dashboard-header" class="rk-dashboard-header"></header>
+
+      <main id="main-content" class="rk-dashboard-content">
+        <span data-welcome hidden></span>
+        <span data-role-label hidden></span>
+
+        <div class="courts-header">
+          <div>
+            <span class="rk-eyebrow">QUẢN LÝ CƠ SỞ VẬT CHẤT</span>
+            <h1>Quản lý sân cầu lông</h1>
+            <p class="courts-subtitle">Quản lý danh sách sân, hình ảnh thực tế và trạng thái hoạt động / bảo trì.</p>
+          </div>
+          <button type="button" class="rk-btn rk-primary" id="btnOpenAddDrawer">+ Thêm sân mới</button>
+        </div>
+
+        <section class="courts-card" aria-label="Danh sách sân cầu lông">
+          <div class="courts-toolbar">
+            <div class="courts-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input type="text" id="searchInput" placeholder="Tìm theo tên sân..." />
+            </div>
+
+            <div class="courts-tabs" role="tablist">
+              <button type="button" class="courts-tab active" data-filter="ALL" id="tabAll">Tất cả (0)</button>
+              <button type="button" class="courts-tab" data-filter="Active" id="tabActive">Hoạt động (0)</button>
+              <button type="button" class="courts-tab" data-filter="Maintenance" id="tabMaint">Bảo trì (0)</button>
+            </div>
+          </div>
+
+          <div class="courts-table-wrap">
+            <table class="courts-table">
+              <thead>
+                <tr>
+                  <th>HÌNH ẢNH &amp; TÊN SÂN</th>
+                  <th>MÔ TẢ</th>
+                  <th>TRẠNG THÁI</th>
+                  <th class="text-right">THAO TÁC</th>
+                </tr>
+              </thead>
+              <tbody id="courtsTableBody">
+                <tr>
+                  <td colspan="4" class="courts-state-cell">Đang tải danh sách sân...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="courts-footer">
+            <span id="paginationInfo" class="courts-page-info">Hiển thị 0–0 trong tổng số 0 sân</span>
+            <div id="paginationControls" class="courts-page-btns"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Drawer Thêm / Sửa thông tin sân -->
+  <div class="rk-overlay" id="drawerOverlay">
+    <aside class="rk-drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <div class="rk-drawer-head">
+        <div>
+          <h2 id="drawerTitle">Thêm sân mới</h2>
+          <p id="drawerSubtitle">Nhập thông tin và tải lên hình ảnh thực tế của sân.</p>
+        </div>
+        <button type="button" class="rk-icon-button" id="btnCloseDrawer" aria-label="Đóng">×</button>
+      </div>
+
+      <form id="courtForm" class="rk-drawer-body">
+        <input type="hidden" id="courtId" />
+        <div class="rk-drawer-caption">THÔNG TIN SÂN</div>
+
+        <div class="rk-field">
+          <label for="courtName">Tên sân <span class="req">*</span></label>
+          <input type="text" id="courtName" maxlength="50" required placeholder="VD: Sân 01" />
+        </div>
+
+        <div class="rk-field">
+          <label for="courtStatus">Trạng thái</label>
+          <select id="courtStatus">
+            <option value="Active">Hoạt động</option>
+            <option value="Maintenance">Bảo trì</option>
+          </select>
+        </div>
+
+        <div class="rk-field">
+          <label for="courtDescription">Mô tả</label>
+          <textarea id="courtDescription" rows="3" placeholder="Sân tiêu chuẩn, gần khu vực lễ tân. Ánh sáng tốt, thuận tiện di chuyển."></textarea>
+        </div>
+
+        <div class="rk-field">
+          <label>Hình ảnh sân</label>
+          <div class="rk-upload-box">
+            <div class="rk-upload-preview-wrap">
+              <img id="previewImg" src="../assets/images/chatNTK.webp" alt="Xem trước ảnh sân" />
+              <span>Ảnh xem trước</span>
+            </div>
+            <div class="rk-upload-info">
+              <strong id="fileNameLabel">Chưa chọn ảnh mới</strong>
+              <small id="fileMetaLabel">PNG, JPG hoặc WEBP (Tối đa 5MB)</small>
+              <label for="courtImageInput" class="rk-btn-upload">Tải ảnh lên</label>
+              <input type="file" id="courtImageInput" accept="image/png,image/jpeg,image/webp" hidden />
+            </div>
+          </div>
+        </div>
+
+        <div class="rk-form-error" id="formErrorBox"></div>
+
+        <div class="rk-drawer-foot">
+          <button type="button" class="rk-btn-cancel" id="btnCancelDrawer">Hủy bỏ</button>
+          <button type="submit" class="rk-btn rk-primary rk-btn-save" id="btnSaveCourt">Lưu thông tin sân</button>
+        </div>
+      </form>
+    </aside>
+  </div>
+
+  <!-- Modal Xác nhận chuyển bảo trì / xóa sân -->
+  <div class="rk-overlay rk-center" id="confirmOverlay">
+    <div class="rk-confirm-box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="rk-warn-icon" aria-hidden="true">!</div>
+      <h3 id="confirmTitle">Xác nhận chuyển trạng thái bảo trì</h3>
+      <p class="rk-confirm-main" id="confirmMainText"></p>
+      <p class="rk-confirm-sub" id="confirmSubText"></p>
+      <div class="rk-confirm-btns">
+        <button type="button" class="rk-btn-cancel" id="btnCancelConfirm">Quay lại</button>
+        <button type="button" class="rk-btn rk-primary" id="btnProceedConfirm">Xác nhận bảo trì</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rk-toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    window.RK_TASK_CONFIG = Object.assign({}, window.RK_TASK_CONFIG, {
+      dashboardLinks: Object.assign(
+        {},
+        (window.RK_TASK_CONFIG && window.RK_TASK_CONFIG.dashboardLinks) || {},
+        {
+          "admin.courts": "../pages/courts.html",
+          "staff.courts": "../pages/courts.html"
+        }
+      )
+    });
+  </script>
+  <script src="../js/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/t3d2096-config.js"></script>
+  <script src="../js/authStorage.js"></script>
+  <script src="../js/axiosClient.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/ProtectedRoute.js"></script>
+  <script src="../js/t3d2096-ui.js"></script>
+  <script src="../js/rk-layout.js"></script>
+  <script src="../js/pages/courts.js"></script>
+</body>
+</html>
