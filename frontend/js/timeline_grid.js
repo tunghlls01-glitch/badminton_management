@@ -1,0 +1,492 @@
+/**
+ * ============================================================================
+ * RK BADMINTON — BOOKING MATRIX LOGIC (VANILLA JS / API-READY)
+ * ============================================================================
+ */
+
+// 1. CẤU HÌNH HẰNG SỐ & KHUNG GIỜ (5:30 -> 24:00 = 37 MỐC 30 PHÚT)
+const DEFAULT_SLOT_PRICE = 60000; // 60.000đ / 30 phút
+
+const COURTS = Array.from({ length: 10 }, (_, idx) => ({
+  id: `court_${idx + 1}`,
+  name: `C.Lông ${idx + 1}`
+}));
+
+/**
+ * Tạo danh sách 37 khung giờ 30 phút từ 5:30 đến 24:00
+ */
+function generateTimeSlots() {
+  const slots = [];
+  let totalMinutes = 5 * 60 + 30; // 05:30
+  const endMinutes = 24 * 60;     // 24:00
+  let index = 0;
+
+  while (totalMinutes < endMinutes) {
+    const startH = Math.floor(totalMinutes / 60);
+    const startM = totalMinutes % 60;
+    const nextTotal = totalMinutes + 30;
+    const endH = Math.floor(nextTotal / 60);
+    const endM = nextTotal % 60;
+
+    const formatTime = (h, m) => `${h}:${m === 0 ? '00' : m}`;
+    const startTime = formatTime(startH, startM);
+    const endTime = formatTime(endH, endM);
+
+    slots.push({
+      index,
+      startTime,
+      endTime,
+      isHourMark: startM === 0
+    });
+
+    totalMinutes = nextTotal;
+    index++;
+  }
+  return slots;
+}
+
+const TIME_SLOTS = generateTimeSlots();
+
+const AVAILABLE_DATES = [
+  { dateStr: '2026-11-16', dayLabel: 'Thứ 2', dayNum: '16', fullLabel: 'THỨ HAI, 16 THÁNG 11', shortLabel: '16/11/2026', badge: 'Hôm nay' },
+  { dateStr: '2026-11-17', dayLabel: 'Thứ 3', dayNum: '17', fullLabel: 'THỨ BA, 17 THÁNG 11', shortLabel: '17/11/2026', badge: 'Còn trống' },
+  { dateStr: '2026-11-18', dayLabel: 'Thứ 4', dayNum: '18', fullLabel: 'THỨ TƯ, 18 THÁNG 11', shortLabel: '18/11/2026', badge: 'Còn trống' },
+  { dateStr: '2026-11-19', dayLabel: 'Thứ 5', dayNum: '19', fullLabel: 'THỨ NĂM, 19 THÁNG 11', shortLabel: '19/11/2026', badge: 'Còn trống' },
+  { dateStr: '2026-11-20', dayLabel: 'Thứ 6', dayNum: '20', fullLabel: 'THỨ SÁU, 20 THÁNG 11', shortLabel: '20/11/2026', badge: 'Hot' },
+  { dateStr: '2026-11-21', dayLabel: 'Thứ 7', dayNum: '21', fullLabel: 'THỨ BẢY, 21 THÁNG 11', shortLabel: '21/11/2026', badge: 'Cuối tuần' },
+  { dateStr: '2026-11-22', dayLabel: 'CN',    dayNum: '22', fullLabel: 'CHỦ NHẬT, 22 THÁNG 11', shortLabel: '22/11/2026', badge: 'Cuối tuần' },
+  { dateStr: '2026-11-23', dayLabel: 'Thứ 2', dayNum: '23', fullLabel: 'THỨ HAI, 23 THÁNG 11', shortLabel: '23/11/2026', badge: 'Còn trống' }
+];
+
+// 2. STATE QUẢN LÝ ỨNG DỤNG
+const appState = {
+  currentDate: AVAILABLE_DATES[0],
+  gridData: [],
+  selectedSlots: new Map() // Key: `${courtId}_${slotIndex}`, Value: Slot Object
+};
+
+// 3. MOCK DATA & TẦNG DỊCH VỤ API (SẴN SÀNG NỐI FASTAPI)
+function buildMockGridData(dateStr) {
+  const daySeed = parseInt(dateStr.split('-')[2], 10) || 16;
+
+  return COURTS.map((court, cIdx) => {
+    const slots = TIME_SLOTS.map((tSlot) => {
+      let status = 'available';
+      const price = DEFAULT_SLOT_PRICE;
+
+      // Khoá từ 5:30 đến 12:30 (index 0 -> 13)
+      if (tSlot.index >= 0 && tSlot.index <= 13) {
+        status = 'locked';
+      }
+
+      // Sự kiện ở C.Lông 8 lúc 13:00–13:30 (index 15 -> 16)
+      if (court.id === 'court_8' && (tSlot.index === 15 || tSlot.index === 16)) {
+        status = 'event';
+      }
+
+      // Đã đặt ở khung tối 16:00–21:00 (index 21 -> 30)
+      const isEveningPeak = tSlot.index >= 21 && tSlot.index <= 30;
+      if (isEveningPeak) {
+        if (
+          (cIdx % 2 === 0 && tSlot.index >= 22 && tSlot.index <= 26) ||
+          (cIdx % 3 === 1 && tSlot.index >= 25 && tSlot.index <= 29) ||
+          ((cIdx + daySeed) % 4 === 0 && tSlot.index >= 21 && tSlot.index <= 24)
+        ) {
+          status = 'booked';
+        }
+      }
+
+      return {
+        id: `${court.id}_${tSlot.index}`,
+        courtId: court.id,
+        courtName: court.name,
+        slotIndex: tSlot.index,
+        startTime: tSlot.startTime,
+        endTime: tSlot.endTime,
+        status,
+        price
+      };
+    });
+
+    return {
+      courtId: court.id,
+      courtName: court.name,
+      slots
+    };
+  });
+}
+
+async function fetchSlotsGrid(dateStr) {
+  // TODO: Thay thế bằng fetch('/api/v1/slots/grid?date=' + dateStr)
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(buildMockGridData(dateStr));
+    }, 40);
+  });
+}
+
+// 4. HÀM XỬ LÝ NGHIỆP VỤ: GỘP Ô LIỀN NHAU & FORMAT TIỀN TỆ
+function formatCurrencyVND(amount) {
+  return amount.toLocaleString('vi-VN') + 'đ';
+}
+
+/**
+ * Tự động gộp các ô 30 phút liền kề trên cùng 1 sân thành khoảng giờ gọn đẹp.
+ * Ví dụ: 14:00, 14:30, 15:00 trên C.Lông 3 => "C.Lông 3 • 14:00 – 15:30"
+ */
+function groupConsecutiveSlots() {
+  const items = Array.from(appState.selectedSlots.values());
+  if (items.length === 0) return [];
+
+  items.sort((a, b) => {
+    const courtNumA = parseInt(a.courtId.replace('court_', ''), 10);
+    const courtNumB = parseInt(b.courtId.replace('court_', ''), 10);
+    if (courtNumA !== courtNumB) return courtNumA - courtNumB;
+    return a.slotIndex - b.slotIndex;
+  });
+
+  const groups = [];
+  let currentGroup = null;
+
+  for (const slot of items) {
+    if (
+      currentGroup &&
+      currentGroup.courtId === slot.courtId &&
+      slot.slotIndex === currentGroup.lastSlotIndex + 1
+    ) {
+      currentGroup.endTime = slot.endTime;
+      currentGroup.lastSlotIndex = slot.slotIndex;
+      currentGroup.slotCount += 1;
+      currentGroup.totalPrice += slot.price;
+    } else {
+      currentGroup = {
+        courtId: slot.courtId,
+        courtName: slot.courtName,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        lastSlotIndex: slot.slotIndex,
+        slotCount: 1,
+        totalPrice: slot.price
+      };
+      groups.push(currentGroup);
+    }
+  }
+
+  return groups;
+}
+
+// 5. RENDER GIAO DIỆN (DATE CARDS, GRID, SUMMARY BAR)
+function renderDateCards() {
+  const container = document.getElementById('dateCardsContainer');
+  container.innerHTML = AVAILABLE_DATES.map((d) => {
+    const isActive = d.dateStr === appState.currentDate.dateStr;
+    return `
+      <button
+        type="button"
+        class="date-card ${isActive ? 'active' : ''}"
+        data-date="${d.dateStr}"
+        aria-pressed="${isActive}"
+      >
+        <span class="date-card-day">${d.dayLabel}</span>
+        <span class="date-card-num">${d.dayNum}</span>
+        <span class="date-card-badge">${d.badge}</span>
+      </button>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.date-card').forEach((card) => {
+    card.addEventListener('click', async () => {
+      const selectedDateStr = card.dataset.date;
+      if (selectedDateStr === appState.currentDate.dateStr) return;
+
+      const found = AVAILABLE_DATES.find((item) => item.dateStr === selectedDateStr);
+      if (found) {
+        appState.currentDate = found;
+        appState.selectedSlots.clear();
+        renderDateCards();
+        await loadAndRenderGrid();
+        updateSummaryBar();
+      }
+    });
+  });
+}
+
+function renderGridHeader() {
+  const thead = document.getElementById('bookingTableHead');
+  const timeHeadersHtml = TIME_SLOTS.map((slot) => `
+    <th class="time-header-cell ${slot.isHourMark ? 'hour-mark' : ''}" title="${slot.startTime} - ${slot.endTime}">
+      ${slot.startTime}
+    </th>
+  `).join('');
+
+  thead.innerHTML = `
+    <tr>
+      <th class="corner-cell" rowspan="2">
+        <span class="corner-label">Sân / Giờ</span>
+      </th>
+      <th class="date-banner-cell" colspan="${TIME_SLOTS.length}">
+        ${appState.currentDate.fullLabel}
+      </th>
+    </tr>
+    <tr>
+      ${timeHeadersHtml}
+    </tr>
+  `;
+}
+
+function renderGridBody() {
+  const tbody = document.getElementById('bookingTableBody');
+  const selectedCourtIds = new Set(
+    Array.from(appState.selectedSlots.values()).map((s) => s.courtId)
+  );
+
+  const rowsHtml = appState.gridData.map((courtRow) => {
+    const hasSelection = selectedCourtIds.has(courtRow.courtId);
+    const cells = [];
+    let i = 0;
+
+    while (i < courtRow.slots.length) {
+      const slot = courtRow.slots[i];
+
+      if (slot.status === 'available') {
+        const isSelected = appState.selectedSlots.has(slot.id);
+        cells.push(`
+          <td class="slot-cell">
+            <button
+              type="button"
+              class="slot-btn ${isSelected ? 'selected' : 'available'}"
+              data-slot-id="${slot.id}"
+              data-court-id="${slot.courtId}"
+              data-slot-index="${slot.slotIndex}"
+              aria-label="${slot.courtName} lúc ${slot.startTime} đến ${slot.endTime}"
+              title="${slot.courtName} • ${slot.startTime} - ${slot.endTime} (${formatCurrencyVND(slot.price)})"
+            >
+              ${isSelected ? '✓' : ''}
+            </button>
+          </td>
+        `);
+        i++;
+      } else {
+        let span = 1;
+        while (
+          i + span < courtRow.slots.length &&
+          courtRow.slots[i + span].status === slot.status
+        ) {
+          span++;
+        }
+
+        const statusLabels = {
+          locked: 'Khoá',
+          booked: 'Đã đặt',
+          event: 'Sự kiện'
+        };
+
+        const endMergedTime = courtRow.slots[i + span - 1].endTime;
+        cells.push(`
+          <td class="merged-slot-cell" colspan="${span}">
+            <div
+              class="merged-block ${slot.status}"
+              title="${courtRow.courtName} • ${slot.startTime} - ${endMergedTime} (${statusLabels[slot.status]})"
+            >
+              ${statusLabels[slot.status]}
+            </div>
+          </td>
+        `);
+        i += span;
+      }
+    }
+
+    return `
+      <tr data-court-row="${courtRow.courtId}" class="${hasSelection ? 'has-selection' : ''}">
+        <th class="court-cell" scope="row">
+          <span>${courtRow.courtName}</span>
+          <span class="court-selected-dot" title="Đang chọn ô trên sân này"></span>
+        </th>
+        ${cells.join('')}
+      </tr>
+    `;
+  }).join('');
+
+  tbody.innerHTML = rowsHtml;
+}
+
+function updateSummaryBar() {
+  const totalSlots = appState.selectedSlots.size;
+  const badgeEl = document.getElementById('slotCountBadge');
+  const titleEl = document.getElementById('summaryTitle');
+  const detailsEl = document.getElementById('summaryDetails');
+  const metaEl = document.getElementById('summaryMeta');
+  const totalAmountEl = document.getElementById('totalAmountDisplay');
+  const btnClearAll = document.getElementById('btnClearAll');
+  const btnProceed = document.getElementById('btnProceed');
+
+  if (totalSlots === 0) {
+    badgeEl.textContent = '00';
+    badgeEl.classList.add('empty');
+    titleEl.textContent = 'Chưa chọn khung giờ nào';
+    detailsEl.textContent = 'Vui lòng chạm vào các ô trống màu trắng trên lưới để bắt đầu đặt sân';
+    metaEl.textContent = `Đơn giá tiêu chuẩn: ${formatCurrencyVND(DEFAULT_SLOT_PRICE)} / 30 phút`;
+    totalAmountEl.textContent = '0đ';
+    btnClearAll.disabled = true;
+    btnProceed.disabled = true;
+    return;
+  }
+
+  const grouped = groupConsecutiveSlots();
+  const totalMinutes = totalSlots * 30;
+  const totalPrice = Array.from(appState.selectedSlots.values()).reduce(
+    (sum, item) => sum + item.price,
+    0
+  );
+
+  const groupStrings = grouped.map(
+    (g) => `${g.courtName} • ${g.startTime} – ${g.endTime}`
+  );
+
+  badgeEl.textContent = String(totalSlots).padStart(2, '0');
+  badgeEl.classList.remove('empty');
+  titleEl.textContent = `Đã chọn ${totalSlots} khung giờ`;
+  detailsEl.textContent = `${groupStrings.join('  |  ')} (${appState.currentDate.shortLabel})`;
+  detailsEl.title = `${groupStrings.join(', ')} — Ngày ${appState.currentDate.shortLabel}`;
+  metaEl.textContent = `Tổng thời lượng: ${totalMinutes} phút (${(totalMinutes / 60).toFixed(1).replace('.0', '')} giờ) • Đơn giá ${formatCurrencyVND(DEFAULT_SLOT_PRICE)}/30p`;
+  totalAmountEl.textContent = formatCurrencyVND(totalPrice);
+
+  btnClearAll.disabled = false;
+  btnProceed.disabled = false;
+}
+
+// 6. SỰ KIỆN TƯƠNG TÁC
+function handleSlotClick(event) {
+  const btn = event.target.closest('.slot-btn');
+  if (!btn) return;
+
+  const slotId = btn.dataset.slotId;
+  const courtId = btn.dataset.courtId;
+  const slotIndex = parseInt(btn.dataset.slotIndex, 10);
+
+  if (appState.selectedSlots.has(slotId)) {
+    appState.selectedSlots.delete(slotId);
+    btn.classList.remove('selected');
+    btn.classList.add('available');
+    btn.innerHTML = '';
+  } else {
+    const courtObj = appState.gridData.find((c) => c.courtId === courtId);
+    const slotObj = courtObj.slots[slotIndex];
+    appState.selectedSlots.set(slotId, slotObj);
+
+    btn.classList.remove('available');
+    btn.classList.add('selected');
+    btn.innerHTML = '✓';
+  }
+
+  const rowEl = document.querySelector(`tr[data-court-row="${courtId}"]`);
+  if (rowEl) {
+    const courtStillHasSelection = Array.from(appState.selectedSlots.values()).some(
+      (s) => s.courtId === courtId
+    );
+    rowEl.classList.toggle('has-selection', courtStillHasSelection);
+  }
+
+  updateSummaryBar();
+}
+
+function clearAllSelections() {
+  appState.selectedSlots.clear();
+  document.querySelectorAll('.slot-btn.selected').forEach((btn) => {
+    btn.classList.remove('selected');
+    btn.classList.add('available');
+    btn.innerHTML = '';
+  });
+  document.querySelectorAll('tr.has-selection').forEach((row) => {
+    row.classList.remove('has-selection');
+  });
+  updateSummaryBar();
+}
+
+function openConfirmModal() {
+  const grouped = groupConsecutiveSlots();
+  if (grouped.length === 0) return;
+
+  const modal = document.getElementById('confirmModal');
+  const modalDateText = document.getElementById('modalDateText');
+  const modalList = document.getElementById('modalBookingList');
+  const modalTotal = document.getElementById('modalTotalPrice');
+
+  modalDateText.textContent = `${appState.currentDate.fullLabel} (${appState.currentDate.shortLabel})`;
+
+  let grandTotal = 0;
+  modalList.innerHTML = grouped.map((g) => {
+    grandTotal += g.totalPrice;
+    return `
+      <li class="modal-summary-item">
+        <span><strong>${g.courtName}</strong> • ${g.startTime} – ${g.endTime} (${g.slotCount * 30} phút)</span>
+        <strong class="modal-item-price">${formatCurrencyVND(g.totalPrice)}</strong>
+      </li>
+    `;
+  }).join('');
+
+  modalTotal.textContent = formatCurrencyVND(grandTotal);
+  modal.classList.add('open');
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirmModal').classList.remove('open');
+}
+
+async function loadAndRenderGrid() {
+  appState.gridData = await fetchSlotsGrid(appState.currentDate.dateStr);
+  renderGridHeader();
+  renderGridBody();
+}
+
+// 7. KHỞI TẠO ỨNG DỤNG
+async function initApp() {
+  renderDateCards();
+  await loadAndRenderGrid();
+  updateSummaryBar();
+
+  const scrollContainer = document.getElementById('gridScrollContainer');
+  if (scrollContainer) {
+    scrollContainer.scrollLeft = 12 * 58;
+  }
+
+  document.getElementById('bookingTableBody').addEventListener('click', handleSlotClick);
+  document.getElementById('btnClearAll').addEventListener('click', clearAllSelections);
+  document.getElementById('btnProceed').addEventListener('click', openConfirmModal);
+
+  document.getElementById('btnPricingInfo').addEventListener('click', (e) => {
+    e.preventDefault();
+    alert('Bảng giá chuẩn RK Badminton:\n• Khung giờ thường: 60.000đ / 30 phút (120.000đ/giờ)\n• Khung giờ vàng (17:00 - 22:00): 75.000đ / 30 phút');
+  });
+
+  document.getElementById('btnCloseModal').addEventListener('click', closeConfirmModal);
+  document.getElementById('btnCancelModal').addEventListener('click', closeConfirmModal);
+  document.getElementById('confirmModal').addEventListener('click', (e) => {
+    if (e.target.id === 'confirmModal') closeConfirmModal();
+  });
+
+  document.getElementById('btnConfirmSubmit').addEventListener('click', () => {
+    const payload = {
+      date: appState.currentDate.dateStr,
+      slots: Array.from(appState.selectedSlots.values()),
+      grouped_bookings: groupConsecutiveSlots()
+    };
+    console.log('[RK Badminton - Payload sẵn sàng gửi FastAPI]:', payload);
+    alert('Đã tạo yêu cầu giữ chỗ tạm thời!\nKiểm tra Console (F12) để xem JSON payload chuẩn bị gửi tới FastAPI.');
+    closeConfirmModal();
+  });
+
+  document.getElementById('btnNextDays').addEventListener('click', async () => {
+    const currentIndex = AVAILABLE_DATES.findIndex(
+      (d) => d.dateStr === appState.currentDate.dateStr
+    );
+    const nextIndex = (currentIndex + 1) % AVAILABLE_DATES.length;
+    appState.currentDate = AVAILABLE_DATES[nextIndex];
+    appState.selectedSlots.clear();
+    renderDateCards();
+    await loadAndRenderGrid();
+    updateSummaryBar();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
