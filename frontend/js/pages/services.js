@@ -368,6 +368,8 @@ function renderServicesTable(list) {
   }).join("");
 
   document.getElementById("table-pagination-info").textContent = `Hiển thị ${list.length} trên ${allServices.length} dịch vụ`;
+  const badgeEl = document.getElementById("table-count-badge");
+  if (badgeEl) badgeEl.textContent = list.length;
 }
 
 // Điền các select box ở Tab Nhập kho & Điều chỉnh kho
@@ -521,18 +523,23 @@ window.toggleDeactivateService = async function(id) {
   const service = allServices.find(s => s.id === id);
   if (!service) return;
 
-  const actionText = isServiceActive(service) ? "ngừng kinh doanh" : "mở bán lại";
-  if (!confirm(`Bạn có chắc muốn ${actionText} dịch vụ '${service.name}'?`)) {
+  const isCurrentlyActive = isServiceActive(service);
+  const actionPrompt = isCurrentlyActive ? "xóa (ngừng kinh doanh)" : "khôi phục (mở bán lại)";
+  const successMsg = isCurrentlyActive
+    ? "Đã xóa dịch vụ thành công! Dịch vụ đã biến mất khỏi danh sách bán nhưng vẫn lưu an toàn trong cơ sở dữ liệu."
+    : "Đã khôi phục dịch vụ thành công!";
+
+  if (!confirm(`Bạn có chắc muốn ${actionPrompt} dịch vụ '${service.name}'?`)) {
     return;
   }
 
   try {
-    if (isServiceActive(service)) {
+    if (isCurrentlyActive) {
       await api.delete(`/services/${id}`);
     } else {
       await api.put(`/services/${id}`, { status: "Active" });
     }
-    showToast(`Đã ${actionText} thành công dịch vụ!`, "success");
+    showToast(successMsg, "success");
     await loadData();
   } catch (err) {
     showToast("Không thể thay đổi trạng thái: " + err.message, "error");
