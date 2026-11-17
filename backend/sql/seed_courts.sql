@@ -78,3 +78,4 @@ INSERT INTO price_rules (start_time, end_time, day_type, court_type, price_per_h
 -- Seed mẫu 1 lịch khóa sân (CourtBlock) cho Sân 6 đang bảo trì
 INSERT INTO court_blocks (court_id, start_time, end_time, reason) VALUES
 (6, '2026-11-08 06:00:00', '2026-11-08 22:00:00', 'Bảo trì thay mặt thảm PVC mới');
+

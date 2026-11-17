@@ -27,10 +27,13 @@
     assetURL: new URL("assets/images/", root).href,
     adminHome: custom.adminHome || page("dashboard.html") + "?view=dashboard",
     staffHome: custom.staffHome || page("dashboard.html") + "?view=bookings",
+    receptionURL: page("reception.html"),
     // Các module còn lại do thành viên phụ trách nối URL thật tại đây.
     dashboardLinks: custom.dashboardLinks || {
       "admin.services": page("services.html"),
       "staff.services": page("services.html"),
+      "staff.check-in": page("reception.html"),
+      "admin.check-in": page("reception.html"),
     },
   });
   global.RK_NAV = {
