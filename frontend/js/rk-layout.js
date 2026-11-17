@@ -45,7 +45,7 @@
       key: "check-in",
       label: "Check-in / Thanh toán tại quầy",
       icon: "card",
-      roles: ["staff"],
+      roles: ["admin", "staff"],
     },
     { key: "courts", label: "Danh sách sân", icon: "grid", roles: ["staff"] },
     {

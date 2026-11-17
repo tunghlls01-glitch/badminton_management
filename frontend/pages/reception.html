@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nhận sân & Thanh toán quầy | RK BADMINTON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/reception.css">
+</head>
+<body class="rk-reception-body" data-root="../" data-page="reception">
+  <div id="receptionApp" class="reception-app">
+    
+    <!-- Sidebar Navigation (Figma node 2:3) -->
+    <aside class="reception-sidebar" aria-label="Menu quản lý quầy lễ tân">
+      <a href="customer-home.html" class="sidebar-logo">
+        <div class="brand-badge" aria-hidden="true">//</div>
+        <span class="brand-text">RK BADMINTON</span>
+      </a>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard.html?view=dashboard" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <span>Tổng quan</span>
+        </a>
+
+        <a href="dashboard.html?view=bookings" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>Đặt sân</span>
+        </a>
+
+        <a href="reception.html" class="nav-item active" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>Nhận sân & thanh toán</span>
+        </a>
+
+        <a href="dashboard.html?view=courts" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="18" rx="2"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <line x1="12" y1="3" x2="12" y2="21"/>
+          </svg>
+          <span>Sân cầu lông</span>
+        </a>
+
+        <a href="dashboard.html?view=users" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>Khách hàng</span>
+        </a>
+
+        <a href="dashboard.html?view=services" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <span>Dịch vụ & hàng hóa</span>
+        </a>
+
+        <a href="dashboard.html?view=revenue" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span>Báo cáo</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="dashboard.html?view=settings" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span>Cài đặt</span>
+        </a>
+        <a href="#help" class="sidebar-help">
+          <span>Trung tâm trợ giúp ↗</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <div class="reception-main">
+      
+      <!-- Top Navigation Bar (Figma node 2:4) -->
+      <header class="reception-topbar">
+        <div class="topbar-left">
+          <span class="topbar-title">Quầy lễ tân</span>
+        </div>
+
+        <div class="topbar-right">
+          <div class="club-status-pill">
+            <span>●</span>
+            <span>Đang mở cửa</span>
+          </div>
+
+          <div class="user-profile">
+            <div class="user-info">
+              <span id="receptionUserName" class="user-name">Lễ tân</span>
+              <span id="receptionUserRole" class="user-role">Nhân viên quầy</span>
+            </div>
+            <div id="receptionUserAvatar" class="user-avatar" aria-hidden="true">LT</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Body Content -->
+      <main class="reception-content">
+        
+        <!-- Page Heading (Figma node 2:5) -->
+        <div class="page-heading">
+          <div>
+            <h1 class="heading-title">Nhận sân &amp; thanh toán</h1>
+            <p class="heading-subtitle">Chọn lượt đặt sân để nhận sân hoặc thanh toán.</p>
+          </div>
+        </div>
+
+        <!-- Two Column Layout (Lịch đặt sân & Thanh toán) -->
+        <div class="reception-grid">
+          
+          <!-- Column 1: Today's Bookings (Figma node 2:6) -->
+          <section class="card-panel" aria-labelledby="todayBookingsTitle">
+            <div class="bookings-card-header">
+              <h2 id="todayBookingsTitle" class="bookings-title">Lịch đặt sân</h2>
+              <p id="bookingsCountLabel" class="bookings-count">Hôm nay · 5 lượt đặt sân</p>
+            </div>
+
+            <!-- Search box (Figma node 2:76) -->
+            <div class="search-box">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input 
+                type="text" 
+                id="searchInput" 
+                class="search-input" 
+                placeholder="Tìm tên, số điện thoại hoặc mã đặt sân"
+                autocomplete="off"
+              >
+            </div>
+
+            <!-- Filter tabs (Figma node 2:79) -->
+            <div class="filter-tabs" role="tablist">
+              <button type="button" class="filter-tab active" data-filter="all" role="tab">Tất cả  (5)</button>
+              <button type="button" class="filter-tab" data-filter="upcoming" role="tab">Sắp tới  (3)</button>
+              <button type="button" class="filter-tab" data-filter="checkedin" role="tab">Đã nhận sân  (2)</button>
+            </div>
+
+            <!-- Bookings List items container -->
+            <div id="bookingsList" class="bookings-list" role="list">
+              <!-- Rendered via reception.js -->
+            </div>
+          </section>
+
+          <!-- Column 2: Counter Checkout (Figma node 2:7) -->
+          <section class="card-panel" aria-labelledby="checkoutTitle">
+            <div class="checkout-panel-header">
+              <h2 id="checkoutTitle" class="checkout-title">Thanh toán</h2>
+              <div id="checkoutStatus" class="checkout-status-badge pending">
+                ● Chờ thanh toán
+              </div>
+            </div>
+
+            <div id="checkoutBookingCode" class="checkout-booking-code">#BK-20261113</div>
+
+            <div class="checkout-customer-meta">
+              <div>
+                <div id="checkoutCustName" class="checkout-cust-name">Minh Anh Nguyen</div>
+                <div id="checkoutCustPhone" class="checkout-cust-phone">090 123 4567</div>
+              </div>
+              <div>
+                <div id="checkoutCourtName" class="checkout-court-name">Sân 2</div>
+                <div id="checkoutCheckinTime" class="checkout-checkin-time">Đã nhận sân lúc 14:02</div>
+              </div>
+            </div>
+
+            <div class="checkout-divider"></div>
+
+            <!-- Section 1: Tiền sân -->
+            <div class="section-header-row">
+              <span class="section-label">Tiền sân</span>
+              <span class="currency-tag">VND</span>
+            </div>
+
+            <div class="court-fee-row">
+              <div>
+                <div id="courtFeeDesc" class="court-fee-desc">Sân 2 · Sân tiêu chuẩn</div>
+                <div id="courtFeeFormula" class="court-fee-formula">14:00–15:00  ·  1 giờ × 180,000</div>
+              </div>
+              <div id="courtFeePrice" class="court-fee-price">180,000</div>
+            </div>
+
+            <div class="checkout-divider"></div>
+
+            <!-- Section 2: Dịch vụ đã dùng -->
+            <div class="section-header-row">
+              <span class="section-label">Dịch vụ đã dùng</span>
+            </div>
+
+            <div class="services-table-header">
+              <span>MẶT HÀNG</span>
+              <span style="text-align:center;">SL</span>
+              <span style="text-align:right;">ĐƠN GIÁ</span>
+              <span style="text-align:right;">THÀNH TIỀN</span>
+            </div>
+
+            <div id="servicesTableBody" class="services-table-body">
+              <!-- Dynamic items injected here -->
+            </div>
+
+            <div class="services-subtotal-row">
+              <span class="services-subtotal-label">Tổng tiền dịch vụ</span>
+              <span id="servicesSubtotal" class="services-subtotal-value">190,000</span>
+            </div>
+
+            <!-- Section 3: Payment summary & Cash calculator (Figma node 2:178) -->
+            <div class="payment-summary-box">
+              <div class="grand-total-row">
+                <div class="grand-total-label-wrap">
+                  <span class="grand-total-label">Tổng cộng</span>
+                  <span class="grand-total-currency">VND</span>
+                </div>
+                <div id="grandTotal" class="grand-total-amount">370,000</div>
+              </div>
+
+              <!-- Payment Method Toggle -->
+              <div class="payment-method-selector">
+                <button type="button" id="paymentMethodCash" class="method-btn active">Tiền mặt</button>
+                <button type="button" id="paymentMethodBank" class="method-btn">Chuyển khoản</button>
+              </div>
+
+              <!-- Cash Calculator -->
+              <div id="cashCalculatorBox">
+                <label for="cashInput" class="cash-received-label">Tiền khách đưa</label>
+                <div class="cash-received-controls">
+                  <div class="cash-input-wrap">
+                    <input type="text" id="cashInput" class="cash-input" value="500,000" inputmode="numeric">
+                    <span class="cash-input-currency">VND</span>
+                  </div>
+                  <button type="button" id="btnQuick200k" class="cash-quick-btn">200k</button>
+                  <button type="button" id="btnQuick500k" class="cash-quick-btn active">500k</button>
+                  <button type="button" id="btnQuickExact" class="cash-quick-btn">Vừa đủ</button>
+                </div>
+
+                <div class="change-due-row">
+                  <span class="change-due-label">Tiền thừa</span>
+                  <span id="changeDue" class="change-due-amount">130,000 VND</span>
+                </div>
+              </div>
+
+              <!-- Bank Transfer Info Box (Hidden by default) -->
+              <div id="bankTransferBox" style="display:none;padding:12px;text-align:center;background:#fff;border-radius:6px;border:1px solid #cbd5e1;margin-top:10px;">
+                <p style="font-size:12px;font-weight:600;color:#1e293b;">Quét mã VietQR thanh toán</p>
+                <p style="font-size:11px;color:#64748b;margin-top:2px;">MB Bank · 0901234567 · RK BADMINTON</p>
+                <div style="margin:10px auto;width:140px;height:140px;background:#f1f5f9;border:1px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;font-size:11px;color:#64748b;">
+                  Mã QR chuyển khoản
+                </div>
+                <p style="font-size:11px;color:#047857;font-weight:500;">Hệ thống tự động đối soát giao dịch</p>
+              </div>
+            </div>
+
+            <!-- Checkout Actions -->
+            <button type="button" id="btnPrintPreview" class="btn-print-preview">
+              Xem trước bản in
+            </button>
+
+            <button type="button" id="btnConfirmPayment" class="btn-confirm-payment">
+              Thanh toán &amp; in hóa đơn
+            </button>
+          </section>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       Thermal Receipt Drawer Modal (Figma node 2:205 / 2:409)
+       ======================================================================== -->
+  <div id="modalOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="receiptModalTitle">
+    <div class="thermal-drawer">
+      <div class="drawer-header">
+        <div>
+          <h2 id="receiptModalTitle" class="drawer-title">Xem trước hóa đơn</h2>
+          <p class="drawer-subtitle">In nhiệt 80 mm · Đen trắng</p>
+        </div>
+        <button type="button" id="btnCloseReceipt" class="drawer-close-btn" aria-label="Đóng cửa sổ">×</button>
+      </div>
+
+      <div class="drawer-body">
+        
+        <!-- Printable 80mm Thermal Receipt (Matches Figma node 2:414) -->
+        <div id="thermalReceiptPrintArea" class="thermal-receipt-paper">
+          <div class="receipt-header">
+            <div class="receipt-brand-logo">
+              <span class="receipt-brand-mark">//</span>
+              <span class="receipt-brand-name">RK BADMINTON</span>
+            </div>
+            <div class="receipt-address">28 Nguyễn Thị Minh Khai</div>
+            <div class="receipt-address">Quận 1, TP. Hồ Chí Minh</div>
+            <div class="receipt-address">ĐT: 028 3822 1818</div>
+          </div>
+
+          <div class="receipt-divider">--------------------------------</div>
+          <div class="receipt-title">XEM TRƯỚC THANH TOÁN</div>
+
+          <div class="receipt-meta-grid">
+            <div class="receipt-meta-row">
+              <span>Mã đặt sân</span>
+              <strong id="receiptBookingCode">#BK-20261113</strong>
+            </div>
+            <div class="receipt-meta-row">
+              <span>Ngày</span>
+              <span id="receiptDate">13/11/2026</span>
+            </div>
+            <div class="receipt-meta-row">
+              <span>Giờ</span>
+              <span id="receiptTime">14:42</span>
+            </div>
+            <div class="receipt-meta-row">
+              <span>Khách hàng</span>
+              <span id="receiptCustomer">Minh Anh Nguyen</span>
+            </div>
+            <div class="receipt-meta-row">
+              <span>Sân</span>
+              <span id="receiptCourt">Sân 2</span>
+            </div>
+            <div class="receipt-meta-row">
+              <span>Nhận sân</span>
+              <span id="receiptCheckin">14:02</span>
+            </div>
+          </div>
+
+          <div class="receipt-divider">--------------------------------</div>
+
+          <div class="receipt-table-header">
+            <span>MẶT HÀNG / SL × ĐƠN GIÁ</span>
+            <span>VND</span>
+          </div>
+
+          <!-- Items list -->
+          <div id="receiptItemsList">
+            <!-- Dynamic items rendered via JS -->
+          </div>
+
+          <div class="receipt-divider">--------------------------------</div>
+
+          <div class="receipt-total-row">
+            <span>TỔNG CỘNG</span>
+            <span id="receiptTotal">370,000</span>
+          </div>
+
+          <div class="receipt-tender-row">
+            <span>Tiền khách đưa</span>
+            <span id="receiptTender">500,000</span>
+          </div>
+
+          <div class="receipt-tender-row" style="font-weight:700;">
+            <span>Tiền thừa</span>
+            <span id="receiptChange">130,000</span>
+          </div>
+
+          <div class="receipt-footer-msg">
+            Cảm ơn. Hẹn gặp lại trên sân!
+          </div>
+        </div>
+
+      </div>
+
+      <div class="drawer-footer">
+        <div id="receiptPaymentStatus" class="drawer-status-text">
+          Thanh toán chưa được xác nhận.
+        </div>
+
+        <button type="button" id="btnPrintReceipt" class="btn-print-receipt">
+          In hóa đơn
+        </button>
+
+        <button type="button" id="btnBackCheckout" class="btn-back-checkout">
+          Quay lại thanh toán
+        </button>
+
+        <div class="drawer-print-note">
+          Khổ in: 80 mm · Tỷ lệ: 100% · Không lề
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="rkToast" class="rk-toast" role="status" aria-live="polite">
+    <span id="rkToastText">Thông báo</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../js/pages/reception.js"></script>
+</body>
+</html>
