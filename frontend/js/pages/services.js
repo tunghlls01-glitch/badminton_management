@@ -524,9 +524,9 @@ window.toggleDeactivateService = async function(id) {
   if (!service) return;
 
   const isCurrentlyActive = isServiceActive(service);
-  const actionPrompt = isCurrentlyActive ? "xóa (ngừng kinh doanh)" : "khôi phục (mở bán lại)";
+  const actionPrompt = isCurrentlyActive ? "xóa" : "khôi phục (mở bán lại)";
   const successMsg = isCurrentlyActive
-    ? "Đã xóa dịch vụ thành công! Dịch vụ đã biến mất khỏi danh sách bán nhưng vẫn lưu an toàn trong cơ sở dữ liệu."
+    ? "Đã xóa dịch vụ thành công!"
     : "Đã khôi phục dịch vụ thành công!";
 
   if (!confirm(`Bạn có chắc muốn ${actionPrompt} dịch vụ '${service.name}'?`)) {
