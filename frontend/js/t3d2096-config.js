@@ -17,6 +17,7 @@
     // main.py của project_code.txt đăng ký auth ở gốc, không dưới /api.
     authURL: custom.authURL || origin + "/auth",
     homeURL: page("customer-home.html"),
+    profileURL: page("profile.html"),
     loginURL: page("login.html"),
     registerURL: page("register.html"),
     forbiddenURL: page("403.html"),

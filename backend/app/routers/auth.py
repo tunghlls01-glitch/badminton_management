@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.user import User, UserRole, UserStatus
-from app.schemas.user import UserCreate, UserResponse, UserLogin, Token
+from app.schemas.user import CurrentUserResponse, UserCreate, UserResponse, UserLogin, Token
+from app.schemas.profile import PasswordChange
 from app.core.security import (
     get_password_hash,
     verify_password,
@@ -12,6 +13,16 @@ from app.core.security import (
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+@router.post("/change-password")
+def change_password(payload: PasswordChange, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_user)):
+    if not verify_password(payload.old_password, current_user.hashed_password):
+        raise HTTPException(400, "Mật khẩu cũ không chính xác.")
+    current_user.hashed_password = get_password_hash(payload.new_password)
+    db.commit()
+    return {"message": "Đổi mật khẩu thành công."}
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -65,6 +76,6 @@ def login(login_in: UserLogin, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=CurrentUserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
