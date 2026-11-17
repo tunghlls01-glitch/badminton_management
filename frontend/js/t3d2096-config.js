@@ -28,7 +28,10 @@
     adminHome: custom.adminHome || page("dashboard.html") + "?view=dashboard",
     staffHome: custom.staffHome || page("dashboard.html") + "?view=bookings",
     // Các module còn lại do thành viên phụ trách nối URL thật tại đây.
-    dashboardLinks: custom.dashboardLinks || {},
+    dashboardLinks: custom.dashboardLinks || {
+      "admin.services": page("services.html"),
+      "staff.services": page("services.html"),
+    },
   });
   global.RK_NAV = {
     go(url, replace = false) {

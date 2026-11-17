@@ -18,54 +18,111 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadData();
 });
 
-// Tự động cấp quyền ADMIN dùng thử để thao tác thêm/sửa/nhập kho mượt mà không bị lỗi 401
+// Quản lý phiên đăng nhập và hiển thị thông tin người dùng
 async function ensureAuth() {
-  let token = localStorage.getItem("token") || localStorage.getItem("access_token");
-  if (!token) {
+  let token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("access_token") ||
+    sessionStorage.getItem("access_token");
+
+  if (token) {
     try {
-      const res = await axios.post("http://127.0.0.1:8000/auth/login", {
-        account: "admin@badminton.com",
-        password: "admin123",
-      });
-      if (res.data && res.data.access_token) {
-        token = res.data.access_token;
-        localStorage.setItem("token", token);
-        localStorage.setItem("access_token", token);
-      }
-    } catch (e) {
+      // Thử lấy thông tin người dùng hiện tại
+      const baseUrl = typeof CONFIG !== "undefined" && CONFIG.API_BASE_URL ? CONFIG.API_BASE_URL.replace(/\/api$/, "") : "http://127.0.0.1:8000";
+      let meRes;
       try {
-        await axios.post("http://127.0.0.1:8000/auth/register", {
-          full_name: "Alex Morgan",
-          email: "admin@badminton.com",
-          phone: "0901000001",
-          password: "admin123",
-          role: "ADMIN",
+        meRes = await axios.get(`${baseUrl}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        const loginRes = await axios.post("http://127.0.0.1:8000/auth/login", {
-          account: "admin@badminton.com",
-          password: "admin123",
+      } catch (_) {
+        meRes = await axios.get(`${baseUrl}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        if (loginRes.data && loginRes.data.access_token) {
-          token = loginRes.data.access_token;
-          localStorage.setItem("token", token);
-          localStorage.setItem("access_token", token);
-        }
-      } catch (_) {}
+      }
+
+      if (meRes && meRes.data) {
+        localStorage.setItem("user", JSON.stringify(meRes.data));
+      }
+    } catch (err) {
+      // Token hết hạn hoặc không hợp lệ
+      if (err.response && err.response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user");
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("user");
+        token = null;
+      }
     }
   }
 
-  // Hiển thị tên tài khoản lên góc phải topbar
-  if (token) {
-    try {
-      const meRes = await axios.get("http://127.0.0.1:8000/auth/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (meRes.data && meRes.data.full_name) {
-        const nameEl = document.getElementById("user-display-name");
-        if (nameEl) nameEl.textContent = meRes.data.full_name;
-      }
-    } catch (_) {}
+  updateUserProfileUI();
+}
+
+// Cập nhật giao diện người dùng trên thanh topbar và sidebar
+function updateUserProfileUI() {
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("access_token") ||
+    sessionStorage.getItem("access_token");
+  const userStr =
+    localStorage.getItem("user") ||
+    sessionStorage.getItem("user");
+
+  let user = null;
+  if (userStr) {
+    try { user = JSON.parse(userStr); } catch (_) {}
   }
+
+  const profileBox = document.getElementById("user-profile-box");
+  const guestBox = document.getElementById("guest-profile-box");
+  const nameEl = document.getElementById("user-display-name");
+  const roleEl = document.getElementById("user-display-role");
+  const avatarEl = document.getElementById("user-avatar-initial");
+  const topBadge = document.getElementById("user-top-badge");
+  const sidebarAuthLink = document.getElementById("sidebar-auth-link");
+  const sidebarAuthText = document.getElementById("sidebar-auth-text");
+  const btnLogoutHeader = document.getElementById("btn-logout-header");
+
+  if (token && user) {
+    if (profileBox) profileBox.style.display = "flex";
+    if (guestBox) guestBox.style.display = "none";
+    if (nameEl) nameEl.textContent = user.full_name || "Quản trị viên";
+    if (avatarEl && user.full_name) {
+      avatarEl.textContent = user.full_name.trim().charAt(0).toUpperCase();
+    }
+    const roleLower = String(user.role || "").toLowerCase();
+    const roleTitle = roleLower === "admin" ? "Quản trị viên CLB" : (roleLower === "staff" ? "Lễ tân" : "Thành viên");
+    if (roleEl) roleEl.textContent = roleTitle;
+    if (topBadge) topBadge.textContent = roleLower === "admin" ? "QUẢN TRỊ" : roleTitle.toUpperCase();
+
+    if (sidebarAuthText) sidebarAuthText.textContent = "Đăng xuất";
+    if (sidebarAuthLink) {
+      sidebarAuthLink.href = "#";
+      sidebarAuthLink.onclick = (e) => { e.preventDefault(); handleLogout(); };
+    }
+  } else {
+    if (profileBox) profileBox.style.display = "none";
+    if (guestBox) guestBox.style.display = "flex";
+    if (sidebarAuthText) sidebarAuthText.textContent = "Đăng nhập";
+    if (sidebarAuthLink) {
+      sidebarAuthLink.href = "login.html";
+      sidebarAuthLink.onclick = null;
+    }
+  }
+
+  if (btnLogoutHeader) {
+    btnLogoutHeader.onclick = handleLogout;
+  }
+}
+
+function handleLogout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("user");
+  sessionStorage.removeItem("access_token");
+  sessionStorage.removeItem("user");
+  window.location.href = "login.html";
 }
 
 /* ==========================================================================
@@ -936,17 +993,30 @@ function showToast(message, type = "success") {
   const container = document.getElementById("toast-container");
   if (!container) return;
 
+  const isAuthError =
+    typeof message === "string" &&
+    (message.includes("Bearer Token") ||
+      message.includes("xác thực") ||
+      message.includes("401"));
+
   const toast = document.createElement("div");
   toast.className = `toast-msg ${type}`;
   toast.innerHTML = `
     <span>${type === "success" ? "✓" : "⚠"}</span>
-    <span>${escapeHtml(message)}</span>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span>${escapeHtml(message)}</span>
+      ${
+        isAuthError
+          ? `<a href="login.html" style="background:#dc2626;color:#fff;padding:3px 10px;border-radius:4px;text-decoration:none;font-size:12px;font-weight:600;">👉 Đăng nhập ngay</a>`
+          : ""
+      }
+    </div>
   `;
   container.appendChild(toast);
 
   setTimeout(() => {
     toast.remove();
-  }, 4000);
+  }, isAuthError ? 7000 : 4000);
 }
 
 function escapeHtml(text) {
