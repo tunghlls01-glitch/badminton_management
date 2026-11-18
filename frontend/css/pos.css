@@ -116,32 +116,42 @@ body {
 .sidebar-nav a {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  color: #4b5563;
+  gap: 14px;
+  padding: 11px 16px;
+  color: #475569;
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
-  border-radius: var(--rk-radius-sm);
+  border-radius: var(--rk-radius-md);
   transition: all 0.15s ease;
   margin-bottom: 4px;
 }
 
 .sidebar-nav a:hover {
-  background-color: #f3f4f6;
+  background-color: #f8fafc;
+  color: var(--rk-dark);
+}
+
+.sidebar-nav a:hover .nav-svg {
   color: var(--rk-dark);
 }
 
 .sidebar-nav a.active {
-  background-color: var(--rk-primary-soft);
-  color: var(--rk-primary);
+  background-color: #fef2f2;
+  color: #991b1b;
   font-weight: 600;
 }
 
-.sidebar-nav .nav-icon {
-  font-size: 16px;
+.sidebar-nav a.active .nav-svg {
+  color: #991b1b;
+}
+
+.sidebar-nav .nav-svg {
   width: 20px;
-  text-align: center;
+  height: 20px;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
 }
 
 .sidebar-footer {
