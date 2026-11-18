@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bán hàng tại quầy (POS) | RK BADMINTON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/pos.css">
+</head>
+<body data-root="../" data-page="pos">
+
+  <div class="pos-app">
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="pos-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-badge">//</div>
+        <span class="brand-name">RK BADMINTON</span>
+      </div>
+
+      <ul class="sidebar-nav">
+        <li class="nav-label">Quản lý câu lạc bộ</li>
+        <li>
+          <a href="dashboard.html?view=dashboard">
+            <span class="nav-icon">📊</span>
+            <span>Tổng quan</span>
+          </a>
+        </li>
+        <li>
+          <a href="booking.html">
+            <span class="nav-icon">📅</span>
+            <span>Đặt sân</span>
+          </a>
+        </li>
+        <li>
+          <a href="court_booking_schedule.html">
+            <span class="nav-icon">🏸</span>
+            <span>Sân cầu lông</span>
+          </a>
+        </li>
+        <li>
+          <a href="reception.html">
+            <span class="nav-icon">🛎</span>
+            <span>Nhận sân & thanh toán</span>
+          </a>
+        </li>
+        <li>
+          <a href="services.html">
+            <span class="nav-icon">📦</span>
+            <span>Dịch vụ & kho</span>
+          </a>
+        </li>
+        <li>
+          <a href="pos.html" class="active">
+            <span class="nav-icon">🛒</span>
+            <span>Bán hàng tại quầy</span>
+          </a>
+        </li>
+        <li>
+          <a href="items.html">
+            <span class="nav-icon">👥</span>
+            <span>Hội viên</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div style="margin-bottom: 6px;">
+          <a href="login.html" id="sidebar-auth-link" style="color:var(--rk-text); text-decoration:none; display:flex; align-items:center; gap:6px;">
+            <span>🔑</span> <span id="sidebar-auth-text">Đăng nhập</span>
+          </a>
+        </div>
+        <div>© 2026 RK Badminton</div>
+      </div>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <div class="pos-main-wrapper">
+      <!-- Topbar -->
+      <header class="pos-topbar">
+        <div class="topbar-left">
+          <span class="topbar-title">Bán hàng tại quầy</span>
+          <span class="topbar-badge">POS ORDER</span>
+          <div class="topbar-clock" id="live-clock">
+            <span>🕒</span>
+            <span id="clock-text">Đang tải...</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="btn-history-orders" id="btn-open-recent-orders" title="Xem danh sách các đơn vừa bán trong ca">
+            <span>📋</span>
+            <span>Đơn gần đây</span>
+          </button>
+
+          <!-- User profile -->
+          <div class="user-profile-widget" id="user-profile-box" style="display:none;">
+            <div class="user-avatar" id="user-avatar-initial">AM</div>
+            <div class="user-details">
+              <span class="user-name" id="user-display-name">Alex Morgan</span>
+              <span class="user-role" id="user-display-role">Thu ngân POS</span>
+            </div>
+            <button class="btn-logout-small" id="btn-logout-header" title="Đăng xuất">↪</button>
+          </div>
+
+          <div id="guest-profile-box" style="display:flex;">
+            <a href="login.html" style="background:#b91c1c; color:#fff; text-decoration:none; padding:6px 12px; font-size:12.5px; border-radius:6px; font-weight:600;">
+              🔑 Đăng nhập
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <!-- Workstation 2 Columns -->
+      <div class="pos-workstation">
+        <!-- LEFT: Quick Menu Grid -->
+        <section class="pos-menu-panel">
+          <!-- Controls: Search + Categories -->
+          <div class="menu-controls">
+            <div class="menu-search-wrap">
+              <span class="search-icon-left">🔍</span>
+              <input type="text" id="pos-search-input" placeholder="Tìm theo tên dịch vụ hoặc mã món (SVC-001)..." autocomplete="off">
+              <button class="btn-clear-search" id="btn-clear-pos-search">✕</button>
+            </div>
+
+            <!-- Quick category pills -->
+            <div class="category-tabs" id="pos-category-tabs">
+              <button class="category-tab-btn active" data-cat="">🏷️ Tất cả</button>
+              <button class="category-tab-btn" data-cat="DO_UONG">🥤 Đồ uống</button>
+              <button class="category-tab-btn" data-cat="ONG_CAU">🏸 Ống cầu</button>
+              <button class="category-tab-btn" data-cat="THUE_VOT">🎾 Thuê vợt</button>
+              <button class="category-tab-btn" data-cat="KHAC">🎒 Phụ kiện / Khác</button>
+            </div>
+          </div>
+
+          <!-- Grid items -->
+          <div class="menu-grid-scroll">
+            <div class="service-card-grid" id="pos-service-grid">
+              <!-- Rendered via JavaScript -->
+              <div style="grid-column: 1/-1; text-align:center; padding: 60px 0; color:var(--rk-text-light);">
+                Đang tải danh sách dịch vụ từ kho...
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT: Order Cart Sidebar -->
+        <aside class="pos-cart-panel">
+          <!-- Cart Header -->
+          <div class="cart-header">
+            <div class="cart-title-wrap">
+              <span class="cart-title">Đơn hàng hiện tại</span>
+              <span class="cart-count-pill" id="cart-item-count">0</span>
+            </div>
+            <button class="btn-clear-cart" id="btn-reset-cart" title="Xóa toàn bộ giỏ hàng">
+              <span>✕</span>
+              <span>Làm mới</span>
+            </button>
+          </div>
+
+          <!-- Target Customer / Booking Picker -->
+          <div class="target-selector-box">
+            <div class="target-type-switch">
+              <button class="target-tab active" id="tab-target-retail" data-target="RETAIL">
+                🛍 Khách vãng lai
+              </button>
+              <button class="target-tab" id="tab-target-booking" data-target="BOOKING">
+                🏸 Gắn vào sân (Booking)
+              </button>
+            </div>
+
+            <!-- Booking selector (ẩn khi chọn bán lẻ) -->
+            <div class="booking-select-row" id="booking-select-container" style="display:none;">
+              <label for="pos-booking-id">Chọn sân / lượt chơi đang hoạt động:</label>
+              <select class="booking-select" id="pos-booking-id">
+                <option value="">-- Đang tải danh sách sân... --</option>
+              </select>
+              <div class="booking-active-hint" id="booking-detail-hint">
+                <span>✓</span>
+                <span id="booking-hint-text">Tiền dịch vụ sẽ được cộng vào hóa đơn thanh toán sân.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cart Items Scroll -->
+          <div class="cart-items-scroll" id="cart-items-container">
+            <!-- Empty state default -->
+            <div class="cart-empty-state" id="cart-empty-state">
+              <div class="empty-icon">🛒</div>
+              <div class="empty-text-title">Giỏ order đang trống</div>
+              <div class="empty-text-sub">Bấm vào bất kỳ món nào ở bảng bên trái để thêm vào đơn hàng.</div>
+            </div>
+
+            <!-- Cart rows rendered dynamically -->
+            <div id="cart-rows-list"></div>
+          </div>
+
+          <!-- Cart Footer & Submit -->
+          <div class="cart-footer">
+            <input type="text" class="order-note-input" id="order-note" placeholder="Ghi chú đơn (ví dụ: Nước ướp lạnh, vợt căng 10.5kg)...">
+
+            <div class="cart-calc-line">
+              <span>Tổng số lượng món:</span>
+              <strong id="cart-total-qty">0 món</strong>
+            </div>
+
+            <div class="cart-total-line">
+              <span class="label">TỔNG CỘNG</span>
+              <span class="amount" id="cart-grand-total">0đ</span>
+            </div>
+
+            <button class="btn-submit-order" id="btn-submit-order" disabled>
+              <span>🚀</span>
+              <span>XÁC NHẬN GỬI ORDER</span>
+            </button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: XÁC NHẬN VÀ HÓA ĐƠN TẠM TÍNH ==================== -->
+  <div class="modal-overlay" id="order-success-modal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="receipt-modal-title">✓ Đặt món thành công!</h3>
+        <button class="btn-close-modal" id="btn-close-success-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="receipt-box" id="receipt-content-box">
+          <div class="receipt-header">
+            <h4>RK BADMINTON CLUB</h4>
+            <div class="receipt-meta" id="receipt-order-code">Hóa đơn dịch vụ: #ORD-000</div>
+            <div class="receipt-meta" id="receipt-order-time">Thời gian: --/--/----</div>
+            <div class="receipt-meta" id="receipt-order-target" style="font-weight:700; color:var(--rk-dark); margin-top:4px;">
+              Đối tượng: Khách vãng lai
+            </div>
+          </div>
+
+          <table class="receipt-items-table">
+            <thead>
+              <tr>
+                <th>Tên dịch vụ</th>
+                <th style="text-align:center;">SL</th>
+                <th style="text-align:right;">Đơn giá</th>
+                <th style="text-align:right;">Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody id="receipt-table-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+
+          <div class="receipt-total-block">
+            <span>TỔNG TIỀN:</span>
+            <span id="receipt-grand-total" style="color:var(--rk-primary);">0đ</span>
+          </div>
+
+          <div id="receipt-note-box" style="margin-top:10px; font-size:12px; color:var(--rk-text-muted); font-style:italic;">
+            <!-- Ghi chú nếu có -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-history-orders" id="btn-print-receipt">🖨 In phiếu tạm tính</button>
+        <button class="btn-submit-order" id="btn-next-order" style="height:38px; padding:0 16px; font-size:13.5px; width:auto;">
+          Tạo đơn mới
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: ĐƠN HÀNG GẦN ĐÂY ==================== -->
+  <div class="modal-overlay" id="recent-orders-modal" style="display:none;">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3>📋 Lịch sử đơn hàng POS gần đây</h3>
+        <button class="btn-close-modal" id="btn-close-recent-modal">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <div id="recent-orders-list">
+          <div style="text-align:center; padding:30px; color:var(--rk-text-light);">
+            Đang tải lịch sử đơn...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/pages/pos.js"></script>
+</body>
+</html>
