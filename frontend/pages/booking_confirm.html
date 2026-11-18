@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xác nhận đặt sân — RK Badminton</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/timeline_grid.css" />
+  <link rel="stylesheet" href="../css/booking_confirm.css" />
+</head>
+
+<body>
+  <!-- HEADER NAVIGATION -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="./customer-home.html" class="brand-logo">
+        <span class="brand-icon">//</span>
+        <span class="brand-name">RK Badminton</span>
+      </a>
+
+      <nav class="nav-menu" aria-label="Menu chính">
+        <a href="./timeline_grid.html" class="nav-link active">Khám phá sân</a>
+        <a href="./court_booking_schedule.html" class="nav-link">Lịch đặt của tôi</a>
+        <a href="./services.html" class="nav-link">Ưu đãi</a>
+        <a href="./booking_notification.html" class="nav-link">Hỗ trợ</a>
+      </nav>
+
+      <a href="./profile.html" class="btn-account" style="text-decoration: none;">
+        Tài khoản của tôi <span>›</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="confirm-container">
+    <!-- Header trang + Thanh đếm ngược gọn gàng cùng hàng -->
+    <div class="confirm-top-header">
+      <div>
+        <span class="eyebrow-label">BƯỚC 2 / 2 • XÁC NHẬN & THANH TOÁN</span>
+        <h1 class="page-title">Hoàn tất đặt sân</h1>
+      </div>
+
+      <div class="hold-pill-banner" role="status" aria-live="polite">
+        <i data-lucide="timer" class="hold-banner-icon"></i>
+        <span>Giữ chỗ còn lại:</span>
+        <span id="confirmCountdown" class="countdown-timer">--:--</span>
+      </div>
+    </div>
+
+    <!-- Bố cục 2 cột chuẩn Checkout -->
+    <div class="confirm-grid">
+      <!-- CỘT TRÁI: THÔNG TIN & THANH TOÁN -->
+      <div class="confirm-left-col">
+        <form id="confirmBookingForm">
+          <!-- Card 1: Thông tin liên hệ -->
+          <section class="card-box">
+            <div class="card-header-flex">
+              <span class="step-badge">1</span>
+              <h2>Thông tin người đặt sân</h2>
+            </div>
+
+            <div class="form-row-2col">
+              <div class="form-group">
+                <label for="customerName">Họ và tên *</label>
+                <input type="text" id="customerName" class="form-control" placeholder="VD: Trần Giang Long" required />
+              </div>
+              <div class="form-group">
+                <label for="customerPhone">Số điện thoại liên hệ *</label>
+                <input type="tel" id="customerPhone" class="form-control" placeholder="VD: 0912 345 678" required />
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="bookingNote">Ghi chú cho sân (tùy chọn)</label>
+              <input type="text" id="bookingNote" class="form-control" placeholder="VD: Thuê thêm 2 vợt, 1 ống cầu..." />
+            </div>
+          </section>
+
+          <!-- Card 2: Phương thức thanh toán -->
+          <section class="card-box" style="margin-top: 20px;">
+            <div class="card-header-flex">
+              <span class="step-badge">2</span>
+              <h2>Phương thức thanh toán</h2>
+            </div>
+
+            <div class="form-group">
+              <select id="paymentMethod" class="form-control">
+                <option value="banking" selected>Chuyển khoản ngân hàng / Quét mã QR</option>
+                <option value="counter">Thanh toán trực tiếp tại quầy lễ tân</option>
+              </select>
+            </div>
+
+            <!-- Khối QR + Upload Bill -->
+            <div id="bankTransferSection" class="bank-transfer-box">
+              <div class="qr-and-info-grid">
+                <!-- Khung QR bên trái -->
+                <div class="qr-code-frame">
+                  <img src="../assets/images/images.png" alt="Mã QR chuyển khoản RK Badminton" class="qr-custom-img" />
+                </div>
+
+                <!-- Thông tin tài khoản bên phải -->
+                <div class="bank-info-details">
+                  <div class="bank-badge">MB BANK • Ngân hàng Quân Đội</div>
+                  <div class="bank-row">
+                    <span>Số tài khoản</span>
+                    <strong>0988 686 868</strong>
+                  </div>
+                  <div class="bank-row">
+                    <span>Chủ tài khoản</span>
+                    <strong>RK BADMINTON CENTER</strong>
+                  </div>
+                  <div class="bank-row">
+                    <span>Số tiền cần chuyển</span>
+                    <strong id="qrTransferAmount" class="text-brand-red">0đ</strong>
+                  </div>
+                  <div class="bank-row">
+                    <span>Nội dung CK</span>
+                    <strong id="qrTransferNote" class="transfer-note-code">RK DATSAN</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mục tải ảnh minh chứng -->
+              <div class="receipt-upload-group">
+                <label for="receiptImageInput" class="upload-label">
+                  Ảnh minh chứng đã chuyển khoản *
+                </label>
+
+                <label for="receiptImageInput" id="uploadDropzone" class="upload-dropzone">
+                  <input type="file" id="receiptImageInput" accept="image/*" class="hidden-file-input" />
+
+                  <div id="uploadPlaceholder" class="upload-placeholder">
+                    <div class="upload-icon-circle">
+                      <i data-lucide="image-plus" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <div>
+                      <div class="upload-main-text">Tải lên ảnh biên lai chuyển khoản</div>
+                      <div class="upload-sub-text">Nhấn để chọn ảnh PNG, JPG (Tối đa 5MB)</div>
+                    </div>
+                  </div>
+
+                  <div id="uploadPreviewBox" class="upload-preview-box hidden">
+                    <img id="receiptPreviewImg" src="" alt="Ảnh minh chứng chuyển khoản" />
+                    <div class="preview-file-bar">
+                      <span id="receiptFileName" class="preview-file-name">bill.jpg</span>
+                      <button type="button" id="btnRemoveReceipt" class="btn-remove-receipt">
+                        Xóa ảnh
+                      </button>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </section>
+        </form>
+      </div>
+
+      <!-- CỘT PHẢI: TÓM TẮT ĐƠN GIỮ CHỖ (STICKY) -->
+      <aside class="confirm-right-col">
+        <div class="card-box sticky-summary-card">
+          <h2>Chi tiết khung giờ đã giữ</h2>
+
+          <div class="summary-meta-pill">
+            <i data-lucide="calendar" style="width: 16px; height: 16px; color: var(--brand-red);"></i>
+            <span id="confirmDate">--/--/----</span>
+          </div>
+
+          <div id="confirmSlotList" class="slot-list-container"></div>
+
+          <div class="summary-divider"></div>
+
+          <div class="summary-total-row">
+            <div>
+              <div class="total-label-main">Tổng thanh toán</div>
+              <div class="total-label-sub">Đã bao gồm thuế VAT</div>
+            </div>
+            <span id="confirmTotalPrice" class="confirm-total-price">0đ</span>
+          </div>
+
+          <div class="action-buttons">
+            <button type="submit" form="confirmBookingForm" class="btn-proceed btn-submit-full">
+              HOÀN TẤT ĐẶT SÂN ✓
+            </button>
+            <button type="button" id="btnBackToGrid" class="btn-clear-all btn-back-full">
+              ← Quay lại chỉnh sửa khung giờ
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Modal hết thời gian giữ chỗ -->
+  <div id="confirmExpiredModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmExpiredTitle">
+    <div class="modal-card expired-modal-card">
+      <div class="modal-body expired-modal-body">
+        <div class="expired-icon-circle cancel-icon-ring">
+          <i data-lucide="timer-off" style="width: 28px; height: 28px;"></i>
+        </div>
+        <h2 id="confirmExpiredTitle" class="expired-modal-title">Hết thời gian giữ chỗ</h2>
+        <p class="expired-modal-desc">
+          Thời gian giữ chỗ 10 phút đã kết thúc. Hệ thống sẽ đưa bạn quay lại lưới sân để chọn lại.
+        </p>
+        <button type="button" id="btnReturnToGrid" class="btn-proceed btn-reload-full">
+          Quay lại lưới sân
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+  <script src="../js/booking_confirm.js"></script>
+</body>
+
+</html>
