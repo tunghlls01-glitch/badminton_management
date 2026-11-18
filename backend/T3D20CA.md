@@ -8,7 +8,7 @@ Nhánh dựa trên origin/develop tại 0a123b6, đã fetch remote ngày 19/11/2
 
 User chưa có username riêng. Tên đăng nhập trong Figma ánh xạ email hoặc SĐT theo /auth/login hiện có. API tìm nhân viên qua full_name/phone/email. Form gửi email làm tên đăng nhập, không gửi username riêng. Vai trò nhân viên luôn do server đặt STAFF. PUT sửa họ tên, email và SĐT, mật khẩu chỉ dùng khi tạo. Đổi trạng thái qua PATCH riêng.
 
-Frontend hiện có menu users nhưng chưa có trang quản lý nhân viên/khách hàng hay liên kết dashboard tương ứng. Task cung cấp API và hợp đồng tích hợp cho các màn hình tham chiếu.
+Frontend có trang frontend/pages/admin-users.html, mở từ menu Admin Nhân viên và Khách hàng. Trang nối API thật, hỗ trợ thêm/sửa/khóa/mở khóa, tìm kiếm, phân trang và lịch sử lọc ngày/trạng thái. Logo chung nằm tại frontend/assets/images/logo.svg.
 
 Không cần migration hoặc cấu hình mới. Dùng các bảng và unique constraint email/phone hiện có. Hai file đang sửa trước task (seed_users.py, sql/init.sql) không thuộc commit này.
 
@@ -75,4 +75,4 @@ Trong backend chạy
 
 Test dùng ASGI, SQLite riêng, JWT, bcrypt, ORM và router thật. Kiểm tra quyền đọc/ghi, khóa/mở khóa với đăng nhập và token, chống nâng quyền, ID Admin, sửa/tạo/trùng/sai dữ liệu, tìm kiếm/phân trang, lịch sử đúng khách/ngày/trạng thái, khách trống/không tồn tại, dữ liệu response và hồi quy hồ sơ.
 
-Chưa kiểm chứng giao diện quản trị vì chưa có màn hình tương ứng, chưa chạy kiểm thử end-to-end với MySQL hoặc các nhánh chưa merge. SQLite không xác minh collation MySQL cho tìm kiếm tiếng Việt không dấu.
+Chưa kiểm chứng giao diện quản trị trực tiếp trong trình duyệt, chưa chạy kiểm thử end-to-end với MySQL hoặc các nhánh chưa merge. Đã kiểm tra cú pháp JavaScript, ID HTML và đường dẫn script. SQLite không xác minh collation MySQL cho tìm kiếm tiếng Việt không dấu.
