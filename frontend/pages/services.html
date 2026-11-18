@@ -6,63 +6,13 @@
   <title>Quản lý dịch vụ & kho | RK Badminton</title>
   <link rel="icon" href="../assets/images/logo.svg">
   <link rel="stylesheet" href="../css/services.css">
+  <link rel="stylesheet" href="../css/admin-sidebar.css">
 </head>
-<body data-root="../">
+<body data-admin-sidebar="true" data-root="../">
 
   <!-- ==================== SIDEBAR ==================== -->
-  <aside class="sidebar">
-    <a href="../index.html" class="brand-wrap">
-      <div class="brand-icon">RK</div>
-      <span class="brand-name">RK BADMINTON</span>
-    </a>
-
-    <div class="nav-section-title">Quản lý câu lạc bộ</div>
-    <ul class="nav-list">
-      <li class="nav-item">
-        <a href="../index.html">
-          <span class="nav-icon">☵</span>
-          <span>Tổng quan</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="booking.html">
-          <span class="nav-icon">📅</span>
-          <span>Đặt sân</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="court_booking_schedule.html">
-          <span class="nav-icon">🏸</span>
-          <span>Sân</span>
-        </a>
-      </li>
-      <li class="nav-item active">
-        <a href="services.html">
-          <span class="nav-icon">📦</span>
-          <span>Dịch vụ & kho</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="items.html">
-          <span class="nav-icon">👥</span>
-          <span>Hội viên</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="#">
-          <span class="nav-icon">📊</span>
-          <span>Báo cáo</span>
-        </a>
-      </li>
-    </ul>
-
-    <div class="sidebar-footer">
-      <a href="login.html" id="sidebar-auth-link"><span class="nav-icon">🔑</span> <span id="sidebar-auth-text">Đăng nhập</span></a>
-      <a href="#"><span class="nav-icon">⚙</span> Cài đặt</a>
-      <a href="#"><span class="nav-icon">❓</span> Trợ giúp & hỗ trợ</a>
-      <div class="copyright">© 2026 RK Badminton</div>
-    </div>
-  </aside>
+  <button class="au-sidebar-toggle" type="button" data-rk-action="sidebar" aria-controls="rk-sidebar" aria-expanded="false">Menu quản lý</button>
+    <aside id="rk-sidebar" class="rk-sidebar" aria-label="Thanh bên quản lý"></aside>
 
   <!-- ==================== MAIN CONTENT ==================== -->
   <div class="main-wrapper">
@@ -590,5 +540,13 @@
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/pages/services.js"></script>
+  <script src="../js/t3d2096-config.js"></script>
+  <script src="../js/authStorage.js"></script>
+  <script src="../js/axiosClient.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/ProtectedRoute.js"></script>
+  <script src="../js/t3d2096-ui.js"></script>
+  <script src="../js/rk-layout.js"></script>
+  <script src="../js/pages/admin-sidebar.js"></script>
 </body>
 </html>

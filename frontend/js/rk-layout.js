@@ -89,7 +89,10 @@
 
     const items = menu.filter((item) => item.roles.includes(user.role));
     const view =
-      new URLSearchParams(global.location.search).get("view") || items[0].key;
+      new URLSearchParams(global.location.search).get("view") ||
+      ({"courts.html": "courts", "pricing.html": "pricing", "services.html": "services",
+        "reception.html": "check-in", "admin-users.html": "users"})[global.location.pathname.split("/").pop()] ||
+      items[0].key;
     const active = items.find((item) => item.key === view) || items[0];
 
     if (sidebar) {
