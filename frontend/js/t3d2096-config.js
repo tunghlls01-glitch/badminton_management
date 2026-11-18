@@ -30,6 +30,11 @@
     receptionURL: page("reception.html"),
     // Các module còn lại do thành viên phụ trách nối URL thật tại đây.
     dashboardLinks: custom.dashboardLinks || {
+      "admin.courts": page("courts.html"),
+      "staff.courts": page("courts.html"),
+      "admin.pricing": page("pricing.html"),
+      "admin.users": page("admin-users.html") + "?view=users",
+      "admin.customers": page("admin-users.html") + "?view=customers",
       "admin.services": page("services.html"),
       "staff.services": page("services.html"),
       "staff.check-in": page("reception.html"),

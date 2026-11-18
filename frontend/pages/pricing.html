@@ -10,56 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/t3d2096.css" />
   <link rel="stylesheet" href="../css/pricing.css" />
+  <link rel="stylesheet" href="../css/admin-sidebar.css">
 </head>
-<body class="rk-app" data-root="../" data-page="pricing">
+<body data-admin-sidebar="true" class="rk-app" data-root="../" data-page="pricing">
   <div class="rk-dashboard" style="display: flex; min-height: 100vh;">
     <!-- SIDEBAR CHUẨN MẪU -->
-    <aside class="rk-sidebar" style="width: 260px; background: #ffffff; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; flex-shrink: 0; padding: 24px 16px;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 28px; padding-left: 8px;">
-        <div style="background: #b91c1c; color: #fff; font-weight: 800; padding: 4px 8px; border-radius: 6px; font-size: 1rem;">//</div>
-        <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1.05rem; color: #111827;">RK BADMINTON</span>
-      </div>
-      
-      <div style="padding: 0 8px 10px; font-size: 11px; font-weight: 700; color: #9ca3af; letter-spacing: 0.05em; text-transform: uppercase;">KHÔNG GIAN LÀM VIỆC</div>
-      
-      <nav style="display: flex; flex-direction: column; gap: 4px;">
-        <a href="dashboard.html" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 13.5px;">
-          <span>📊</span> Tổng quan
-        </a>
-        <a href="courts.html" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 13.5px;">
-          <span>🏓</span> Quản lý sân
-        </a>
-        <a href="bookings.html" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 13.5px;">
-          <span>📅</span> Quản lý đặt sân
-        </a>
-        <a href="pricing.html" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: #fef2f2; color: #b91c1c; text-decoration: none; font-weight: 600; font-size: 13.5px;">
-          <span>⏰</span> Bảng giá & Khung giờ
-        </a>
-        <a href="services.html" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 13.5px;">
-          <span>📦</span> Dịch vụ & Kho
-        </a>
-        <a href="customers.html" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 13.5px;">
-          <span>👥</span> Quản lý nhân viên & Khách hàng
-        </a>
-        <a href="reports.html" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 13.5px;">
-          <span>📈</span> Báo cáo doanh thu
-        </a>
-        <a href="checkin.html" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 13.5px;">
-          <span>💳</span> Check-in / Thanh toán tại quầy
-        </a>
-      </nav>
-
-      <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 10px; padding-left: 8px;">
-        <div style="font-size: 12px; color: #6b7280; font-weight: 500;">Hồ sơ cá nhân</div>
-        <a href="customer-view.html" style="display: flex; align-items: center; justify-content: space-between; color: #111827; text-decoration: none; font-size: 13.5px; font-weight: 500;">
-          <span>Xem trang khách hàng</span>
-          <span>→</span>
-        </a>
-        <a href="login.html" style="display: flex; align-items: center; gap: 8px; color: #b91c1c; text-decoration: none; font-size: 13.5px; font-weight: 600; margin-top: 2px;">
-          <span>🚪</span> Đăng xuất
-        </a>
-      </div>
-    </aside>
+    <button class="au-sidebar-toggle" type="button" data-rk-action="sidebar" aria-controls="rk-sidebar" aria-expanded="false">Menu quản lý</button>
+    <aside id="rk-sidebar" class="rk-sidebar" aria-label="Thanh bên quản lý"></aside>
 
     <!-- NỘI DUNG CHÍNH -->
     <div class="rk-dashboard-body" style="flex: 1; display: flex; flex-direction: column; background: #f9fafb; overflow-y: auto;">
@@ -205,5 +162,9 @@
   <script src="../js/axiosClient.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/pages/pricing.js"></script>
+  <script src="../js/ProtectedRoute.js"></script>
+  <script src="../js/t3d2096-ui.js"></script>
+  <script src="../js/rk-layout.js"></script>
+  <script src="../js/pages/admin-sidebar.js"></script>
 </body>
 </html>

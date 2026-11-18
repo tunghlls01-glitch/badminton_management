@@ -1,0 +1,30 @@
+#admin-users { max-width: 1400px; margin: auto; }
+#admin-users h1 { font-size: 28px; margin-bottom: 8px; }
+.au-summary { display: flex; gap: 18px; margin: 24px 0; flex-wrap: wrap; }
+.au-summary article { flex: 1; min-width: 150px; background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px; color: #64748b; }
+.au-summary strong { display: block; font-size: 28px; color: #1e293b; margin-top: 8px; }
+.au-panel { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; }
+.au-toolbar, .au-actions, .au-pagination { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.au-toolbar { align-items: flex-end; }
+.au-toolbar label, #staff-form label { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; }
+.au-query { flex: 1; min-width: 200px; }
+.au-toolbar input, .au-toolbar select, #staff-form input { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; font: inherit; background: white; }
+.au-toolbar input:focus, #staff-form input:focus { outline-color: #b91c1c; }
+.au-table { overflow-x: auto; }
+.au-table table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+.au-table th { background: #f8fafc; text-align: left; color: #64748b; font-weight: 600; }
+.au-table td, .au-table th { padding: 16px 12px; border-bottom: 1px solid #f1f5f9; }
+.au-badge { padding: 7px 10px; border-radius: 5px; background: #ecfdf5; color: #047857; }
+.au-locked { background: #fef2f2; color: #b91c1c; }
+.au-actions button, #au-retry { border: 1px solid #e2e8f0; background: white; padding: 8px 12px; border-radius: 6px; color: #334155; }
+.au-actions .rk-primary { background: var(--rk-red); color: white; }
+.au-link, .au-back { color: #b91c1c !important; }
+.au-pagination { justify-content: space-between; margin-top: 22px; font-size: 13px; }
+.au-pagination button:disabled { opacity: .4; }
+.au-empty { padding: 60px 20px; text-align: center; color: #64748b; }
+dialog { width: min(520px, calc(100% - 32px)); border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px; color: #1e293b; }
+dialog::backdrop { background: #0f172a66; }
+#staff-form { display: grid; gap: 18px; }
+#staff-error, #status-error { color: #b91c1c; }
+dialog .au-actions { justify-content: flex-end; }
+@media(max-width: 600px) { .au-panel { padding: 16px; } .au-toolbar > * { width: 100%; } }
