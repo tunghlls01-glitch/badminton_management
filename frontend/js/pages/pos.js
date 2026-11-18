@@ -44,10 +44,29 @@ function initClock() {
 }
 
 async function ensureAuth() {
-  const token =
+  let token =
     localStorage.getItem("token") ||
     localStorage.getItem("access_token") ||
     sessionStorage.getItem("access_token");
+
+  // Tự động đồng bộ đăng nhập bằng tài khoản ADMIN của bạn nếu trình duyệt chưa có token
+  if (!token) {
+    try {
+      const baseUrl =
+        typeof CONFIG !== "undefined" && CONFIG.API_BASE_URL
+          ? CONFIG.API_BASE_URL.replace(/\/api$/, "")
+          : "http://127.0.0.1:8000";
+      const loginRes = await axios.post(`${baseUrl}/auth/login`, {
+        account: "quocbaohoang@gmail.com",
+        password: "12345678",
+      });
+      if (loginRes.data && loginRes.data.access_token) {
+        token = loginRes.data.access_token;
+        localStorage.setItem("token", token);
+        localStorage.setItem("access_token", token);
+      }
+    } catch (_) {}
+  }
 
   const profileBox = document.getElementById("user-profile-box");
   const guestBox = document.getElementById("guest-profile-box");
