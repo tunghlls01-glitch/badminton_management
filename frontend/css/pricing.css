@@ -1,0 +1,350 @@
+/* ==========================================================================
+   RK BADMINTON - PRICING CONFIGURATION STYLES (Đồng bộ tuyệt đối courts.css)
+   ========================================================================== */
+.rk-app,
+.rk-app button,
+.rk-app input,
+.rk-app select,
+.rk-app textarea {
+  font-family: var(--rk-font, "Inter", system-ui, -apple-system, sans-serif);
+}
+
+.pricing-header h1,
+.rk-drawer-head h2,
+.rk-confirm-box h3 {
+  font-family: var(--rk-font-display, "Plus Jakarta Sans", "Inter", sans-serif);
+}
+
+.pricing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.pricing-header h1 {
+  margin: 4px 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.pricing-subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  color: #6b7280;
+}
+
+.pricing-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pricing-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.pricing-table-wrap {
+  overflow-x: auto;
+}
+
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.pricing-table thead th {
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  white-space: nowrap;
+}
+
+.pricing-table tbody td {
+  padding: 14px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.pricing-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.pricing-state-cell {
+  text-align: center;
+  padding: 36px 20px;
+  color: #6b7280;
+  font-size: 13.5px;
+}
+
+.rk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rk-badge.is-active,
+.rk-badge.rk-available {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.rk-badge.rk-secondary {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.rk-alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pricing-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-pricing-action {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-pricing-action:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.btn-pricing-action.to-delete {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.btn-pricing-action.to-delete:hover {
+  background: #fef2f2;
+}
+
+.rk-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: none;
+  justify-content: flex-end;
+  z-index: 1000;
+}
+
+.rk-overlay.open {
+  display: flex;
+}
+
+.rk-overlay.rk-center {
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+.rk-drawer {
+  width: 440px;
+  max-width: 100%;
+  height: 100vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.14);
+}
+
+.rk-drawer-head {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rk-drawer-head h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.rk-drawer-head p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: #6b7280;
+}
+
+.rk-drawer-body {
+  padding: 18px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.rk-drawer-caption {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  margin-bottom: 14px;
+}
+
+.rk-field {
+  margin-bottom: 16px;
+}
+
+.rk-field label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.rk-field .req {
+  color: #b91c1c;
+}
+
+.rk-field input[type="text"],
+.rk-field input[type="number"],
+.rk-field input[type="date"],
+.rk-field input[type="time"],
+.rk-field select,
+.rk-field textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  color: #111827;
+  background: #ffffff;
+}
+
+.rk-field input:focus,
+.rk-field select:focus,
+.rk-field textarea:focus {
+  outline: none;
+  border-color: #b91c1c;
+}
+
+.rk-form-error {
+  display: none;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  margin-bottom: 12px;
+}
+
+.rk-drawer-foot {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  gap: 10px;
+}
+
+.rk-btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rk-btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.rk-btn-save {
+  flex: 1;
+}
+
+.rk-confirm-box {
+  background: #ffffff;
+  width: 390px;
+  max-width: 100%;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.16);
+}
+
+.rk-confirm-box h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.rk-icon-button {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.rk-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #111827;
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: all 0.25s ease;
+  z-index: 2000;
+}
+
+.rk-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}

@@ -1,24 +1,22 @@
 /**
  * ============================================================================
- * RK BADMINTON — BOOKING MATRIX LOGIC (VANILLA JS / API-READY)
+ * RK BADMINTON — BOOKING MATRIX LOGIC + 10-MINUTE HOLD COUNTDOWN
  * ============================================================================
  */
 
 // 1. CẤU HÌNH HẰNG SỐ & KHUNG GIỜ (5:30 -> 24:00 = 37 MỐC 30 PHÚT)
-const DEFAULT_SLOT_PRICE = 60000; // 60.000đ / 30 phút
+const DEFAULT_SLOT_PRICE = 60000;
+const HOLD_DURATION_MS = 10 * 60 * 1000; // 10 phút (đổi thành 10 * 1000 để test nhanh popup hết giờ)
 
 const COURTS = Array.from({ length: 10 }, (_, idx) => ({
   id: `court_${idx + 1}`,
   name: `C.Lông ${idx + 1}`
 }));
 
-/**
- * Tạo danh sách 37 khung giờ 30 phút từ 5:30 đến 24:00
- */
 function generateTimeSlots() {
   const slots = [];
-  let totalMinutes = 5 * 60 + 30; // 05:30
-  const endMinutes = 24 * 60;     // 24:00
+  let totalMinutes = 5 * 60 + 30;
+  const endMinutes = 24 * 60;
   let index = 0;
 
   while (totalMinutes < endMinutes) {
@@ -29,13 +27,10 @@ function generateTimeSlots() {
     const endM = nextTotal % 60;
 
     const formatTime = (h, m) => `${h}:${m === 0 ? '00' : m}`;
-    const startTime = formatTime(startH, startM);
-    const endTime = formatTime(endH, endM);
-
     slots.push({
       index,
-      startTime,
-      endTime,
+      startTime: formatTime(startH, startM),
+      endTime: formatTime(endH, endM),
       isHourMark: startM === 0
     });
 
@@ -62,10 +57,12 @@ const AVAILABLE_DATES = [
 const appState = {
   currentDate: AVAILABLE_DATES[0],
   gridData: [],
-  selectedSlots: new Map() // Key: `${courtId}_${slotIndex}`, Value: Slot Object
+  selectedSlots: new Map(),
+  holdSession: null,        // { holdId, holdUntil, slots, grouped, totalPrice, date }
+  holdTimerInterval: null
 };
 
-// 3. MOCK DATA & TẦNG DỊCH VỤ API (SẴN SÀNG NỐI FASTAPI)
+// 3. MOCK DATA & TẦNG DỊCH VỤ API
 function buildMockGridData(dateStr) {
   const daySeed = parseInt(dateStr.split('-')[2], 10) || 16;
 
@@ -74,17 +71,14 @@ function buildMockGridData(dateStr) {
       let status = 'available';
       const price = DEFAULT_SLOT_PRICE;
 
-      // Khoá từ 5:30 đến 12:30 (index 0 -> 13)
       if (tSlot.index >= 0 && tSlot.index <= 13) {
         status = 'locked';
       }
 
-      // Sự kiện ở C.Lông 8 lúc 13:00–13:30 (index 15 -> 16)
       if (court.id === 'court_8' && (tSlot.index === 15 || tSlot.index === 16)) {
         status = 'event';
       }
 
-      // Đã đặt ở khung tối 16:00–21:00 (index 21 -> 30)
       const isEveningPeak = tSlot.index >= 21 && tSlot.index <= 30;
       if (isEveningPeak) {
         if (
@@ -117,7 +111,7 @@ function buildMockGridData(dateStr) {
 }
 
 async function fetchSlotsGrid(dateStr) {
-  // TODO: Thay thế bằng fetch('/api/v1/slots/grid?date=' + dateStr)
+  // TODO: Thay bằng fetch(`/api/v1/slots/grid?date=${dateStr}`)
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(buildMockGridData(dateStr));
@@ -125,15 +119,11 @@ async function fetchSlotsGrid(dateStr) {
   });
 }
 
-// 4. HÀM XỬ LÝ NGHIỆP VỤ: GỘP Ô LIỀN NHAU & FORMAT TIỀN TỆ
+// 4. HÀM XỬ LÝ NGHIỆP VỤ
 function formatCurrencyVND(amount) {
   return amount.toLocaleString('vi-VN') + 'đ';
 }
 
-/**
- * Tự động gộp các ô 30 phút liền kề trên cùng 1 sân thành khoảng giờ gọn đẹp.
- * Ví dụ: 14:00, 14:30, 15:00 trên C.Lông 3 => "C.Lông 3 • 14:00 – 15:30"
- */
 function groupConsecutiveSlots() {
   const items = Array.from(appState.selectedSlots.values());
   if (items.length === 0) return [];
@@ -175,7 +165,7 @@ function groupConsecutiveSlots() {
   return groups;
 }
 
-// 5. RENDER GIAO DIỆN (DATE CARDS, GRID, SUMMARY BAR)
+// 5. RENDER GIAO DIỆN
 function renderDateCards() {
   const container = document.getElementById('dateCardsContainer');
   container.innerHTML = AVAILABLE_DATES.map((d) => {
@@ -196,6 +186,11 @@ function renderDateCards() {
 
   container.querySelectorAll('.date-card').forEach((card) => {
     card.addEventListener('click', async () => {
+      if (appState.holdSession) {
+        alert('Bạn đang giữ chỗ. Vui lòng tiếp tục xác nhận hoặc bấm "Hủy giữ" trước khi đổi ngày.');
+        return;
+      }
+
       const selectedDateStr = card.dataset.date;
       if (selectedDateStr === appState.currentDate.dateStr) return;
 
@@ -239,6 +234,7 @@ function renderGridBody() {
   const selectedCourtIds = new Set(
     Array.from(appState.selectedSlots.values()).map((s) => s.courtId)
   );
+  const isHolding = Boolean(appState.holdSession);
 
   const rowsHtml = appState.gridData.map((courtRow) => {
     const hasSelection = selectedCourtIds.has(courtRow.courtId);
@@ -250,11 +246,12 @@ function renderGridBody() {
 
       if (slot.status === 'available') {
         const isSelected = appState.selectedSlots.has(slot.id);
+        const stateClass = isSelected ? (isHolding ? 'holding' : 'selected') : 'available';
         cells.push(`
           <td class="slot-cell">
             <button
               type="button"
-              class="slot-btn ${isSelected ? 'selected' : 'available'}"
+              class="slot-btn ${stateClass}"
               data-slot-id="${slot.id}"
               data-court-id="${slot.courtId}"
               data-slot-index="${slot.slotIndex}"
@@ -345,7 +342,9 @@ function updateSummaryBar() {
 
   badgeEl.textContent = String(totalSlots).padStart(2, '0');
   badgeEl.classList.remove('empty');
-  titleEl.textContent = `Đã chọn ${totalSlots} khung giờ`;
+  titleEl.textContent = appState.holdSession
+    ? `Đang giữ chỗ ${totalSlots} khung giờ`
+    : `Đã chọn ${totalSlots} khung giờ`;
   detailsEl.textContent = `${groupStrings.join('  |  ')} (${appState.currentDate.shortLabel})`;
   detailsEl.title = `${groupStrings.join(', ')} — Ngày ${appState.currentDate.shortLabel}`;
   metaEl.textContent = `Tổng thời lượng: ${totalMinutes} phút (${(totalMinutes / 60).toFixed(1).replace('.0', '')} giờ) • Đơn giá ${formatCurrencyVND(DEFAULT_SLOT_PRICE)}/30p`;
@@ -355,8 +354,113 @@ function updateSummaryBar() {
   btnProceed.disabled = false;
 }
 
-// 6. SỰ KIỆN TƯƠNG TÁC
+// 6. LOGIC GIỮ CHỖ & ĐẾM NGƯỢC 10 PHÚT
+function startHoldCountdown(holdUntilISO) {
+  if (appState.holdTimerInterval) {
+    clearInterval(appState.holdTimerInterval);
+  }
+
+  const footerBar = document.getElementById('bottomSummaryBar');
+  const gridCard = document.querySelector('.grid-card');
+  const btnClearAll = document.getElementById('btnClearAll');
+  const holdCountdownBox = document.getElementById('holdCountdownBox');
+  const countdownDisplay = document.getElementById('countdownDisplay');
+  const btnProceed = document.getElementById('btnProceed');
+  const btnGoBookingConfirm = document.getElementById('btnGoBookingConfirm');
+
+  const slotsArray = Array.from(appState.selectedSlots.values());
+  const grouped = groupConsecutiveSlots();
+  const totalPrice = slotsArray.reduce((sum, s) => sum + s.price, 0);
+
+  appState.holdSession = {
+    holdId: 'HOLD_' + Date.now(),
+    holdUntil: holdUntilISO,
+    date: appState.currentDate,
+    slots: slotsArray,
+    grouped,
+    totalPrice
+  };
+
+  sessionStorage.setItem('rk_hold_session', JSON.stringify(appState.holdSession));
+
+  // Cập nhật UI sang trạng thái giữ chỗ
+  footerBar.classList.add('is-holding');
+  gridCard?.classList.add('is-locked');
+  btnClearAll.classList.add('hidden');
+  holdCountdownBox.classList.remove('hidden');
+  btnProceed.classList.add('hidden');
+  btnGoBookingConfirm.classList.remove('hidden');
+
+  renderGridBody();
+  updateSummaryBar();
+
+  const expireTime = new Date(holdUntilISO).getTime();
+
+  function tick() {
+    const remainingMs = expireTime - Date.now();
+    if (remainingMs <= 0) {
+      clearInterval(appState.holdTimerInterval);
+      appState.holdTimerInterval = null;
+      countdownDisplay.textContent = '00:00';
+      handleHoldTimeout();
+      return;
+    }
+
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    countdownDisplay.textContent = `${minutes}:${seconds}`;
+    countdownDisplay.classList.toggle('urgent', totalSeconds <= 60);
+  }
+
+  tick();
+  appState.holdTimerInterval = setInterval(tick, 1000);
+}
+
+function resetHoldUIState() {
+  if (appState.holdTimerInterval) {
+    clearInterval(appState.holdTimerInterval);
+    appState.holdTimerInterval = null;
+  }
+
+  appState.holdSession = null;
+  sessionStorage.removeItem('rk_hold_session');
+
+  document.getElementById('bottomSummaryBar').classList.remove('is-holding');
+  document.querySelector('.grid-card')?.classList.remove('is-locked');
+  document.getElementById('btnClearAll').classList.remove('hidden');
+  document.getElementById('holdCountdownBox').classList.add('hidden');
+  document.getElementById('countdownDisplay').classList.remove('urgent');
+  document.getElementById('btnProceed').classList.remove('hidden');
+  document.getElementById('btnGoBookingConfirm').addEventListener('click', () => {
+    if (!appState.holdSession) {
+      alert('Phiên giữ chỗ đã hết hạn, vui lòng chọn lại sân!');
+      return;
+    }
+    sessionStorage.setItem('rk_hold_session', JSON.stringify(appState.holdSession));
+    window.location.href = './booking.html';
+  });
+}
+
+function handleHoldTimeout() {
+  document.getElementById('cancelHoldModal')?.classList.remove('open');
+  resetHoldUIState();
+  document.getElementById('holdExpiredModal').classList.add('open');
+}
+
+async function reloadGridAfterTimeout() {
+  document.getElementById('holdExpiredModal').classList.remove('open');
+  document.getElementById('cancelHoldModal')?.classList.remove('open');
+  resetHoldUIState();
+  appState.selectedSlots.clear();
+  await loadAndRenderGrid();
+  updateSummaryBar();
+}
+
+// 7. SỰ KIỆN TƯƠNG TÁC
 function handleSlotClick(event) {
+  if (appState.holdSession) return;
+
   const btn = event.target.closest('.slot-btn');
   if (!btn) return;
 
@@ -391,6 +495,8 @@ function handleSlotClick(event) {
 }
 
 function clearAllSelections() {
+  if (appState.holdSession) return;
+
   appState.selectedSlots.clear();
   document.querySelectorAll('.slot-btn.selected').forEach((btn) => {
     btn.classList.remove('selected');
@@ -439,7 +545,7 @@ async function loadAndRenderGrid() {
   renderGridBody();
 }
 
-// 7. KHỞI TẠO ỨNG DỤNG
+// 8. KHỞI TẠO ỨNG DỤNG
 async function initApp() {
   renderDateCards();
   await loadAndRenderGrid();
@@ -465,18 +571,60 @@ async function initApp() {
     if (e.target.id === 'confirmModal') closeConfirmModal();
   });
 
+  // Bấm "Xác nhận giữ chỗ" -> Đóng modal & Bắt đầu đếm ngược 10 phút trên thanh đáy
   document.getElementById('btnConfirmSubmit').addEventListener('click', () => {
-    const payload = {
-      date: appState.currentDate.dateStr,
-      slots: Array.from(appState.selectedSlots.values()),
-      grouped_bookings: groupConsecutiveSlots()
-    };
-    console.log('[RK Badminton - Payload sẵn sàng gửi FastAPI]:', payload);
-    alert('Đã tạo yêu cầu giữ chỗ tạm thời!\nKiểm tra Console (F12) để xem JSON payload chuẩn bị gửi tới FastAPI.');
+    if (appState.selectedSlots.size === 0) return;
+
+    // TODO: Khi nối API thật, gọi POST /api/v1/bookings/hold và lấy hold_until từ response
+    const holdUntilISO = new Date(Date.now() + HOLD_DURATION_MS).toISOString();
+
     closeConfirmModal();
+    startHoldCountdown(holdUntilISO);
+  });
+
+  // Bấm "TIẾP TỤC XÁC NHẬN →" -> Chuyển sang bước xác nhận đặt sân (module Đặt sân)
+  document.getElementById('btnGoBookingConfirm').addEventListener('click', () => {
+    if (!appState.holdSession) {
+      alert('Phiên giữ chỗ đã hết hạn, vui lòng chọn lại sân!');
+      return;
+    }
+    sessionStorage.setItem('rk_hold_session', JSON.stringify(appState.holdSession));
+    window.location.href = './booking_confirm.html';
+  });
+
+  // Hết giờ -> Bấm "Tải lại lưới sân"
+  document.getElementById('btnReloadGrid').addEventListener('click', reloadGridAfterTimeout);
+
+  // Hủy giữ chỗ -> Mở modal xác nhận hủy
+  const cancelHoldModal = document.getElementById('cancelHoldModal');
+
+  document.getElementById('btnCancelHold').addEventListener('click', () => {
+    if (!appState.holdSession) return;
+    cancelHoldModal.classList.add('open');
+  });
+
+  document.getElementById('btnKeepHold').addEventListener('click', () => {
+    cancelHoldModal.classList.remove('open');
+  });
+
+  cancelHoldModal.addEventListener('click', (e) => {
+    if (e.target.id === 'cancelHoldModal') {
+      cancelHoldModal.classList.remove('open');
+    }
+  });
+
+  document.getElementById('btnConfirmCancelHold').addEventListener('click', async () => {
+    cancelHoldModal.classList.remove('open');
+    // TODO: Khi nối API thật, gọi DELETE /api/v1/bookings/hold/${appState.holdSession.holdId}
+    await reloadGridAfterTimeout();
   });
 
   document.getElementById('btnNextDays').addEventListener('click', async () => {
+    if (appState.holdSession) {
+      alert('Bạn đang giữ chỗ. Vui lòng tiếp tục xác nhận hoặc bấm "Hủy giữ" trước khi đổi ngày.');
+      return;
+    }
+
     const currentIndex = AVAILABLE_DATES.findIndex(
       (d) => d.dateStr === appState.currentDate.dateStr
     );

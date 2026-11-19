@@ -1,0 +1,453 @@
+/* ==========================================================================
+   RK BADMINTON — BOOKING CONFIRMATION PAGE (2-COLUMN CHECKOUT LAYOUT)
+   ========================================================================== */
+
+body {
+  background-color: #F9FAFB;
+  padding-bottom: 48px;
+}
+
+.confirm-container {
+  max-width: 1120px;
+  margin: 28px auto;
+  padding: 0 24px;
+}
+
+/* Header & Pill đếm ngược */
+.confirm-top-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.hold-pill-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFBEB;
+  border: 1.5px solid #F59E0B;
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #78350F;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12);
+}
+
+.hold-banner-icon {
+  width: 17px;
+  height: 17px;
+  color: var(--brand-red);
+}
+
+/* Bố cục 2 cột chính */
+.confirm-grid {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.card-box {
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.card-header-flex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.step-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--brand-red);
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-header-flex h2,
+.sticky-summary-card h2 {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sticky-summary-card {
+  position: sticky;
+  top: 88px;
+}
+
+.sticky-summary-card h2 {
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Form inputs */
+.form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  background-color: #FFFFFF;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--brand-red);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
+}
+
+/* ==========================================================================
+   KHỐI QR & UPLOAD BILL
+   ========================================================================== */
+.bank-transfer-box {
+  background-color: #F9FAFB;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.qr-and-info-grid {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--border-medium);
+}
+
+.qr-code-frame {
+  width: 146px;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.qr-code-frame img,
+.qr-custom-img {
+  width: 126px;
+  height: 126px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.qr-caption {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand-red);
+  margin-top: 6px;
+}
+
+.bank-info-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bank-badge {
+  align-self: flex-start;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1E40AF;
+  background: #DBEAFE;
+  padding: 3px 9px;
+  border-radius: 6px;
+}
+
+.bank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.bank-row strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.text-brand-red {
+  color: var(--brand-red) !important;
+  font-size: 15px;
+}
+
+.transfer-note-code {
+  background: #FEF2F2;
+  border: 1px dashed #FECACA;
+  color: var(--brand-red) !important;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12.5px;
+}
+
+/* Upload Bill */
+.receipt-upload-group {
+  margin-top: 16px;
+}
+
+.upload-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.upload-dropzone {
+  display: block;
+  border: 1.5px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  overflow: hidden;
+}
+
+.upload-dropzone:hover {
+  border-color: var(--brand-red);
+  background: #FFFDFD;
+}
+
+.upload-placeholder {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.upload-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--brand-red-light);
+  color: var(--brand-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.upload-main-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.upload-sub-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.upload-preview-box {
+  padding: 10px;
+}
+
+.upload-preview-box img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #F3F4F6;
+  display: block;
+}
+
+.preview-file-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+
+.preview-file-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-remove-receipt {
+  background: #FEE2E2;
+  color: var(--brand-red);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   CỘT PHẢI: CHI TIẾT ĐƠN ĐẶT
+   ========================================================================== */
+.summary-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  width: 100%;
+}
+
+.slot-list-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border-light);
+  font-size: 13.5px;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 12px 0 16px;
+}
+
+.summary-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.total-label-main {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.total-label-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.confirm-total-price {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--brand-red);
+  font-variant-numeric: tabular-nums;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-submit-full {
+  width: 100%;
+  justify-content: center;
+  padding: 14px 20px;
+  font-size: 14px;
+}
+
+.btn-back-full {
+  width: 100%;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .confirm-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sticky-summary-card {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .form-row-2col {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-and-info-grid {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .bank-badge {
+    align-self: center;
+  }
+
+  .bank-row {
+    width: 100%;
+  }
+}

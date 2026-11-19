@@ -2,6 +2,7 @@
 import asyncio
 import json
 import unittest
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI
 from sqlalchemy import create_engine
@@ -40,6 +41,7 @@ class ProfileAPITest(unittest.TestCase):
         self.engine.dispose()
 
     def request(self, method, path, payload=None, user_id=1):
+        url = urlsplit(path)
         async def run():
             body = json.dumps(payload).encode() if payload is not None else b""
             headers = [(b"content-type", b"application/json")]
@@ -56,7 +58,7 @@ class ProfileAPITest(unittest.TestCase):
 
             await self.app({"type": "http", "asgi": {"version": "3.0"},
                             "http_version": "1.1", "method": method, "scheme": "http",
-                            "path": path, "raw_path": path.encode(), "query_string": b"",
+                            "path": url.path, "raw_path": url.path.encode(), "query_string": url.query.encode(),
                             "root_path": "", "headers": headers,
                             "server": ("test", 80), "client": ("test", 1)}, receive, send)
             status = next(m["status"] for m in messages if m["type"] == "http.response.start")

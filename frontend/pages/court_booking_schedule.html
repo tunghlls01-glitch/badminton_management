@@ -12,7 +12,7 @@
 <body>
   <header class="topbar">
     <a href="booking.html" class="brand" aria-label="Sân Nhà — Trang chủ">
-    <img class="logo" src ="../assets/images/chatNTK.webp" alt="Logo Web" >
+    <img class="logo" src ="../assets/images/logo.svg" alt="Logo Web" >
     </a>
     <nav aria-label="Điều hướng chính">
       <a href="booking.html">Quản lý đặt sân</a>
@@ -155,6 +155,29 @@
     <div class="modal-actions"><button class="button" data-close>Đã hiểu</button></div>
   </dialog>
   <div class="toast" id="toast" role="status"></div>
+
+<!-- ======================================================================
+       MODAL XÁC NHẬN HỦY GIỮ CHỖ
+       ====================================================================== -->
+  <div id="cancelHoldModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancelHoldModalTitle">
+    <div class="modal-card expired-modal-card">
+      <div class="modal-body expired-modal-body">
+        <div class="expired-icon-circle">⚠️</div>
+        <h2 id="cancelHoldModalTitle" class="expired-modal-title">Xác nhận hủy giữ chỗ?</h2>
+        <p class="expired-modal-desc">
+          Các khung giờ bạn đang giữ sẽ được mở lại ngay cho người chơi khác. Bạn có chắc chắn muốn hủy không?
+        </p>
+        <div class="cancel-hold-actions">
+          <button type="button" id="btnKeepHold" class="btn-clear-all btn-half">
+            Tiếp tục giữ
+          </button>
+          <button type="button" id="btnConfirmCancelHold" class="btn-proceed btn-half">
+            Xác nhận hủy giữ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
   <script src="../js/config.js"></script>

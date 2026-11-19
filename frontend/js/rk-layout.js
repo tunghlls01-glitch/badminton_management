@@ -24,8 +24,14 @@
       roles: ["admin"],
     },
     {
+      key: "pos",
+      label: "Bán hàng tại quầy",
+      icon: "cart",
+      roles: ["admin", "staff"],
+    },
+    {
       key: "users",
-      label: "Quản lý nhân viên & Khách hàng",
+      label: "Nhân viên",
       icon: "users",
       roles: ["admin"],
     },
@@ -54,9 +60,10 @@
       icon: "package",
       roles: ["staff"],
     },
+    { key: "customers", label: "Khách hàng", icon: "users", roles: ["admin"] },
   ];
   const logo = () =>
-    `<a class="rk-logo" href="${h(config.homeURL)}"><span class="rk-logo-mark" aria-hidden="true">//</span><span>RK BADMINTON</span></a>`;
+    `<a class="rk-logo" href="${h(config.homeURL)}"><img class="rk-logo-image" src="${h(config.assetURL)}logo.svg" alt="" width="32" height="32"><span>RK BADMINTON</span></a>`;
   function renderAvatar(user) {
     const content = user.avatar
       ? `<img src="${h(user.avatar)}" alt="">`
@@ -88,7 +95,10 @@
 
     const items = menu.filter((item) => item.roles.includes(user.role));
     const view =
-      new URLSearchParams(global.location.search).get("view") || items[0].key;
+      new URLSearchParams(global.location.search).get("view") ||
+      ({"courts.html": "courts", "pricing.html": "pricing", "services.html": "services",
+        "pos.html": "pos", "reception.html": "check-in", "admin-users.html": "users"})[global.location.pathname.split("/").pop()] ||
+      items[0].key;
     const active = items.find((item) => item.key === view) || items[0];
 
     if (sidebar) {

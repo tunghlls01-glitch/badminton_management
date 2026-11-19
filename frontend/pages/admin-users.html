@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#B91C1C" />
+    <title>Nhân viên và khách hàng | RK BADMINTON</title>
+    <link rel="stylesheet" href="../css/t3d2096.css" />
+  <link rel="stylesheet" href="../css/admin-users.css">  <link rel="stylesheet" href="../css/admin-sidebar.css">
+</head>
+  <body class="rk-app" data-root="../" data-page="dashboard">
+    <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
+    <div
+      id="rk-dashboard-state"
+      class="rk-container rk-session-state"
+      role="status"
+      aria-live="polite"
+    >
+      Đang kiểm tra quyền truy cập...
+    </div>
+    <div id="rk-dashboard" class="rk-dashboard" hidden>
+      <button
+        type="button"
+        id="rk-backdrop"
+        class="rk-backdrop"
+        data-rk-action="sidebar-close"
+        aria-label="Đóng menu"
+        hidden
+      ></button>
+      <aside
+        id="rk-sidebar"
+        class="rk-sidebar"
+        aria-label="Thanh bên quản lý"
+      ></aside>
+      <div class="rk-dashboard-body">
+        <header id="rk-dashboard-header" class="rk-dashboard-header"></header>
+        <main id="main-content" class="rk-dashboard-content">
+          <div id="admin-users" aria-live="polite"></div>
+          <dialog id="staff-dialog" aria-labelledby="staff-title">
+            <form id="staff-form">
+              <h2 id="staff-title">Thêm nhân viên</h2>
+              <label>Họ tên<input name="full_name" required maxlength="100" autocomplete="name"></label>
+              <label>Email / Tên đăng nhập<input name="email" type="email" required maxlength="100" autocomplete="email"></label>
+              <label>Số điện thoại<input name="phone" type="tel" required pattern="(0[35789][0-9]{8}|\+84[35789][0-9]{8})" title="Số di động Việt Nam 10 chữ số hoặc +84" autocomplete="tel"></label>
+              <label id="staff-password-label">Mật khẩu<input name="password" type="password" maxlength="72" autocomplete="new-password"></label>
+              <p id="staff-error" role="alert"></p>
+              <div class="au-actions"><button type="button" data-close>Hủy</button><button class="rk-btn rk-primary" type="submit">Lưu nhân viên</button></div>
+            </form>
+          </dialog>
+          <dialog id="status-dialog" aria-labelledby="status-title">
+            <h2 id="status-title"></h2><p id="status-description"></p><p id="status-error" role="alert"></p>
+            <div class="au-actions"><button type="button" data-close>Hủy</button><button id="status-confirm" class="rk-btn rk-primary">Xác nhận</button></div>
+          </dialog>
+        </main>
+      </div>
+    </div>
+    <noscript
+      ><p class="rk-container">
+        Vui lòng bật JavaScript để đăng nhập và tải dữ liệu.
+      </p></noscript
+    >
+    <script src="../js/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/t3d2096-config.js"></script>
+    <script src="../js/authStorage.js"></script>
+    <script src="../js/axiosClient.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/ProtectedRoute.js"></script>
+    <script src="../js/t3d2096-ui.js"></script>
+    <script src="../js/rk-layout.js"></script>
+    <script src="../js/pages/admin-users.js"></script>
+  </body>
+</html>
