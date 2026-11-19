@@ -2,45 +2,61 @@ const $ = s => document.querySelector(s);
 const money = n => new Intl.NumberFormat('vi-VN').format(n) + 'đ';
 const bookingsKey = 'san-nha-bookings';
 
-const venues = {
-  phutho: {
-    name: 'Sân cầu lông Phú Thọ',
-    sport: 'Cầu lông',
-    address: '219 Lý Thường Kiệt, Quận 11',
-    price: 120000
-  },
-  riverside: {
-    name: 'Pickleball Riverside',
-    sport: 'Pickleball',
-    address: '28 Nguyễn Hữu Cảnh, Bình Thạnh',
-    price: 180000
-  },
-  tanphu: {
-    name: 'Sân cầu lông Tân Phú',
-    sport: 'Cầu lông',
-    address: '15 Tân Sơn Nhì, Tân Phú',
-    price: 100000
-  }
-};
+// ── Đọc thông tin user đang đăng nhập từ session ──────────────────────────
+function getLoggedInUser() {
+  try {
+    const raw = localStorage.getItem('user') || sessionStorage.getItem('user');
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return null;
+}
+function getUserInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+function getRoleLabel(role) {
+  if (!role) return 'Thành viên Sân Nhà';
+  if (role === 'admin') return 'Quản trị viên';
+  if (role === 'staff') return 'Nhân viên';
+  return 'Thành viên Sân Nhà';
+}
+function applyUserUI() {
+  const u = getLoggedInUser();
+  const name = u?.full_name || 'Chưa đăng nhập';
+  const initials = getUserInitials(u?.full_name);
+  const role = getRoleLabel(u?.role);
+  const sbName = $('#sidebarName'), sbAvatar = $('#sidebarAvatar'), sbRole = $('#sidebarRole');
+  const tbAvatar = $('#topbarAvatar');
+  if (sbName) sbName.textContent = name;
+  if (sbAvatar) sbAvatar.textContent = initials;
+  if (sbRole) sbRole.textContent = role;
+  if (tbAvatar) tbAvatar.textContent = initials;
+}
 
-const initial = [
-  { id: 1, venue: 'phutho', court: '03', date: '2026-11-10', start: '18:00', duration: 2, status: 'confirmed' },
-  { id: 2, venue: 'riverside', court: '02', date: '2026-11-12', start: '16:00', duration: 2, status: 'pending' },
-  { id: 3, venue: 'tanphu', court: '01', date: '2026-11-14', start: '18:00', duration: 2, status: 'confirmed' },
-  { id: 4, venue: 'phutho', court: '02', date: '2026-11-09', start: '14:00', duration: 2, status: 'done' }
-];
+let dbCourts = [];
+let selectedCourtFilter = 'all';
 
-let bookings;
+const initial = [];
+
+let bookings = [];
 try {
   const saved = JSON.parse(localStorage.getItem(bookingsKey));
-  bookings = Array.isArray(saved) && saved.every(b =>
-    b && venues[b.venue] && /^\d{4}-\d{2}-\d{2}$/.test(b.date) &&
-    /^\d{2}:\d{2}$/.test(b.start) && Number(b.duration) > 0
-  ) ? saved : initial;
+  if (Array.isArray(saved)) {
+    // Chỉ giữ lại những booking thật có court_id hoặc booking_code từ DB
+    bookings = saved.filter(b => b && (b.court_id || b.booking_code));
+  }
 } catch (error) {
-  console.error('Không thể đọc lịch đặt sân đã lưu.', error);
-  bookings = initial;
+  bookings = [];
 }
+
+const getCourtName = b => {
+  if (b.court_name) return b.court_name;
+  const found = dbCourts.find(c => Number(c.id) === Number(b.court_id || b.court));
+  if (found) return found.name || found.court_name || `Sân ${found.id}`;
+  return `Sân ${b.court || b.court_id || 1}`;
+};
 
 let filter = 'upcoming', weekOffset = 0, toastTimer;
 
@@ -60,7 +76,7 @@ const statusText = status =>
   status === 'pending' ? 'Chờ xác nhận' :
   status === 'done' ? 'Đã hoàn thành' :
   status === 'cancelled' ? 'Đã hủy' : 'Đã xác nhận';
-const bookingReference = b => b.booking_code || ('SN-' + String(b.id).padStart(8, '0'));
+const bookingReference = b => b.booking_code || ('BK-' + String(b.id).padStart(6, '0'));
 
 function toast(message) {
   $('#toast').textContent = message;
@@ -79,7 +95,7 @@ function info(title, content) {
 function detail(id) {
   const b = bookings.find(x => x.id === Number(id));
   if (!b) return;
-  const v = venues[b.venue];
+  const courtName = getCourtName(b);
   const row = (label, value) => `<div class="detail-row"><span>${label}</span><strong>${value}</strong></div>`;
 
   const matchStart = new Date(`${b.date}T${b.start}:00`);
@@ -94,26 +110,48 @@ function detail(id) {
   } else if (isDone) {
     actionHtml = `<div style="margin-top:14px;padding:10px;background:#f5f5f5;border-radius:8px;text-align:center;color:#888;font-weight:600">Trận đấu đã hoàn thành</div>`;
   } else if (isPast) {
-    actionHtml = `<div style="margin-top:14px;padding:10px;background:#fff5f5;border-radius:8px;text-align:center;color:var(--green);font-size:12px">Đã qua giờ bắt đầu trận đấu, không thể hủy đặt sân.</div>`;
+    // Admin vẫn có thể hủy kể cả đã qua giờ
+    const _u = getLoggedInUser();
+    if (_u?.role === 'admin') {
+      actionHtml = `
+        <div style="margin-top:14px;padding:10px 12px;background:#fff8f8;border:1px solid #f5c6cb;border-radius:8px;font-size:12px;color:#c0392b;margin-bottom:8px;">
+          Đã qua giờ bắt đầu — chỉ admin mới có thể hủy (không hoàn tiền).
+        </div>
+        <button type="button" class="btn-admin-cancel-action" id="btnOpenAdminCancelModal">
+          <svg style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+          Hủy sân (Admin)
+        </button>
+      `;
+    } else {
+      actionHtml = `<div style="margin-top:14px;padding:10px;background:#fff5f5;border-radius:8px;text-align:center;color:var(--green);font-size:12px">Đã qua giờ bắt đầu trận đấu, không thể hủy đặt sân.</div>`;
+    }
   } else {
+    // Chưa tới giờ — user thường dùng nút hủy thường, admin có thêm nút hủy admin
+    const _u = getLoggedInUser();
+    const isAdmin = _u?.role === 'admin';
     actionHtml = `
       <button type="button" class="btn-cancel-action" id="btnOpenCancelModal">
         <svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
         Hủy đặt sân này
       </button>
+      ${isAdmin ? `
+      <button type="button" class="btn-admin-cancel-action" id="btnOpenAdminCancelModal" style="margin-top:8px;">
+        <svg style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+        Hủy sân (Admin) — Gửi thông báo
+      </button>` : ''}
     `;
   }
 
   info(
     'Chi tiết đặt sân',
-    `<p style="color:var(--green);font-weight:600;margin-top:0">${v.name}</p>` +
+    `<p style="color:var(--green);font-weight:600;margin-top:0">${courtName}</p>` +
     row('Mã lượt đặt', bookingReference(b)) +
-    row('Địa chỉ', v.address) +
-    row('Sân', v.sport + ' · Sân ' + b.court) +
+    row('Sân', courtName) +
     row('Ngày chơi', dateOf(b.date).toLocaleDateString('vi-VN')) +
     row('Khung giờ', b.start + ' – ' + endTime(b)) +
     row('Trạng thái', statusText(b.status)) +
-    row('Thành tiền', money(Number(b.total_price) || (v.price * b.duration))) +
+    row('Thành tiền', money(Number(b.total_price) || 100000)) +
+    (b.customer_name ? row('Khách hàng', b.customer_name + (b.customer_phone ? ` (${b.customer_phone})` : '')) : '') +
     `<p class="form-note">Vui lòng đến trước 15 phút. Đưa mã đặt sân cho nhân viên tại quầy để nhận sân.</p>` +
     actionHtml
   );
@@ -122,11 +160,15 @@ function detail(id) {
   if (cancelBtn) {
     cancelBtn.onclick = () => openCancelConfirmation(b);
   }
+  const adminCancelBtn = $('#btnOpenAdminCancelModal');
+  if (adminCancelBtn) {
+    adminCancelBtn.onclick = () => openAdminCancelDialog(b);
+  }
 }
 
 async function openCancelConfirmation(b) {
-  const v = venues[b.venue];
-  const totalPrice = Number(b.total_price) || (v.price * Number(b.duration));
+  const courtName = getCourtName(b);
+  const totalPrice = Number(b.total_price) || 100000;
   const startDt = new Date(`${b.date}T${b.start}:00`);
   const now = new Date();
   const diffHours = (startDt - now) / 3600000;
@@ -172,7 +214,7 @@ async function openCancelConfirmation(b) {
   const bodyEl = $('#cancelConfirmBody');
   bodyEl.innerHTML = `
     <div style="font-size:13px; line-height:1.6;">
-      <p style="margin:0 0 10px;">Bạn đang yêu cầu hủy lượt đặt sân tại <strong>${v.name}</strong> (Sân ${b.court}).</p>
+      <p style="margin:0 0 10px;">Bạn đang yêu cầu hủy lượt đặt sân tại <strong>${courtName}</strong>.</p>
       <div class="detail-row"><span>Mã lượt đặt</span><strong>${bookingReference(b)}</strong></div>
       <div class="detail-row"><span>Thời gian chơi</span><strong>${dateOf(b.date).toLocaleDateString('vi-VN')} · ${b.start} – ${endTime(b)}</strong></div>
       <div class="detail-row"><span>Thời gian còn lại</span><strong style="color:var(--green)">Còn ${hoursLeftDisplay} trước giờ vào sân</strong></div>
@@ -259,30 +301,146 @@ async function openCancelConfirmation(b) {
   };
 }
 
+// ── Hàm Admin Hủy Sân ────────────────────────────────────────────────────
+async function openAdminCancelDialog(b) {
+  const courtName = getCourtName(b);
+  const totalPrice = Number(b.total_price) || 0;
+  const startDt = new Date(`${b.date}T${b.start}:00`);
+  const now = new Date();
+  const diffHours = (startDt - now) / 3600000;
+
+  // Xác định chính sách hoàn tiền (tính sẵn để hiển thị, backend sẽ tính lại)
+  let refundPercent = 0, policyText = 'Không hoàn tiền (hủy sau giờ vào sân)';
+  if (diffHours > 24) { refundPercent = 100; policyText = 'Hoàn 100% (hủy trước 24 giờ)'; }
+  else if (diffHours > 6) { refundPercent = 50; policyText = 'Hoàn 50% (hủy trong 6–24 giờ)'; }
+  else if (diffHours > 0) { refundPercent = 0; policyText = 'Không hoàn tiền (hủy dưới 6 giờ)'; }
+
+  const refundAmount = Math.round(totalPrice * refundPercent / 100);
+  const timeLabel = diffHours <= 0
+    ? '<span style="color:#c0392b;font-weight:600">Đã qua giờ vào sân</span>'
+    : diffHours >= 24
+      ? `Còn ${Math.floor(diffHours / 24)} ngày ${Math.round(diffHours % 24)} giờ`
+      : `Còn ${diffHours.toFixed(1)} giờ`;
+
+  const bodyEl = $('#adminCancelBody');
+  bodyEl.innerHTML = `
+    <div class="detail-row"><span>Mã lượt đặt</span><strong>${bookingReference(b)}</strong></div>
+    <div class="detail-row"><span>Sân</span><strong>${courtName}</strong></div>
+    <div class="detail-row"><span>Ngày · Giờ</span><strong>${dateOf(b.date).toLocaleDateString('vi-VN')} · ${b.start} – ${endTime(b)}</strong></div>
+    <div class="detail-row"><span>Thời gian còn lại</span><strong>${timeLabel}</strong></div>
+    ${b.customer_name ? `<div class="detail-row"><span>Khách hàng</span><strong>${b.customer_name}${b.customer_phone ? ` (${b.customer_phone})` : ''}</strong></div>` : ''}
+    <div class="detail-row"><span>Tổng tiền</span><strong>${money(totalPrice)}</strong></div>
+    <div class="detail-row"><span>Dự kiến hoàn</span><strong style="color:var(--green)">${money(refundAmount)} (${refundPercent}%) — ${policyText}</strong></div>
+  `;
+
+  // Clear lý do cũ, reset lỗi
+  const reasonEl = $('#adminCancelReason');
+  const errEl = $('#adminCancelError');
+  if (reasonEl) reasonEl.value = '';
+  if (errEl) errEl.style.display = 'none';
+
+  // Đóng detail dialog, mở admin cancel dialog
+  $('#infoDialog').close();
+  $('#adminCancelDialog').showModal();
+
+  $('#btnSubmitAdminCancel').onclick = async () => {
+    const reason = reasonEl ? reasonEl.value.trim() : '';
+    const submitBtn = $('#btnSubmitAdminCancel');
+
+    if (!reason) {
+      if (errEl) {
+        errEl.textContent = 'Vui lòng nhập lý do hủy. Lý do này sẽ được gửi đến khách hàng.';
+        errEl.style.display = 'block';
+      }
+      reasonEl && reasonEl.focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Đang xử lý...';
+    if (errEl) errEl.style.display = 'none';
+
+    try {
+      let result = null;
+
+      if (typeof api !== 'undefined' && b.id) {
+        // Lấy token từ session để gọi API cần auth
+        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${CONFIG.API_BASE_URL}/bookings/${b.id}/admin-cancel`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ admin_reason: reason }),
+        });
+        result = await res.json();
+        if (!res.ok) {
+          throw new Error(result?.detail || `Lỗi ${res.status}`);
+        }
+      }
+
+      // Cập nhật local state
+      b.status = 'cancelled';
+      try { localStorage.setItem(bookingsKey, JSON.stringify(bookings)); } catch (_) {}
+
+      // Reload từ backend
+      await fetchBookingsFromBackend();
+      renderBookings();
+      renderCalendar();
+
+      $('#adminCancelDialog').close();
+
+      const finalRefund = result?.refund_amount ?? refundAmount;
+      const finalPercent = result?.refund_percent ?? refundPercent;
+      toast(`✅ Đã hủy sân thành công! Hoàn lại: ${money(finalRefund)} (${finalPercent}%). Thông báo đã gửi cho khách.`);
+
+    } catch (err) {
+      console.error('Lỗi admin hủy sân:', err);
+      const msg = err.message || 'Không thể hủy sân lúc này!';
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+      }
+      toast(msg);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Xác nhận hủy & gửi thông báo';
+    }
+  };
+}
+
 function renderBookings() {
-  const selected = bookings.filter(b =>
-    filter === 'all' ||
-    (filter === 'done' ? (b.status === 'done' || b.status === 'cancelled') : isUpcoming(b))
-  );
+  const validCourtIds = new Set(dbCourts.map(c => Number(c.id)));
+  const selected = bookings.filter(b => {
+    if (validCourtIds.size > 0 && b.court_id && !validCourtIds.has(Number(b.court_id))) return false;
+    return filter === 'all' ||
+      (filter === 'done' ? (b.status === 'done' || b.status === 'cancelled') : isUpcoming(b));
+  });
+
   $('#listCount').textContent = `(${selected.length})`;
   $('#bookingsBody').innerHTML = selected.length ? selected.map(b => {
-    const v = venues[b.venue];
+    const courtTitle = getCourtName(b);
     const status = statusText(b.status);
     const pillClass = b.status === 'pending' ? 'pending' : b.status === 'done' ? 'done' : b.status === 'cancelled' ? 'cancelled' : '';
-    return `<tr><td><div class="venue"><span class="venue-icon"><svg><use href="#i-court"/></svg></span><span><strong>${v.name}</strong><small>${v.sport} · Sân ${b.court}</small></span></div></td><td>${dateText(b.date)}<span style="color:#b0b7ab;padding:0 8px">·</span>${b.start} – ${endTime(b)}</td><td style="font-weight:600">${money(Number(b.total_price) || (v.price * b.duration))}</td><td><span class="pill ${pillClass}">${status}</span></td><td><button class="table-detail" data-detail="${b.id}" aria-label="Chi tiết ${v.name}"><svg><use href="#i-chevron"/></svg></button></td></tr>`;
+    return `<tr><td><div class="venue"><span class="venue-icon"><svg><use href="#i-court"/></svg></span><span><strong>${courtTitle}</strong><small>Cầu lông</small></span></div></td><td>${dateText(b.date)}<span style="color:#b0b7ab;padding:0 8px">·</span>${b.start} – ${endTime(b)}</td><td style="font-weight:600">${money(Number(b.total_price) || 100000)}</td><td><span class="pill ${pillClass}">${status}</span></td><td><button class="table-detail" data-detail="${b.id}" aria-label="Chi tiết ${courtTitle}"><svg><use href="#i-chevron"/></svg></button></td></tr>`;
   }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">Chưa có lượt đặt trong mục này.</td></tr>';
 
-  const upcoming = bookings.filter(isUpcoming);
+  const upcoming = bookings.filter(b => {
+    if (validCourtIds.size > 0 && b.court_id && !validCourtIds.has(Number(b.court_id))) return false;
+    return isUpcoming(b);
+  });
   $('#upcomingCount').textContent = String(upcoming.length).padStart(2, '0');
   $('#navCount').textContent = upcoming.length;
 
-  const hours = upcoming.filter(b => b.date >= '2026-11-09' && b.date <= '2026-11-15').reduce((sum, b) => sum + Number(b.duration), 0);
+  const hours = upcoming.reduce((sum, b) => sum + Number(b.duration), 0);
   $('#hoursCount').innerHTML = hours + ' <span style="font-size:18px;font-weight:600">giờ</span>';
   renderNextBooking(upcoming);
 }
 
 function renderNextBooking(upcoming = bookings.filter(isUpcoming)) {
+  const validCourtIds = new Set(dbCourts.map(c => Number(c.id)));
   const next = upcoming
+    .filter(b => validCourtIds.size === 0 || !b.court_id || validCourtIds.has(Number(b.court_id)))
     .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start))[0];
   if (!next) {
     $('#next-venue').textContent = 'Chưa có lượt đặt';
@@ -292,10 +450,10 @@ function renderNextBooking(upcoming = bookings.filter(isUpcoming)) {
     return;
   }
 
-  const venue = venues[next.venue];
-  $('#next-sport').textContent = venue.sport.toUpperCase();
-  $('#next-venue').textContent = venue.name + ' · Sân ' + next.court;
-  $('#next-address').textContent = venue.address;
+  const courtTitle = getCourtName(next);
+  $('#next-sport').textContent = 'CẦU LÔNG';
+  $('#next-venue').textContent = courtTitle;
+  $('#next-address').textContent = 'Sân thể thao Sân Nhà';
   $('#next-date').textContent = dateOf(next.date).toLocaleDateString('vi-VN');
   $('#next-time').textContent = next.start + ' – ' + endTime(next);
 }
@@ -310,13 +468,30 @@ function renderCalendar() {
   const last = days[6];
   $('#weekTitle').textContent = `${String(monday.getDate()).padStart(2, '0')} – ${String(last.getDate()).padStart(2, '0')} tháng ${last.getMonth() + 1}, ${last.getFullYear()}`;
   $('#calendarHeader').innerHTML = '<div></div>' + days.map((d, i) => `<div class="day ${weekOffset === 0 && i === 1 ? 'today' : ''}"><small>${i === 6 ? 'CN' : 'TH ' + (i + 2)}</small><strong>${String(d.getDate()).padStart(2, '0')}</strong></div>`).join('');
-  $('#calendarBody').innerHTML = '<div class="time-column">' + ['12:00', '14:00', '16:00', '18:00', '20:00', '22:00'].map(t => `<span>${t}</span>`).join('') + '</div>' + days.map((d, i) => {
+
+  // Lọc CHỈ những sân có trong database
+  const validCourtIds = new Set(dbCourts.map(c => Number(c.id)));
+
+  $('#calendarBody').innerHTML = '<div class="time-column">' + ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'].map(t => `<span>${t}</span>`).join('') + '</div>' + days.map((d, i) => {
     const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    return `<div class="day-column ${weekOffset === 0 && i === 1 ? 'today' : ''}">` + bookings.filter(b => b.date === iso && b.status !== 'cancelled').map(b => {
-      const hour = Number(b.start.slice(0, 2));
-      const top = Math.max(0, Math.min(83, (hour - 12) / 12 * 100));
-      const height = Math.min(100 - top, Number(b.duration) / 12 * 100 + 5);
-      return `<button class="event ${b.status === 'pending' ? 'orange' : b.status === 'done' ? 'dark' : ''}" data-detail="${b.id}" style="top:${top}%;height:${height}%" aria-label="${venues[b.venue].name}, ${b.start}"><strong>${venues[b.venue].sport}</strong><small>Sân ${b.court}<br>${b.start}</small></button>`;
+
+    // Lọc theo ngày, trạng thái, và sân trong database
+    const dayBookings = bookings.filter(b => {
+      if (b.date !== iso || b.status === 'cancelled') return false;
+      const cId = Number(b.court_id || b.court);
+      // Chỉ hiển thị sân có trong database
+      if (validCourtIds.size > 0 && !validCourtIds.has(cId)) return false;
+      // Nếu có chọn lọc 1 sân cụ thể
+      if (selectedCourtFilter !== 'all' && Number(selectedCourtFilter) !== cId) return false;
+      return true;
+    });
+
+    return `<div class="day-column ${weekOffset === 0 && i === 1 ? 'today' : ''}">` + dayBookings.map(b => {
+      const startMin = Number(b.start.slice(0, 2)) * 60 + Number(b.start.slice(3, 5) || 0);
+      const top = Math.max(0, Math.min(95, (startMin - 360) / 960 * 100));
+      const height = Math.min(100 - top, Math.max(14, (Number(b.duration) * 60) / 960 * 100));
+      const courtTitle = getCourtName(b);
+      return `<button class="event ${b.status === 'pending' ? 'orange' : b.status === 'done' ? 'dark' : ''}" data-detail="${b.id}" style="top:${top}%;height:${height}%" aria-label="${courtTitle}, ${b.start}"><strong>${courtTitle}</strong><small>${b.start} – ${endTime(b)}</small></button>`;
     }).join('') + '</div>';
   }).join('');
 }
@@ -331,6 +506,18 @@ $('#menuButton').addEventListener('click', () => {
   $('#menuButton').setAttribute('aria-expanded', open);
 });
 
+// Pre-fill customer name/phone from logged-in user
+function prefillCustomerFields() {
+  const u = getLoggedInUser();
+  if (!u) return;
+  const nameEl = $('#customerName'), phoneEl = $('#customerPhone');
+  if (nameEl && !nameEl.value) nameEl.value = u.full_name || '';
+  if (phoneEl && !phoneEl.value) phoneEl.value = u.phone || '';
+  const rcNameEl = $('#rcCustomerName'), rcPhoneEl = $('#rcCustomerPhone');
+  if (rcNameEl && !rcNameEl.value) rcNameEl.value = u.full_name || '';
+  if (rcPhoneEl && !rcPhoneEl.value) rcPhoneEl.value = u.phone || '';
+}
+
 document.addEventListener('click', e => {
   const detailButton = e.target.closest('[data-detail]');
   if (detailButton) detail(detailButton.dataset.detail);
@@ -339,12 +526,13 @@ document.addEventListener('click', e => {
     setDialogError('');
     initDefaultDateTime();
     loadCourtsFromBackend();
+    prefillCustomerFields();
     $('#bookingDialog').showModal();
     closeMenu();
   }
   if (e.target.closest('.supportButton')) {
     e.preventDefault();
-    info('Sân Nhà luôn sẵn sàng', '<p>Cần đổi lịch, tìm sân hoặc hỗ trợ đặt sân?</p><div class="detail-row"><span>Hotline</span><a href="tel:1900636888"><strong>1900 636 888</strong></a></div><div class="detail-row"><span>Email</span><a href="mailto:hotro@sannha.vn"><strong>hotro@sannha.vn</strong></a></div><p class="form-note">Thời gian hỗ trợ: 07:00 – 22:00 mỗi ngày.<br>Thông tin liên hệ minh họa cho bản demo.</p>');
+    info('Sân Nhà luôn sẵn sàng', '<p>Cần đổi lịch, tìm sân hoặc hỗ trợ đặt sân?</p><div class="detail-row"><span>Hotline</span><a href="tel:1900636888"><strong>1900 636 888</strong></a></div><div class="detail-row"><span>Email</span><a href="mailto:khangtien10032008@gmail.com"><strong>khangtien10032008@gmail.com</strong></a></div><p class="form-note">Thời gian hỗ trợ: 07:00 – 22:00 mỗi ngày.</p>');
   }
   if (e.target.closest('[data-filter]')) {
     const button = e.target.closest('[data-filter]');
@@ -372,14 +560,20 @@ $('#exploreButton').onclick = () => {
   setDialogError('');
   initDefaultDateTime();
   loadCourtsFromBackend();
+  prefillCustomerFields();
   $('#bookingDialog').showModal();
   closeMenu();
 };
 $('#view-schedule').onclick = () => { window.location.href = 'court_booking_schedule.html'; };
-$('#offersButton').onclick = () => info('Ưu đãi dành cho bạn', '<div style="padding:20px;background:var(--green-light);border-radius:8px;color:var(--green)"><div class="eyebrow">CHƠI NHIỀU HƠN, VUI NHIỀU HƠN</div><h3 style="font-size:24px;margin:10px 0">Giảm 15% lượt đặt đầu</h3><p>Mã ưu đãi: <strong>CHAO SAN NHA</strong></p></div><p class="form-note">Ưu đãi minh họa. Chức năng áp dụng mã và thanh toán chưa được kết nối trong bản demo.</p>');
+$('#offersButton').onclick = () => info('Ưu đãi dành cho bạn', '<div style="padding:20px;background:var(--green-light);border-radius:8px;color:var(--green)"><div class="eyebrow">CHƠI NHIỀU HƠN, VUI NHIỀU HƠN</div><h3 style="font-size:24px;margin:10px 0">Giảm 15% lượt đặt đầu</h3><p>Mã ưu đãi: <strong>Tung Gay</strong></p></div><p class="form-note">Ưu đãi minh họa. Chức năng áp dụng mã và thanh toán chưa được kết nối trong bản demo.</p>');
 $('#profileButton').onclick = e => {
   e.preventDefault();
-  info('Tài khoản của tôi', '<div class="detail-row"><span>Họ tên</span><strong>Minh Anh</strong></div><div class="detail-row"><span>Hạng thành viên</span><strong>Thành viên Sân Nhà</strong></div><p class="form-note">Đây là tài khoản minh họa. Kết nối hệ thống đăng nhập để quản lý thông tin cá nhân.</p>');
+  const u = getLoggedInUser();
+  const name = u?.full_name || 'Chưa đăng nhập';
+  const email = u?.email || '';
+  const phone = u?.phone || '';
+  const role = getRoleLabel(u?.role);
+  info('Tài khoản của tôi', `<div class="detail-row"><span>Họ tên</span><strong>${name}</strong></div><div class="detail-row"><span>Email</span><strong>${email || '—'}</strong></div><div class="detail-row"><span>Điện thoại</span><strong>${phone || '—'}</strong></div><div class="detail-row"><span>Hạng thành viên</span><strong>${role}</strong></div>`);
 };
 $('#notificationButton').onclick = () => {
   window.location.href = 'booking_notification.html';
@@ -434,10 +628,10 @@ function initDefaultDateTime() {
 initDefaultDateTime();
 
 function updatePrice() {
-  $('#totalPrice').textContent = money(venues[$('#venueSelect').value].price * Number($('#duration').value));
+  const pricePerHour = 50000;
+  $('#totalPrice').textContent = money(pricePerHour * Number($('#duration').value));
 }
 
-$('#venueSelect').onchange = updatePrice;
 $('#duration').onchange = updatePrice;
 
 // Đồng bộ danh sách booking từ backend MySQL về giao diện
@@ -446,32 +640,63 @@ async function fetchBookingsFromBackend() {
   try {
     const list = await api.get("/bookings");
     if (Array.isArray(list) && list.length > 0) {
-      // Map định dạng của backend sang định dạng giao diện
-      const apiBookings = list.map(item => {
-        const startStr = item.start_time ? item.start_time.slice(0, 5) : "18:00";
-        let duration = 2;
-        if (item.start_time && item.end_time) {
-          const sMin = Number(item.start_time.slice(0, 2)) * 60 + Number(item.start_time.slice(3, 5));
-          const eMin = Number(item.end_time.slice(0, 2)) * 60 + Number(item.end_time.slice(3, 5));
-          if (eMin > sMin) duration = (eMin - sMin) / 60;
+      const apiBookings = [];
+      list.forEach(item => {
+        if (item.slots && item.slots.length > 0) {
+          item.slots.forEach(slot => {
+            const startDt = new Date(slot.start_at);
+            const endDt = new Date(slot.end_at);
+            const dateStr = slot.start_at.slice(0, 10);
+            const startStr = slot.start_at.slice(11, 16);
+            let duration = (endDt - startDt) / 3600000;
+            if (isNaN(duration) || duration <= 0) duration = (slot.duration_minutes || 120) / 60;
+            const courtNum = (slot.court_name ? slot.court_name.replace(/\D/g, "") : "") || String(slot.court_id || 1).padStart(2, "0");
+
+            apiBookings.push({
+              id: item.id,
+              slot_id: slot.id,
+              booking_code: item.booking_code,
+              court_id: slot.court_id,
+              court_name: slot.court_name,
+              court: courtNum.padStart(2, "0"),
+              date: dateStr,
+              start: startStr,
+              duration: duration,
+              status: item.status ? item.status.toLowerCase() : 'confirmed',
+              total_price: slot.amount || (item.total_price / item.slots.length),
+              customer_name: item.user_name,
+              customer_phone: item.user_phone
+            });
+          });
+        } else {
+          const startStr = item.start_time ? item.start_time.slice(0, 5) : "18:00";
+          let duration = 2;
+          if (item.start_time && item.end_time) {
+            const sMin = Number(item.start_time.slice(0, 2)) * 60 + Number(item.start_time.slice(3, 5));
+            const eMin = Number(item.end_time.slice(0, 2)) * 60 + Number(item.end_time.slice(3, 5));
+            if (eMin > sMin) duration = (eMin - sMin) / 60;
+          }
+          const courtNum = item.court_name ? item.court_name.replace(/\D/g, "") || String(item.court_id || 1).padStart(2, "0") : String(item.court_id || 1).padStart(2, "0");
+
+          apiBookings.push({
+            id: item.id,
+            booking_code: item.booking_code,
+            court_id: item.court_id,
+            court_name: item.court_name,
+            court: courtNum.padStart(2, "0"),
+            date: item.booking_date || localDate(new Date()),
+            start: startStr,
+            duration: duration,
+            status: item.status ? item.status.toLowerCase() : 'confirmed',
+            total_price: item.total_price,
+            customer_name: item.user_name,
+            customer_phone: item.user_phone
+          });
         }
-
-        const courtNum = item.court_name ? item.court_name.replace(/\D/g, "") || String(item.court_id || 1).padStart(2, "0") : String(item.court_id || 1).padStart(2, "0");
-
-        return {
-          id: item.id,
-          booking_code: item.booking_code,
-          venue: 'phutho',
-          court: courtNum.padStart(2, "0"),
-          date: item.booking_date || localDate(new Date()),
-          start: startStr,
-          duration: duration,
-          status: item.status ? item.status.toLowerCase() : 'confirmed',
-          total_price: item.total_price
-        };
       });
 
       bookings = apiBookings;
+      try { localStorage.setItem(bookingsKey, JSON.stringify(bookings)); } catch (_) {}
       renderBookings();
       renderCalendar();
     }
@@ -480,44 +705,87 @@ async function fetchBookingsFromBackend() {
   }
 }
 
-// Nạp danh sách sân thật từ Backend Database vào select box
+// Nạp danh sách sân thật từ Backend Database vào select box & thanh lọc
 async function loadCourtsFromBackend() {
   if (typeof api === "undefined") return;
   try {
     const courtsList = await api.get("/courts");
-    const courtSelect = $("#courtSelect");
-    if (!courtSelect || !courtsList || courtsList.length === 0) return;
+    if (!Array.isArray(courtsList) || courtsList.length === 0) return;
+    dbCourts = courtsList;
 
-    courtSelect.innerHTML = courtsList.map(c => {
-      const courtNum = String(c.id).padStart(2, "0");
-      const courtTitle = c.name || c.court_name || `Sân ${c.id}`;
-      const isActive = c.status === "Active" || c.status === "HOẠT ĐỘNG";
-      const statusLabel = isActive ? "" : " (Bảo trì)";
-      return `<option value="${courtNum}" data-id="${c.id}" ${isActive ? "" : "disabled"}>${courtTitle}${statusLabel}</option>`;
-    }).join("");
+    // 1. Dropdown form đặt sân
+    const courtSelect = $("#courtSelect");
+    if (courtSelect) {
+      courtSelect.innerHTML = dbCourts.map(c => {
+        const courtTitle = c.name || c.court_name || `Sân ${c.id}`;
+        const isActive = c.status === "Active" || c.status === "HOẠT ĐỘNG";
+        const statusLabel = isActive ? "" : " (Bảo trì)";
+        return `<option value="${c.id}" data-id="${c.id}" ${isActive ? "" : "disabled"}>${courtTitle}${statusLabel}</option>`;
+      }).join("");
+    }
+
+    // 2. Dropdown form đặt cố định
+    const rcCourtSelect = $("#rcCourtSelect");
+    if (rcCourtSelect) {
+      rcCourtSelect.innerHTML = dbCourts.map(c => {
+        const courtTitle = c.name || c.court_name || `Sân ${c.id}`;
+        const isActive = c.status === "Active" || c.status === "HOẠT ĐỘNG";
+        const statusLabel = isActive ? "" : " (Bảo trì)";
+        return `<option value="${c.id}" ${isActive ? "" : "disabled"}>${courtTitle}${statusLabel}</option>`;
+      }).join("");
+    }
+
+    // 3. Render bộ lọc sân trên bảng lịch tuần
+    renderCourtFilterTabs();
+
+    // 4. Render lại giao diện
+    renderBookings();
+    renderCalendar();
   } catch (err) {
-    console.warn("Không thể tải danh sách sân từ backend, dùng danh sách mẫu:", err);
+    console.warn("Không thể tải danh sách sân từ backend:", err);
   }
+}
+
+function renderCourtFilterTabs() {
+  const container = $("#courtFilterBar");
+  if (!container) return;
+
+  let html = `<button type="button" class="court-filter-btn ${selectedCourtFilter === 'all' ? 'active' : ''}" data-court="all">Tất cả sân (${dbCourts.length})</button>`;
+  dbCourts.forEach(c => {
+    const isAct = selectedCourtFilter === String(c.id);
+    const title = c.name || c.court_name || `Sân ${c.id}`;
+    html += `<button type="button" class="court-filter-btn ${isAct ? 'active' : ''}" data-court="${c.id}">${title}</button>`;
+  });
+  container.innerHTML = html;
+
+  container.querySelectorAll(".court-filter-btn").forEach(btn => {
+    btn.onclick = () => {
+      selectedCourtFilter = btn.dataset.court;
+      container.querySelectorAll(".court-filter-btn").forEach(b => b.classList.toggle("active", b === btn));
+      renderCalendar();
+    };
+  });
 }
 
 loadCourtsFromBackend();
 fetchBookingsFromBackend();
+applyUserUI();
 
 $('#bookingForm').onsubmit = async e => {
   e.preventDefault();
   setDialogError('');
   const submitBtn = $('#submitBookingBtn');
 
-  const customerName = ($('#customerName') ? $('#customerName').value.trim() : '') || 'Minh Anh';
-  const customerPhone = ($('#customerPhone') ? $('#customerPhone').value.trim() : '') || '0912345678';
+  const _currentUser = getLoggedInUser();
+  const customerName = ($('#customerName') ? $('#customerName').value.trim() : '') || _currentUser?.full_name || '';
+  const customerPhone = ($('#customerPhone') ? $('#customerPhone').value.trim() : '') || _currentUser?.phone || '';
   const noteInput = $('#bookingNote') ? $('#bookingNote').value.trim() : '';
 
-  const venue = $('#venueSelect').value;
   const date = $('#bookingDate').value;
   const start = $('#startTime').value;
   const duration = Number($('#duration').value);
   const courtSelect = $('#courtSelect');
-  const court = courtSelect.value;
+  const realCourtId = Number(courtSelect.value) || 1;
   const startHour = Number(start.slice(0, 2));
 
   if (startHour + duration > 23) {
@@ -536,18 +804,14 @@ $('#bookingForm').onsubmit = async e => {
     return;
   }
 
-  // Tính end_time theo định dạng HH:MM:SS
   const startMinutes = startHour * 60 + Number(start.slice(3, 5) || 0);
   const endMinutes = startMinutes + duration * 60;
   const endStr = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}:00`;
   const startStr = `${start}:00`;
 
-  // Lấy court_id thật từ database
-  const selectedOption = courtSelect.selectedOptions[0];
-  const realCourtId = selectedOption && selectedOption.dataset.id ? Number(selectedOption.dataset.id) : (Number(court) || 1);
-
-  const venueObj = venues[venue];
-  const fullNote = noteInput ? `${noteInput} (${venueObj ? venueObj.name : venue})` : `Đặt tại ${venueObj ? venueObj.name : venue}`;
+  const foundCourt = dbCourts.find(c => Number(c.id) === realCourtId);
+  const courtName = foundCourt ? (foundCourt.name || foundCourt.court_name) : `Sân ${realCourtId}`;
+  const fullNote = noteInput ? `${noteInput} (${courtName})` : `Đặt tại ${courtName}`;
 
   let backendBookingId = null;
   let backendBookingCode = null;
@@ -588,25 +852,9 @@ $('#bookingForm').onsubmit = async e => {
     }
   }
 
-  // 2. Lưu cache local để hiển thị UI
-  const booking = {
-    id: backendBookingId || Date.now(),
-    booking_code: backendBookingCode,
-    venue,
-    court,
-    date,
-    start,
-    duration,
-    status: 'confirmed'
-  };
-  bookings.push(booking);
-  try {
-    localStorage.setItem(bookingsKey, JSON.stringify(bookings));
-  } catch (error) {
-    console.error('Không thể lưu vào localStorage', error);
-  }
-
-  window.location.href = `booking_notification.html?booking=${encodeURIComponent(booking.id)}`;
+  // 2. Refresh lại dữ liệu từ Backend
+  await fetchBookingsFromBackend();
+  window.location.href = `booking_notification.html?booking=${encodeURIComponent(backendBookingId || '')}`;
 };
 
 renderBookings();
@@ -624,6 +872,7 @@ document.addEventListener('click', e => {
     rcReset();
     rcLoadCourts();
     rcInitDate();
+    prefillCustomerFields();
     $('#recurringDialog').showModal();
     closeMenu();
   }
@@ -906,8 +1155,9 @@ $('#rcConfirmBtn').onclick = async () => {
   const startTime = $('#rcStartTime').value;
   const duration = Number($('#rcDuration').value);
   const weeksCount = Number($('#rcWeeksCount').value);
-  const customerName = ($('#rcCustomerName').value.trim()) || 'Minh Anh';
-  const customerPhone = ($('#rcCustomerPhone').value.trim()) || '0912345678';
+  const _rcUser = getLoggedInUser();
+  const customerName = ($('#rcCustomerName').value.trim()) || _rcUser?.full_name || '';
+  const customerPhone = ($('#rcCustomerPhone').value.trim()) || _rcUser?.phone || '';
   const note = $('#rcNote').value.trim();
   const endTime = rcCalcEndTime(startTime, duration);
 

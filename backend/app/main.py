@@ -18,7 +18,7 @@ from app.routers import auth, health, items, reception, service_orders, services
 from app.routers import slot
 from app.routers import booking
 from app.routers import court_management, price_rule_management
-from app.routers import profile, admin_users, analytics
+from app.routers import profile, admin_users, analytics, notification
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -73,6 +73,7 @@ app.include_router(profile.router, prefix="/api")
 app.include_router(admin_users.router, prefix="/api")
 app.include_router(court_management.router, prefix="/api")
 app.include_router(price_rule_management.router, prefix="/api")
+app.include_router(notification.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 @app.get("/")
 def root():

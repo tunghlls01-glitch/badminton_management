@@ -1,29 +1,33 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lịch đặt sân của tôi — Sân Nhà</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="../css/court_booking_schedule.css">
 </head>
+
 <body>
   <header class="topbar">
     <a href="booking.html" class="brand" aria-label="Sân Nhà — Trang chủ">
-    <img class="logo" src ="../assets/images/logo.svg" alt="Logo Web" >
+    <img class="logo" src ="../assets/images/chatNTK.webp" alt="Logo Web" >
     </a>
     <nav aria-label="Điều hướng chính">
       <a href="booking.html">Quản lý đặt sân</a>
-      <a href="#booking-modal" data-book>Đặt sân mới</a>
       <a href="#my-bookings" class="active" aria-current="page">Lịch của tôi</a>
-      <a href="booking_notification.html">Xác nhận gần nhất</a>
+
+      <a href="">Ưu đãi</a>
       <a href="#support" id="support-link">Hỗ trợ</a>
     </nav>
     <div class="profile">
-      <span class="avatar">MA</span>
-      <div class="profile-text"><strong>Minh Anh</strong><small>Thành viên Sân Nhà</small></div>
+      <span class="avatar" id="scheduleAvatar">?</span>
+      <div class="profile-text"><strong id="scheduleName">Đang tải...</strong><small id="scheduleRole">Thành viên Sân Nhà</small></div>
     </div>
   </header>
 
@@ -36,7 +40,8 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="button" data-book><span aria-hidden="true">＋</span> Đặt sân mới</button>
-        <a href="booking.html" class="button secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">📅 Đặt cố định hàng tuần</a>
+        <a href="booking.html" class="button secondary"
+          style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">📅 Đặt cố định hàng tuần</a>
       </div>
     </div>
 
@@ -59,6 +64,7 @@
           <button class="arrow" id="next-week" aria-label="Tuần sau">›</button>
           <button class="today" id="today">Tuần này</button>
         </div>
+        <div class="court-filter-bar" id="scheduleCourtFilterBar" style="display:flex;gap:6px;margin:10px 0;flex-wrap:wrap"></div>
         <div class="calendar-scroll" tabindex="0" aria-label="Lịch tuần, có thể cuộn ngang">
           <div class="calendar">
             <div class="calendar-header" id="calendar-header"></div>
@@ -113,20 +119,21 @@
       </div>
       <p class="subtitle">Chọn sân và khung giờ cho trận đấu tiếp theo.</p>
       <label>Sân cầu lông
-        <select name="court">
-          <option value="01">Sân 01 — Thảo Điền</option>
-          <option value="02">Sân 02 — Thảo Điền</option>
-          <option value="03">Sân 03 — Thảo Điền</option>
-          <option value="05">Sân 05 — Thảo Điền</option>
+        <select name="court" required>
+          <option value="">Đang tải danh sách sân...</option>
         </select>
       </label>
       <label>Ngày chơi<input type="date" name="date" required></label>
       <div class="form-grid">
         <label>Giờ bắt đầu
           <select name="start">
-            <option>06:00</option><option>08:00</option><option>10:00</option>
-            <option>14:00</option><option>16:00</option>
-            <option selected>18:00</option><option>20:00</option>
+            <option>06:00</option>
+            <option>08:00</option>
+            <option>10:00</option>
+            <option>14:00</option>
+            <option>16:00</option>
+            <option selected>18:00</option>
+            <option>20:00</option>
           </select>
         </label>
         <label>Thời lượng
@@ -141,7 +148,8 @@
       <div class="modal-actions" style="display:flex;gap:8px;flex-wrap:wrap">
         <button type="button" class="button secondary" data-close>Để sau</button>
         <button type="submit" class="button">Xác nhận đặt sân</button>
-        <a href="booking.html" class="button secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">📅 Đặt cố định hàng tuần</a>
+        <a href="booking.html" class="button secondary"
+          style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">📅 Đặt cố định hàng tuần</a>
       </div>
     </form>
   </dialog>
@@ -184,4 +192,5 @@
   <script src="../js/api.js"></script>
   <script src="../js/pages/court_booking_schedule.js" defer></script>
 </body>
+
 </html>

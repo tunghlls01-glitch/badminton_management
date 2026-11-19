@@ -1,11 +1,12 @@
 """
 Đường dẫn đầy đủ: /api/bookings
-    POST   /api/bookings                → Tạo booking (chống trùng slot)
-    POST   /api/bookings/{id}/confirm   → Khách xác nhận đặt
-    GET    /api/bookings                → Danh sách booking
-    GET    /api/bookings/{id}           → Chi tiết
-    PATCH  /api/bookings/{id}/status    → Đổi trạng thái
-    DELETE /api/bookings/{id}           → Xoá
+    POST   /api/bookings                       → Tạo booking (chống trùng slot)
+    POST   /api/bookings/{id}/confirm          → Khách xác nhận đặt
+    POST   /api/bookings/{id}/admin-cancel     → Admin hủy (bắt buộc lý do, gửi thông báo)
+    GET    /api/bookings                       → Danh sách booking
+    GET    /api/bookings/{id}                  → Chi tiết
+    PATCH  /api/bookings/{id}/status           → Đổi trạng thái
+    DELETE /api/bookings/{id}                  → Xoá
 """
 from datetime import date
 from typing import Optional
@@ -19,6 +20,8 @@ from app.crud import booking as booking_crud
 from app.crud.booking import ConflictError
 from app.db.session import get_db
 from app.models.booking import BookingStatus
+from app.models.user import UserRole
+from app.core.security import get_current_user
 from app.schemas.booking import (
     BookingCreate,
     BookingOut,
@@ -30,17 +33,42 @@ from app.schemas.booking import (
     RecurringBookingCreate,
     RecurringBookingResponse,
 )
+from app.schemas.booking_slot import BookingSlotOut
+from app.schemas.notification import AdminCancelBookingRequest, AdminCancelBookingOut
 
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
 
 def _to_booking_out(booking) -> dict:
-    """Map Booking model → BookingOut schema (trích slot đầu tiên)."""
+    """Map Booking model → BookingOut schema (kèm toàn bộ slots)."""
     first_slot = None
     if booking.booking_slots:
         first_slot = booking.booking_slots[0]
 
+    slots_out = []
+    if booking.booking_slots:
+        for s in booking.booking_slots:
+            c_name = (
+                getattr(s.court, "name", None)
+                or getattr(s.court, "court_name", None)
+                if s.court
+                else None
+            )
+            slots_out.append(
+                BookingSlotOut(
+                    id=s.id,
+                    booking_id=s.booking_id,
+                    court_id=s.court_id,
+                    court_name=c_name,
+                    start_at=s.start_at,
+                    end_at=s.end_at,
+                    duration_minutes=s.duration_minutes,
+                    price_per_hour=float(s.price_per_hour),
+                    amount=float(s.amount),
+                    status=s.status,
+                )
+            )
 
     return BookingOut(
         id=booking.id,
@@ -63,7 +91,7 @@ def _to_booking_out(booking) -> dict:
         status=booking.status,
         note=booking.note,
         created_at=booking.created_at,
-        slots=[],
+        slots=slots_out,
     )
 
 
@@ -216,6 +244,42 @@ def cancel_booking(
     """
     try:
         return booking_crud.cancel_booking(db, booking, reason=reason)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{booking_id}/admin-cancel", response_model=AdminCancelBookingOut)
+def admin_cancel_booking(
+    booking_id: int,
+    body: AdminCancelBookingRequest,
+    booking=Depends(_get_or_404),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Admin hủy lịch đặt sân bất kỳ — bắt buộc nhập lý do, hệ thống gửi thông báo cho người dùng.
+
+    - Chỉ admin mới được dùng endpoint này.
+    - Lý do (admin_reason) là bắt buộc, không được để trống.
+    - Áp dụng chính sách hoàn tiền bình thường nếu còn trước giờ chơi.
+    - Nếu đã qua giờ → hoàn 0%, nhưng admin vẫn hủy được (khác với cancel thường).
+    - Hệ thống tự động gửi thông báo vào bảng notifications của người dùng.
+    """
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ quản trị viên mới có quyền hủy lịch đặt sân theo cách này.",
+        )
+    if not body.admin_reason or not body.admin_reason.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Lý do hủy là bắt buộc đối với quản trị viên.",
+        )
+    try:
+        return booking_crud.admin_cancel_booking(
+            db, booking,
+            admin_reason=body.admin_reason.strip(),
+            admin_user_id=current_user.id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 
 
 class BookingSlotStatus(str, enum.Enum):
-    Hold = "Hold"
     Active = "Active"
     Cancelled = "Cancelled"
 
@@ -23,8 +22,8 @@ class BookingSlot(Base):
     __tablename__ = "booking_slots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    booking_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("bookings.id", ondelete="CASCADE"), nullable=True
+    booking_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("bookings.id", ondelete="CASCADE"), nullable=False
     )
     court_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("courts.id", ondelete="CASCADE"), nullable=False
@@ -39,8 +38,6 @@ class BookingSlot(Base):
     status: Mapped[BookingSlotStatus] = mapped_column(
         Enum(BookingSlotStatus), default=BookingSlotStatus.Active, server_default="Active", nullable=False
     )
-    hold_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    holder_key: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     booking: Mapped[Optional["Booking"]] = relationship("Booking", back_populates="booking_slots")
     court: Mapped["Court"] = relationship("Court", back_populates="booking_slots")

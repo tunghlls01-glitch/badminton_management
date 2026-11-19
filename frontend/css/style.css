@@ -3,14 +3,14 @@
    Đổi màu chủ đạo cả web: sửa các biến trong :root bên dưới.
    ========================================================== */
 :root {
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
+  --color-primary: #BA0000;
+  --color-primary-dark: #8f0000;
   --color-danger: #dc2626;
   --color-success: #16a34a;
   --color-text: #1f2937;
   --color-muted: #6b7280;
   --color-border: #e5e7eb;
-  --color-bg: #f3f4f6;
+  --color-bg: #fdf6f6;
   --color-card: #ffffff;
   --radius: 8px;
 }
@@ -29,7 +29,7 @@ body {
 }
 
 a { color: var(--color-primary); }
-code { background: #eef2ff; padding: 1px 6px; border-radius: 4px; }
+code { background: #fee2e2; color: var(--color-primary); padding: 1px 6px; border-radius: 4px; }
 h1, h2 { margin-top: 0; }
 
 .container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 16px; }
@@ -42,7 +42,7 @@ main.container { flex: 1; padding-top: 24px; padding-bottom: 24px; }
 .nav { display: flex; gap: 4px; flex-wrap: wrap; }
 .nav a { padding: 6px 12px; border-radius: var(--radius); color: var(--color-muted); text-decoration: none; }
 .nav a:hover { background: var(--color-bg); }
-.nav a.active { background: #eef2ff; color: var(--color-primary); font-weight: 600; }
+.nav a.active { background: #fee2e2; color: var(--color-primary); font-weight: 600; }
 #app-footer { padding: 16px 0; text-align: center; color: var(--color-muted); font-size: 14px; }
 
 /* ---------- Card ---------- */

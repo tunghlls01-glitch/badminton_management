@@ -957,6 +957,32 @@ tr:last-child td {
   background: #fff0f0;
 }
 
+/* Nút Admin Hủy Sân */
+.btn-admin-cancel-action {
+  width: 100%;
+  padding: 10px 16px;
+  background: #fff;
+  color: #c0392b;
+  border: 1.5px solid #c0392b;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  letter-spacing: .2px;
+}
+
+.btn-admin-cancel-action:hover {
+  background: #fff0f0;
+  border-color: #a93226;
+  color: #a93226;
+}
+
 .cancel-policy-card {
   background: #fff5f5;
   border: 1px solid #fed7d7;
@@ -1663,4 +1689,35 @@ input, select {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+.court-filter-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.court-filter-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.court-filter-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.court-filter-btn.active {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+  font-weight: 600;
 }
