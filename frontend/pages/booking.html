@@ -30,7 +30,7 @@
 
   <aside class="sidebar" id="sidebar" aria-label="Điều hướng chính">
 <a class="brand" href="booking.html" aria-label="Sân Nhà — Trang chủ">
-  <img class="logo" src="../assets/images/chatNTK.webp" alt="Logo Web">
+  <img class="logo" src="../assets/images/Brand mark.png" alt="Logo Web">
 </a>    <p class="brand-caption">RA SÂN. KẾT NỐI. HẾT MÌNH.</p>
     <div class="nav-label">ĐIỀU HƯỚNG</div>
     <nav class="nav">
@@ -48,7 +48,7 @@
       </div>
       <div class="nav-label">TÀI KHOẢN</div>
       <a href="#" class="profile" id="profileButton">
-        <span class="avatar">MA</span><span><strong>Minh Anh</strong><small>Thành viên Sân Nhà</small></span><svg><use href="#i-chevron"/></svg>
+        <span class="avatar" id="sidebarAvatar">?</span><span><strong id="sidebarName">Đang tải...</strong><small id="sidebarRole">Thành viên Sân Nhà</small></span><svg><use href="#i-chevron"/></svg>
       </a>
     </div>
   </aside>
@@ -56,7 +56,7 @@
   <main class="main">
     <header class="topbar">
       <div class="breadcrumb"><button class="icon-button mobile-toggle" id="menuButton" aria-label="Mở điều hướng" aria-expanded="false"><svg><use href="#i-menu"/></svg></button><span>Trang chủ</span><span>/</span><span>Lịch đặt của tôi</span></div>
-      <div class="top-tools"><span class="location"><svg><use href="#i-pin"/></svg>TP. Hà Nội</span><button class="icon-button notification" id="notificationButton" aria-label="Xem thông báo"><svg><use href="#i-bell"/></svg></button><span class="avatar" style="width:30px;height:30px;font-size:9px">MA</span></div>
+      <div class="top-tools"><span class="location"><svg><use href="#i-pin"/></svg>TP. Hà Nội</span><button class="icon-button notification" id="notificationButton" aria-label="Xem thông báo"><svg><use href="#i-bell"/></svg></button><span class="avatar" id="topbarAvatar" style="width:30px;height:30px;font-size:9px">?</span></div>
     </header>
 
     <div class="content">
@@ -76,6 +76,7 @@
       <div class="workspace reveal">
         <section aria-label="Lịch đặt sân theo tuần">
           <div class="section-head"><h2>Lịch đặt sân theo tuần</h2><div class="calendar-controls"><span id="weekTitle">09 – 15 tháng 11, 2026</span><button id="previousWeek" aria-label="Tuần trước"><svg style="transform:rotate(180deg)"><use href="#i-chevron"/></svg></button><button id="nextWeek" aria-label="Tuần sau"><svg><use href="#i-chevron"/></svg></button></div></div>
+          <div class="court-filter-bar" id="courtFilterBar"></div>
           <div class="calendar">
             <div class="calendar-header" id="calendarHeader"></div>
             <div class="calendar-body" id="calendarBody"></div>
@@ -141,10 +142,10 @@
       <p class="form-note">Chọn địa điểm và khung giờ phù hợp. Lượt đặt sẽ được cập nhật vào lịch của bạn.</p>
       <div class="form-grid">
         <label class="field" for="customerName">Họ tên khách hàng
-          <input id="customerName" type="text" value="Minh Anh" required placeholder="Nhập tên người đặt">
+          <input id="customerName" type="text" value="" required placeholder="Nhập tên người đặt">
         </label>
         <label class="field" for="customerPhone">Số điện thoại
-          <input id="customerPhone" type="tel" value="0912345678" required placeholder="Nhập số điện thoại">
+          <input id="customerPhone" type="tel" value="" required placeholder="Nhập số điện thoại">
         </label>
         <label class="field full" for="venueSelect">Địa điểm
           <select id="venueSelect" required>
@@ -155,8 +156,7 @@
         </label>
         <label class="field" for="courtSelect">Sân
           <select id="courtSelect" required>
-            <option value="01">Sân 01</option><option value="02">Sân 02</option>
-            <option value="03" selected>Sân 03</option><option value="05">Sân 05</option>
+            <option value="">Đang tải danh sách sân...</option>
           </select>
         </label>
         <label class="field" for="bookingDate">Ngày chơi
@@ -221,10 +221,10 @@
     <div id="recurringStep1">
       <div class="form-grid">
         <label class="field" for="rcCustomerName">Họ tên khách hàng
-          <input id="rcCustomerName" type="text" value="Minh Anh" required placeholder="Nhập tên người đặt">
+          <input id="rcCustomerName" type="text" value="" required placeholder="Nhập tên người đặt">
         </label>
         <label class="field" for="rcCustomerPhone">Số điện thoại
-          <input id="rcCustomerPhone" type="tel" value="0912345678" required placeholder="Nhập số điện thoại">
+          <input id="rcCustomerPhone" type="tel" value="" required placeholder="Nhập số điện thoại">
         </label>
         <label class="field" for="rcCourtSelect">Sân
           <select id="rcCourtSelect" required></select>
@@ -279,6 +279,44 @@
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Dialog Admin Hủy Sân -->
+  <dialog id="adminCancelDialog" aria-labelledby="adminCancelTitle" style="border-radius:16px;border:none;padding:0;max-width:480px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.18);">
+    <div style="padding:28px 24px 20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#fff0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg style="width:18px;height:18px;fill:none;stroke:#c0392b;stroke-width:2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+        </div>
+        <h3 id="adminCancelTitle" style="margin:0;font-size:16px;font-weight:700;color:#c0392b;">Hủy sân (Quyền Admin)</h3>
+        <button type="button" class="close-dialog" style="margin-left:auto;background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;" aria-label="Đóng">
+          <svg style="width:18px;height:18px;fill:none;stroke:#666;stroke-width:2" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div id="adminCancelBody" style="font-size:13px;line-height:1.6;"></div>
+
+      <div style="margin-top:16px;">
+        <label style="display:block;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#333;margin-bottom:6px;">
+          Lý do hủy <span style="color:#c0392b;">*</span> (bắt buộc)
+        </label>
+        <textarea id="adminCancelReason" rows="3" placeholder="Nhập lý do hủy sân (ví dụ: Sân cần bảo trì, sự cố kỹ thuật, lịch sự kiện đặc biệt...)" style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;line-height:1.5;" required></textarea>
+        <small style="color:#888;font-size:11px;">Lý do này sẽ được gửi cho khách hàng qua hệ thống thông báo.</small>
+      </div>
+
+      <div id="adminCancelError" style="display:none;color:#c0392b;background:#fff0f0;border:1px solid #f5c6cb;border-radius:6px;padding:8px 12px;margin-top:10px;font-size:12px;"></div>
+
+      <div style="background:#fffbea;border:1px solid #f0d060;border-radius:8px;padding:10px 14px;margin-top:14px;font-size:12px;color:#7a6000;">
+        <strong>⚠ Lưu ý:</strong> Admin có thể hủy bất kỳ lúc nào. Chính sách hoàn tiền áp dụng bình thường nếu còn trước giờ chơi. Hệ thống sẽ tự động gửi thông báo đến khách hàng.
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:18px;">
+        <button type="button" class="close-dialog" style="flex:1;padding:11px;background:#f4f4f4;border:1px solid #ddd;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">Hủy bỏ</button>
+        <button type="button" id="btnSubmitAdminCancel" style="flex:1.5;padding:11px;background:#c0392b;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;">
+          Xác nhận hủy &amp; gửi thông báo
+        </button>
+      </div>
+    </div>
+  </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
   <script src="../js/config.js"></script>
