@@ -384,3 +384,34 @@ input, select { display: block; width: 100%; padding: 11px; border: 1px solid va
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+.court-filter-bar {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.court-filter-btn {
+  border: 1px solid var(--line, #eadada);
+  background: #fff;
+  color: var(--muted, #806c6c);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.court-filter-btn:hover {
+  border-color: #ba0000;
+  color: #ba0000;
+}
+
+.court-filter-btn.active {
+  background: #ba0000;
+  color: #fff;
+  border-color: #ba0000;
+  font-weight: 600;
+}

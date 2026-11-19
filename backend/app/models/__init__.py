@@ -16,3 +16,4 @@ from app.models.court_block import CourtBlock  # noqa: F401
 from app.models.price_rule import PriceRule  # noqa: F401
 from app.models.booking import Booking, BookingStatus  # noqa: F401
 from app.models.booking_slot import BookingSlot  # noqa: F401
+from app.models.notification import Notification, NotificationType  # noqa: F401
