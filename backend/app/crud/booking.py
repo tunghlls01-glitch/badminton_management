@@ -655,6 +655,95 @@ def delete_booking(db: Session, booking: Booking) -> None:
     db.commit()
 
 
+def admin_cancel_booking(
+    db: Session,
+    booking: Booking,
+    admin_reason: str,
+    admin_user_id: int,
+) -> dict:
+    """Admin hủy lịch đặt sân bắt buộc phải có lý do.
+
+    - Admin có thể hủy bất kỳ booking nào (kể cả dưới 6 giờ),
+      miễn là booking chưa hủy / chưa hoàn thành.
+    - Áp dụng chính sách hoàn tiền bình thường (nếu còn trước giờ chơi).
+    - Nếu đã qua giờ chơi → hoàn 0% (không rollback, admin vẫn hủy được).
+    - Gửi thông báo cho người dùng qua bảng notifications.
+    """
+    from app.models.notification import Notification, NotificationType
+
+    if booking.status == BookingStatus.Cancelled:
+        raise ValueError("Lịch đặt sân này đã được hủy trước đó")
+    if booking.status in (BookingStatus.Completed,):
+        raise ValueError(f"Lịch đặt sân đang ở trạng thái {booking.status.value}, không thể hủy")
+
+    # Tính chính sách hoàn tiền (admin vẫn áp dụng bình thường nếu còn thời gian)
+    refund_percent = 0
+    refund_amount = 0.0
+    policy_message = "Admin hủy sau giờ vào sân: không hoàn tiền (0%)"
+
+    try:
+        _, hours_before, refund_percent, refund_amount, policy_message = calculate_cancellation_terms(booking)
+        policy_message = f"Admin hủy | {policy_message}"
+    except ValueError:
+        # Đã qua giờ → hoàn 0%, nhưng admin vẫn được hủy
+        refund_percent = 0
+        refund_amount = 0.0
+        policy_message = "Admin hủy sau giờ vào sân: không hoàn tiền (0%)"
+
+    # Hủy booking + các slot
+    booking.status = BookingStatus.Cancelled
+    old_note = booking.note or ""
+    booking.note = f"{old_note} | [ADMIN HỦY] Lý do: {admin_reason}".strip(" |")
+
+    for slot in booking.booking_slots:
+        slot.status = BookingSlotStatus.Cancelled
+
+    # Tạo thông báo cho người dùng
+    court_info = ""
+    if booking.booking_slots:
+        s = booking.booking_slots[0]
+        court_name = getattr(getattr(s, "court", None), "name", None) or f"Sân {s.court_id}"
+        start_str = s.start_at.strftime("%H:%M")
+        date_str = s.start_at.strftime("%d/%m/%Y")
+        court_info = f"{court_name} · {start_str} ngày {date_str}"
+
+    notif_title = f"Lịch đặt sân {booking.booking_code} đã bị hủy bởi quản trị viên"
+    notif_message = (
+        f"Kính gửi quý khách,\n\n"
+        f"Lịch đặt sân của bạn ({court_info}) đã bị hủy bởi quản trị viên hệ thống.\n\n"
+        f"Lý do: {admin_reason}\n\n"
+        f"Chính sách hoàn tiền: {policy_message}\n"
+        f"Số tiền hoàn lại: {refund_amount:,.0f}đ ({refund_percent}%)\n\n"
+        f"Vui lòng liên hệ quầy lễ tân để được hỗ trợ thêm. Chúng tôi xin lỗi vì sự bất tiện này."
+    )
+
+    notification = Notification(
+        user_id=booking.user_id,
+        booking_id=booking.id,
+        type=NotificationType.BOOKING_CANCELLED_BY_ADMIN,
+        title=notif_title,
+        message=notif_message,
+        admin_reason=admin_reason,
+        is_read=False,
+    )
+    db.add(notification)
+
+    db.commit()
+    db.refresh(booking)
+
+    return {
+        "booking_id": booking.id,
+        "booking_code": booking.booking_code,
+        "status": booking.status,
+        "refund_percent": refund_percent,
+        "refund_amount": refund_amount,
+        "policy_message": policy_message,
+        "message": f"Đã hủy lịch đặt sân {booking.booking_code} thành công. Thông báo đã được gửi đến khách hàng.",
+        "notification_sent": True,
+        "notification_message": notif_title,
+    }
+
+
 
 
 # ──────────── Custom exceptions ────────────
