@@ -13,7 +13,7 @@ from app.models.booking import Booking
 from app.models.service import Service, ServiceStatus
 from app.models.service_order import ServiceOrder, ServiceOrderStatus
 from app.models.service_order_item import ServiceOrderItem
-from app.models.service_stock_log import ServiceStockLog
+from app.models.service_stock_log import ServiceStockLog, StockChangeType
 from app.schemas.service_order import ServiceOrderAddItem, ServiceOrderCreate
 
 
@@ -97,7 +97,7 @@ def create_order(db: Session, order_in: ServiceOrderCreate) -> ServiceOrder:
 
         stock_log = ServiceStockLog(
             service_id=service.id,
-            change_type="Bán lẻ",
+            change_type=StockChangeType.SALE.value,
             quantity_change=-item.quantity,
             quantity_before=qty_before,
             quantity_after=qty_after,
@@ -154,7 +154,7 @@ def add_item_to_order(db: Session, order_id: int, item_in: ServiceOrderAddItem) 
 
     stock_log = ServiceStockLog(
         service_id=service.id,
-        change_type="Bán lẻ",
+        change_type=StockChangeType.SALE.value,
         quantity_change=-item_in.quantity,
         quantity_before=qty_before,
         quantity_after=qty_after,
@@ -222,7 +222,7 @@ def remove_order_item(db: Session, order_id: int, item_id: int) -> ServiceOrder:
 
         stock_log = ServiceStockLog(
             service_id=service.id,
-            change_type="Điều chỉnh",
+            change_type=StockChangeType.ADJUSTMENT.value,
             quantity_change=item.quantity,
             quantity_before=qty_before,
             quantity_after=qty_after,
@@ -267,7 +267,7 @@ def cancel_order(db: Session, order_id: int) -> ServiceOrder:
 
             stock_log = ServiceStockLog(
                 service_id=service.id,
-                change_type="Điều chỉnh",
+                change_type=StockChangeType.ADJUSTMENT.value,
                 quantity_change=item.quantity,
                 quantity_before=qty_before,
                 quantity_after=qty_after,
