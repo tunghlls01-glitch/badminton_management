@@ -45,8 +45,8 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         email=user_in.email,
         phone=user_in.phone,
         hashed_password=hashed_pwd,
-        role=user_in.role if user_in.role else UserRole.CUSTOMER,
-        status=user_in.status if user_in.status else UserStatus.ACTIVE,
+        role=UserRole.CUSTOMER,
+        status=UserStatus.ACTIVE,
     )
     db.add(new_user)
     db.commit()

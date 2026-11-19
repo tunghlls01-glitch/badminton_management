@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. DESIGN TOKENS & RESET (RK BADMINTON BRAND)
+1. DESIGN TOKENS & RESET (RK BADMINTON BRAND)
    ========================================================================== */
 :root {
   --brand-red: #B91C1C;
@@ -19,13 +19,13 @@
   --border-medium: #D1D5DB;
 
   /* Slot State Colors */
-  --slot-selected-bg: #4B5563;     /* Xám đậm bắt buộc */
+  --slot-selected-bg: #4B5563;
   --slot-selected-hover: #374151;
-  --slot-booked-bg: #E07A7A;       /* Hồng/đỏ nhạt */
+  --slot-booked-bg: #E07A7A;
   --slot-booked-text: #FFFFFF;
-  --slot-locked-bg: #E5E7EB;       /* Xám nhạt */
+  --slot-locked-bg: #E5E7EB;
   --slot-locked-text: #6B7280;
-  --slot-event-bg: #DBEAFE;        /* Xanh dương nhạt */
+  --slot-event-bg: #DBEAFE;
   --slot-event-text: #1E40AF;
 
   /* Layout Dimensions */
@@ -48,12 +48,16 @@
   padding: 0;
 }
 
+.hidden {
+  display: none !important;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-page);
   color: var(--text-primary);
   line-height: 1.5;
-  padding-bottom: 108px; /* Chừa khoảng trống cho Sticky Bottom Bar */
+  padding-bottom: 108px;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -68,7 +72,7 @@ button, select {
 }
 
 /* ==========================================================================
-   2. HEADER NAVIGATION
+2. HEADER NAVIGATION
    ========================================================================== */
 .navbar {
   background: var(--bg-page);
@@ -175,7 +179,7 @@ button, select {
 }
 
 /* ==========================================================================
-   3. PAGE HEADER & DATE STRIP SELECTOR
+3. PAGE HEADER & DATE STRIP SELECTOR
    ========================================================================== */
 .booking-header {
   padding: 28px 0 20px;
@@ -347,7 +351,7 @@ button, select {
 }
 
 /* ==========================================================================
-   4. LEGEND BAR & NOTICE BANNER
+4. LEGEND BAR & NOTICE BANNER
    ========================================================================== */
 .legend-bar {
   display: flex;
@@ -453,7 +457,7 @@ button, select {
 }
 
 /* ==========================================================================
-   5. BOOKING MATRIX GRID (STICKY COURT COLUMN & TIME HEADER)
+5. BOOKING MATRIX GRID
    ========================================================================== */
 .grid-card {
   border: 1px solid var(--border-light);
@@ -461,6 +465,12 @@ button, select {
   background: var(--bg-page);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+}
+
+/* Khóa tương tác lưới khi đang trong 10 phút giữ chỗ */
+.grid-card.is-locked {
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .grid-scroll-container {
@@ -496,7 +506,6 @@ button, select {
   table-layout: fixed;
 }
 
-/* Top-left Corner Sticky Cell */
 .corner-cell {
   position: sticky;
   top: 0;
@@ -520,7 +529,6 @@ button, select {
   color: var(--text-muted);
 }
 
-/* Sticky Top Date Banner Row */
 .date-banner-cell {
   position: sticky;
   top: 0;
@@ -536,7 +544,6 @@ button, select {
   text-transform: uppercase;
 }
 
-/* Sticky Top Time Slots Row */
 .time-header-cell {
   position: sticky;
   top: 31px;
@@ -559,7 +566,6 @@ button, select {
   font-weight: 700;
 }
 
-/* Sticky Left Court Column */
 .court-cell {
   position: sticky;
   left: 0;
@@ -580,7 +586,6 @@ button, select {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-/* Highlight Court Name when any slot on that court is selected */
 tr.has-selection .court-cell {
   background-color: var(--brand-red-light);
   color: var(--brand-red);
@@ -600,7 +605,6 @@ tr.has-selection .court-selected-dot {
   display: inline-block;
 }
 
-/* Slot Cells */
 .slot-cell {
   width: var(--slot-col-width);
   min-width: var(--slot-col-width);
@@ -628,7 +632,6 @@ tr.has-selection .court-selected-dot {
   user-select: none;
 }
 
-/* State: Available */
 .slot-btn.available {
   cursor: pointer;
 }
@@ -638,7 +641,6 @@ tr.has-selection .court-selected-dot {
   background-color: #F9FAFB;
 }
 
-/* State: Selected (REQUIRED: Dark Gray #4B5563 + White Checkmark ✓) */
 .slot-btn.selected {
   background-color: var(--slot-selected-bg);
   border-color: var(--slot-selected-bg);
@@ -654,7 +656,15 @@ tr.has-selection .court-selected-dot {
   border-color: var(--slot-selected-hover);
 }
 
-/* Merged Non-Available Blocks (Locked, Booked, Event) */
+/* Đổi màu đỏ thương hiệu khi đã khóa giữ chỗ */
+.slot-btn.holding {
+  background-color: var(--brand-red);
+  border-color: var(--brand-red);
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .merged-slot-cell {
   height: var(--slot-row-height);
   border-right: 1px solid var(--border-light);
@@ -694,7 +704,7 @@ tr.has-selection .court-selected-dot {
 }
 
 /* ==========================================================================
-   6. STICKY BOTTOM SUMMARY & CHECKOUT BAR
+6. STICKY BOTTOM SUMMARY BAR + ĐẾM NGƯỢC GIỮ CHỖ 10 PHÚT
    ========================================================================== */
 .bottom-summary-bar {
   position: fixed;
@@ -702,11 +712,17 @@ tr.has-selection .court-selected-dot {
   left: 0;
   right: 0;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.97);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--border-light);
   box-shadow: var(--shadow-sticky-bottom);
   padding: 14px 0;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+}
+
+.bottom-summary-bar.is-holding {
+  border-top: 3px solid #F59E0B;
+  background: #FFFDF8;
 }
 
 .bottom-summary-inner {
@@ -778,6 +794,8 @@ tr.has-selection .court-selected-dot {
 
 .summary-center {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .btn-clear-all {
@@ -801,6 +819,54 @@ tr.has-selection .court-selected-dot {
 .btn-clear-all:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* Hộp đồng hồ đếm ngược 10 phút */
+.hold-countdown-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #FFFBEB;
+  border: 1.5px solid #F59E0B;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #78350F;
+}
+
+.countdown-timer {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--brand-red);
+  background: #FEE2E2;
+  padding: 2px 9px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-timer.urgent {
+  animation: pulseUrgent 1s infinite;
+}
+
+@keyframes pulseUrgent {
+  0%, 100% { background-color: #FEE2E2; color: var(--brand-red); }
+  50% { background-color: var(--brand-red); color: #FFFFFF; }
+}
+
+.btn-cancel-hold {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.btn-cancel-hold:hover {
+  color: var(--brand-red);
 }
 
 .summary-right {
@@ -846,6 +912,7 @@ tr.has-selection .court-selected-dot {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   box-shadow: 0 4px 12px rgba(185, 28, 28, 0.28);
   transition: all 0.15s ease;
@@ -863,7 +930,7 @@ tr.has-selection .court-selected-dot {
 }
 
 /* ==========================================================================
-   7. MODAL XÁC NHẬN ĐẶT SÂN (TEST LUỒNG TRƯỚC KHI NỐI API)
+7. MODALS (XÁC NHẬN & HẾT THỜI GIAN GIỮ CHỖ)
    ========================================================================== */
 .modal-backdrop {
   position: fixed;
@@ -988,9 +1055,61 @@ tr.has-selection .court-selected-dot {
   padding: 10px 18px;
 }
 
-/* Responsive Adjustments */
+/* Modal Hết Giờ */
+.expired-modal-card {
+  max-width: 400px;
+}
+
+.expired-modal-body {
+  text-align: center;
+  padding: 28px 24px;
+}
+
+.expired-icon-circle {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--brand-red-light);
+  color: var(--brand-red);
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expired-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.expired-modal-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+.btn-reload-full {
+  width: 100%;
+}
+
 @media (max-width: 900px) {
   .nav-menu { display: none; }
   .bottom-summary-inner { flex-wrap: wrap; }
   .summary-center { order: 3; }
+}
+
+.cancel-hold-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-half {
+  flex: 1;
+  padding: 12px 14px;
+  justify-content: center;
 }

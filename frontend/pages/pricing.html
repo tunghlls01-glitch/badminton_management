@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#B91C1C" />
+  <title>Cấu hình bảng giá | RK BADMINTON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/t3d2096.css" />
+  <link rel="stylesheet" href="../css/pricing.css" />
+  <link rel="stylesheet" href="../css/admin-sidebar.css">
+</head>
+<body data-admin-sidebar="true" class="rk-app" data-root="../" data-page="pricing">
+  <div class="rk-dashboard" style="display: flex; min-height: 100vh;">
+    <!-- SIDEBAR CHUẨN MẪU -->
+    <button class="au-sidebar-toggle" type="button" data-rk-action="sidebar" aria-controls="rk-sidebar" aria-expanded="false">Menu quản lý</button>
+    <aside id="rk-sidebar" class="rk-sidebar" aria-label="Thanh bên quản lý"></aside>
+
+    <!-- NỘI DUNG CHÍNH -->
+    <div class="rk-dashboard-body" style="flex: 1; display: flex; flex-direction: column; background: #f9fafb; overflow-y: auto;">
+      <!-- HEADER TRÊN PHẢI -->
+      <header class="rk-dashboard-header" style="background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center;">
+        <div class="rk-header-left">
+          <span style="font-size: 13.5px; color: #6b7280; font-weight: 500;">Quản lý tài chính / Cấu hình bảng giá</span>
+        </div>
+        <div class="rk-header-right">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="text-align: right;">
+              <div style="font-weight: 700; font-size: 13.5px; color: #111827;">Trịnh Hoàng Anh</div>
+              <div style="font-size: 11px; color: #6b7280;">Quản trị viên</div>
+            </div>
+            <div style="width: 36px; height: 36px; background: #fef2f2; color: #b91c1c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 1px solid #fecaca;">T</div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main-content" class="rk-dashboard-content" style="padding: 28px 32px; flex: 1;">
+        <div class="pricing-header">
+          <div>
+            <span class="rk-eyebrow" style="color: #b91c1c; font-weight: 700; font-size: 11px; letter-spacing: 0.05em;">QUẢN LÝ TÀI CHÍNH &amp; GIÁ</span>
+            <h1>Cấu hình bảng giá sân</h1>
+            <p class="pricing-subtitle">Thiết lập khung giờ, phân loại ngày thường/cuối tuần và kiểm tra xung đột lịch giá.</p>
+          </div>
+          <div class="pricing-header-actions">
+            <button type="button" class="rk-btn rk-secondary" id="btnPreviewPrice" style="background: #ffffff; border: 1px solid #e5e7eb; color: #374151; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;">📅 Xem trước giá theo ngày</button>
+            <button type="button" class="rk-btn rk-primary" id="btnOpenAddRule" style="background: #b91c1c; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;">+ Thêm quy tắc giá</button>
+          </div>
+        </div>
+
+        <!-- Cảnh báo xung đột khung giờ -->
+        <div id="overlapAlert" class="rk-alert-error" style="display: none;" role="alert">
+          <span>⚠️</span> <strong>Cảnh báo xung đột!</strong> Phát hiện khung giờ bị chồng chéo giữa các quy tắc giá. Vui lòng điều chỉnh lại thời gian.
+        </div>
+
+        <section class="pricing-card" aria-label="Danh sách quy tắc giá">
+          <div class="pricing-table-wrap">
+            <table class="pricing-table">
+              <thead>
+                <tr>
+                  <th>TÊN QUY TẮC / KHUNG GIỜ</th>
+                  <th>LOẠI NGÀY</th>
+                  <th class="text-right">ĐƠN GIÁ (VNĐ/GIỜ)</th>
+                  <th>TRẠNG THÁI</th>
+                  <th class="text-right">THAO TÁC</th>
+                </tr>
+              </thead>
+              <tbody id="pricingTableBody">
+                <tr>
+                  <td colspan="5" class="pricing-state-cell">Đang tải cấu hình bảng giá...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Drawer Thêm / Sửa Quy Tắc Giá -->
+  <div class="rk-overlay" id="pricingDrawer">
+    <aside class="rk-drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <div class="rk-drawer-head">
+        <div>
+          <h2 id="drawerTitle">Thêm quy tắc giá mới</h2>
+          <p>Thiết lập khung giờ và đơn giá áp dụng.</p>
+        </div>
+        <button type="button" class="rk-icon-button" id="btnCloseDrawer" aria-label="Đóng">×</button>
+      </div>
+
+      <form id="pricingForm" class="rk-drawer-body">
+        <input type="hidden" id="ruleId" />
+        <div class="rk-drawer-caption">THÔNG TIN QUY TẮC GIÁ</div>
+
+        <div class="rk-field">
+          <label for="ruleName">Tên quy tắc <span class="req">*</span></label>
+          <input type="text" id="ruleName" required placeholder="VD: Giờ cao điểm chiều" />
+        </div>
+
+        <div class="rk-field">
+          <label for="dayType">Loại ngày <span class="req">*</span></label>
+          <select id="dayType">
+            <option value="WEEKDAY">Ngày thường (Thứ 2 - Thứ 6)</option>
+            <option value="WEEKEND">Cuối tuần (Thứ 7 & Chủ nhật)</option>
+            <option value="ALL">Tất cả các ngày</option>
+          </select>
+        </div>
+
+        <div class="pricing-time-grid">
+          <div class="rk-field">
+            <label for="startTime">Từ giờ <span class="req">*</span></label>
+            <input type="time" id="startTime" required />
+          </div>
+          <div class="rk-field">
+            <label for="endTime">Đến giờ <span class="req">*</span></label>
+            <input type="time" id="endTime" required />
+          </div>
+        </div>
+
+        <div class="rk-field">
+          <label for="priceValue">Đơn giá (VNĐ/giờ) <span class="req">*</span></label>
+          <input type="number" id="priceValue" min="0" step="1000" required placeholder="VD: 150000" />
+        </div>
+
+        <div class="rk-form-error" id="formErrorBox"></div>
+
+        <div class="rk-drawer-foot">
+          <button type="button" class="rk-btn-cancel" id="btnCancelDrawer">Hủy bỏ</button>
+          <button type="submit" class="rk-btn rk-primary rk-btn-save" id="btnSaveRule">Lưu quy tắc</button>
+        </div>
+      </form>
+    </aside>
+  </div>
+
+  <!-- Modal Xem trước giá theo ngày bất kỳ -->
+  <div class="rk-overlay rk-center" id="previewModal">
+    <div class="rk-confirm-box" role="dialog" aria-modal="true" style="width: 440px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="margin: 0;">Xem trước giá áp dụng</h3>
+        <button type="button" class="rk-icon-button" id="btnClosePreview" aria-label="Đóng">×</button>
+      </div>
+      <div class="rk-field" style="margin-bottom: 14px;">
+        <label for="previewDate">Chọn ngày kiểm tra:</label>
+        <input type="date" id="previewDate" style="width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 12px; font-size: 13.5px;" />
+      </div>
+      <div id="previewResult" style="background: #f9fafb; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; font-size: 13px; color: #374151; line-height: 1.5;">
+        Vui lòng chọn ngày để xem chi tiết khung giờ và đơn giá tương ứng.
+      </div>
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+        <button type="button" class="rk-btn rk-primary" id="btnRunPreview">Kiểm tra ngay</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rk-toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="../js/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/t3d2096-config.js"></script>
+  <script src="../js/authStorage.js"></script>
+  <script src="../js/axiosClient.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/pages/pricing.js"></script>
+  <script src="../js/ProtectedRoute.js"></script>
+  <script src="../js/t3d2096-ui.js"></script>
+  <script src="../js/rk-layout.js"></script>
+  <script src="../js/pages/admin-sidebar.js"></script>
+</body>
+</html>
