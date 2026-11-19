@@ -24,6 +24,12 @@
       roles: ["admin"],
     },
     {
+      key: "pos",
+      label: "Bán hàng tại quầy",
+      icon: "cart",
+      roles: ["admin", "staff"],
+    },
+    {
       key: "users",
       label: "Nhân viên",
       icon: "users",
@@ -91,7 +97,7 @@
     const view =
       new URLSearchParams(global.location.search).get("view") ||
       ({"courts.html": "courts", "pricing.html": "pricing", "services.html": "services",
-        "reception.html": "check-in", "admin-users.html": "users"})[global.location.pathname.split("/").pop()] ||
+        "pos.html": "pos", "reception.html": "check-in", "admin-users.html": "users"})[global.location.pathname.split("/").pop()] ||
       items[0].key;
     const active = items.find((item) => item.key === view) || items[0];
 
