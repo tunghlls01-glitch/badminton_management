@@ -1,3 +1,4 @@
+/* global axios, axiosClient */
 /**
  * RK BADMINTON · Reception Check-in & Counter Checkout
  * Interactive frontend logic matching Figma specification.
@@ -374,13 +375,16 @@
 
     // 1. Thử gọi API Backend
     try {
-      const token = localStorage.getItem("token") || (window.authStorage && window.authStorage.getToken());
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`http://127.0.0.1:8000/api/racket-rentals/warning/${booking.id}`, { headers });
-      if (res && res.data) {
-        hasUnreturned = res.data.has_unreturned_rackets;
-        unreturnedCount = res.data.unreturned_count;
-        rentalDetails = res.data.rentals || [];
+      const http = window.axios || window.axiosClient;
+      if (http) {
+        const token = localStorage.getItem("token") || (window.authStorage && window.authStorage.getToken());
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await http.get(`http://127.0.0.1:8000/api/racket-rentals/warning/${booking.id}`, { headers });
+        if (res && res.data) {
+          hasUnreturned = res.data.has_unreturned_rackets;
+          unreturnedCount = res.data.unreturned_count;
+          rentalDetails = res.data.rentals || [];
+        }
       }
     } catch (err) {
       // 2. Fallback nếu chạy mock hoặc backend chưa có data: quét danh sách services
@@ -449,13 +453,16 @@
   // Thực thi thu hồi toàn bộ vợt của booking
   async function executeReturnAllRackets(booking) {
     try {
-      const token = localStorage.getItem("token") || (window.authStorage && window.authStorage.getToken());
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await axios.post(
-        `http://127.0.0.1:8000/api/racket-rentals/return-all/${booking.id}`,
-        { note: "Thu hồi trực tiếp tại quầy thanh toán" },
-        { headers }
-      );
+      const http = window.axios || window.axiosClient;
+      if (http) {
+        const token = localStorage.getItem("token") || (window.authStorage && window.authStorage.getToken());
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        await http.post(
+          `http://127.0.0.1:8000/api/racket-rentals/return-all/${booking.id}`,
+          { note: "Thu hồi trực tiếp tại quầy thanh toán" },
+          { headers }
+        );
+      }
     } catch (err) {
       console.warn("Backend return-all warning:", err);
     }
