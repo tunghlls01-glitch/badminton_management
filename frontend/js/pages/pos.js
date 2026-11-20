@@ -757,7 +757,14 @@ window.handleCancelOrderFromRecent = async function (orderId) {
   }
 
   try {
-    await api.patch(`/service-orders/${orderId}/cancel`);
+    if (typeof api !== "undefined" && typeof api.patch === "function") {
+      await api.patch(`/service-orders/${orderId}/cancel`);
+    } else {
+      const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+      await axios.patch(`${CONFIG.API_BASE_URL}/service-orders/${orderId}/cancel`, {}, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+    }
     showToast(
       `Đã hủy đơn #ORD-${orderId} và hoàn kho thành công!`,
       "success",
