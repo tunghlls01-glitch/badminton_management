@@ -33,6 +33,10 @@
       global.RK_NAV.go(global.RK_CONFIG.forbiddenURL, true);
       return;
     }
+    if (new URLSearchParams(global.location.search).get("view") === "revenue" && session.user.role === "admin") {
+      global.RK_NAV.go("analytics.html", true);
+      return;
+    }
     global.RK_LAYOUT.dashboard(session.user);
     box.hidden = true;
     shell.hidden = false;

@@ -31,6 +31,7 @@ from app.schemas.analytics import (
     CancellationsReportResponse,
     TopServiceItem,
     TopServicesReportResponse,
+    ComparisonMetrics,
     AnalyticsOverviewResponse,
 )
 
@@ -532,6 +533,44 @@ def get_analytics_overview(
     cancellations = get_cancellations_report(db, from_d, to_d)
     top_services = get_top_services_report(db, from_d, to_d, limit=10)
 
+    # Tính toán kỳ trước cùng độ dài để so sánh xu hướng
+    duration_days = max(1, (to_d - from_d).days + 1)
+    prev_to_d = from_d - timedelta(days=1)
+    prev_from_d = prev_to_d - timedelta(days=duration_days - 1)
+
+    prev_rev = get_revenue_report(db, prev_from_d, prev_to_d, group_by=group_by)
+    prev_occ = get_occupancy_report(db, prev_from_d, prev_to_d)
+    prev_canc = get_cancellations_report(db, prev_from_d, prev_to_d)
+
+    curr_rev_val = float(revenue.summary.total_revenue)
+    prev_rev_val = float(prev_rev.summary.total_revenue)
+    if prev_rev_val > 0:
+        rev_growth = round(((curr_rev_val - prev_rev_val) / prev_rev_val) * 100, 1)
+    else:
+        rev_growth = 0.0 if curr_rev_val == 0 else 100.0
+
+    curr_bk_val = cancellations.total_bookings or sum(item.booking_count for item in revenue.timeline)
+    prev_bk_val = prev_canc.total_bookings or sum(item.booking_count for item in prev_rev.timeline)
+    if prev_bk_val > 0:
+        bk_growth = round(((curr_bk_val - prev_bk_val) / prev_bk_val) * 100, 1)
+    else:
+        bk_growth = 0.0 if curr_bk_val == 0 else 100.0
+
+    curr_occ_val = float(occupancy.overall_occupancy_rate)
+    prev_occ_val = float(prev_occ.overall_occupancy_rate)
+    occ_growth = round(curr_occ_val - prev_occ_val, 1)
+
+    comparison = ComparisonMetrics(
+        previous_from_date=prev_from_d.isoformat(),
+        previous_to_date=prev_to_d.isoformat(),
+        previous_total_revenue=prev_rev_val,
+        revenue_growth_pct=rev_growth,
+        previous_total_bookings=prev_bk_val,
+        booking_growth_pct=bk_growth,
+        previous_occupancy_rate=prev_occ_val,
+        occupancy_growth_pts=occ_growth,
+    )
+
     return AnalyticsOverviewResponse(
         from_date=from_d.isoformat(),
         to_date=to_d.isoformat(),
@@ -540,4 +579,5 @@ def get_analytics_overview(
         occupancy=occupancy,
         cancellations=cancellations,
         top_services=top_services,
+        comparison=comparison,
     )

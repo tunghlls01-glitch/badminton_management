@@ -42,6 +42,7 @@
       "staff.pos": page("pos.html"),
       "staff.check-in": page("reception.html"),
       "admin.check-in": page("reception.html"),
+      "admin.revenue": page("analytics.html"),
     },
   });
   global.RK_NAV = {
