@@ -89,7 +89,7 @@ class AdminUsersTest(test_profile.ProfileAPITest):
     def test_public_registration_cannot_grant_admin(self):
         status, data = self.request("POST", "/auth/register", {
             "full_name": "Public", "email": "public@example.com", "phone": "0901234569",
-            "password": "secret", "role": "ADMIN", "status": "LOCKED"}, user_id=None)
+            "password": "demo-pass", "role": "ADMIN", "status": "LOCKED"}, user_id=None)
         self.assertEqual(status, 201)
         self.assertEqual(data["role"], "CUSTOMER")
         self.assertEqual(data["status"], "ACTIVE")
