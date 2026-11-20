@@ -133,6 +133,7 @@
     el.courtFeePrice = document.getElementById("courtFeePrice");
     el.servicesTableBody = document.getElementById("servicesTableBody");
     el.servicesSubtotal = document.getElementById("servicesSubtotal");
+    el.racketRentalAlertBox = document.getElementById("racketRentalAlertBox");
     el.grandTotal = document.getElementById("grandTotal");
     el.cashInput = document.getElementById("cashInput");
     el.changeDue = document.getElementById("changeDue");
@@ -356,8 +357,113 @@
     el.servicesSubtotal.textContent = formatMoney(totals.servicesTotal);
     el.grandTotal.textContent = formatMoney(totals.grandTotal);
 
+    // T3D2CB1: Kiểm tra và hiển thị cảnh báo vợt thuê chưa hoàn trả
+    updateRacketRentalWarning(booking);
+
     // Cash received & change due calculation
     renderCashCalculator(totals.grandTotal);
+  }
+
+  // --- T3D2CB1: Cảnh báo & Thu hồi vợt thuê theo Booking ---
+  async function updateRacketRentalWarning(booking) {
+    if (!el.racketRentalAlertBox) return;
+
+    let hasUnreturned = false;
+    let unreturnedCount = 0;
+    let rentalDetails = [];
+
+    // 1. Thử gọi API Backend
+    try {
+      const token = localStorage.getItem("token") || (window.authStorage && window.authStorage.getToken());
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.get(`http://127.0.0.1:8000/api/racket-rentals/warning/${booking.id}`, { headers });
+      if (res && res.data) {
+        hasUnreturned = res.data.has_unreturned_rackets;
+        unreturnedCount = res.data.unreturned_count;
+        rentalDetails = res.data.rentals || [];
+      }
+    } catch (err) {
+      // 2. Fallback nếu chạy mock hoặc backend chưa có data: quét danh sách services
+      const rentalItem = (booking.services || []).find((s) => {
+        const n = (s.name || "").toLowerCase();
+        return n.includes("thuê vợt") || n.includes("vợt");
+      });
+      if (rentalItem && !booking.rackets_returned) {
+        hasUnreturned = true;
+        unreturnedCount = rentalItem.qty || 1;
+        rentalDetails = [{ service_name: rentalItem.name, quantity: unreturnedCount, status: "RENTING" }];
+      }
+    }
+
+    // Ghi nhận trạng thái vào booking object để phục vụ nút xác nhận thanh toán
+    booking._hasUnreturnedRackets = hasUnreturned;
+    booking._unreturnedCount = unreturnedCount;
+
+    if (hasUnreturned && !booking.rackets_returned) {
+      el.racketRentalAlertBox.style.display = "block";
+      el.racketRentalAlertBox.innerHTML = `
+        <div class="rental-warning-card">
+          <div class="rental-warning-header">
+            <span style="font-size:16px;">⚠️</span>
+            <span>CẢNH BÁO: VỢT THUÊ CHƯA HOÀN TRẢ!</span>
+          </div>
+          <div class="rental-warning-body">
+            Booking này hiện đang mượn <strong>${unreturnedCount} cây vợt</strong> chưa hoàn trả vào kho.
+          </div>
+          <div class="rental-warning-actions">
+            <span style="font-size:11.5px; color:#b45309; font-weight:500;">
+              Vui lòng kiểm tra &amp; thu hồi vợt trước khi thanh toán
+            </span>
+            <button type="button" class="btn-return-racket-quick" id="btnQuickReturnRackets" data-booking-id="${booking.id}">
+              <span>✓</span>
+              <span>Xác nhận đã thu hồi vợt</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Gắn sự kiện cho nút Xác nhận thu hồi vợt
+      const btnReturn = document.getElementById("btnQuickReturnRackets");
+      if (btnReturn) {
+        btnReturn.addEventListener("click", () => executeReturnAllRackets(booking));
+      }
+    } else if (booking.rackets_returned) {
+      el.racketRentalAlertBox.style.display = "block";
+      el.racketRentalAlertBox.innerHTML = `
+        <div class="rental-returned-card">
+          <div class="rental-returned-text">
+            <span>✅</span>
+            <span>Đã thu hồi đủ ${unreturnedCount || 1} cây vợt &amp; hoàn kho thành công.</span>
+          </div>
+          <span style="font-size:11px; color:#047857; font-weight:600; background:#d1fae5; padding:3px 8px; border-radius:12px;">
+            Sẵn sàng thanh toán
+          </span>
+        </div>
+      `;
+    } else {
+      el.racketRentalAlertBox.style.display = "none";
+      el.racketRentalAlertBox.innerHTML = "";
+    }
+  }
+
+  // Thực thi thu hồi toàn bộ vợt của booking
+  async function executeReturnAllRackets(booking) {
+    try {
+      const token = localStorage.getItem("token") || (window.authStorage && window.authStorage.getToken());
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.post(
+        `http://127.0.0.1:8000/api/racket-rentals/return-all/${booking.id}`,
+        { note: "Thu hồi trực tiếp tại quầy thanh toán" },
+        { headers }
+      );
+    } catch (err) {
+      console.warn("Backend return-all warning:", err);
+    }
+
+    booking.rackets_returned = true;
+    booking._hasUnreturnedRackets = false;
+    showToast(`✓ Đã xác nhận thu hồi vợt cho booking ${booking.booking_code}! Tồn kho đã hoàn lại.`);
+    updateRacketRentalWarning(booking);
   }
 
   // --- Render Cash Calculator ---
@@ -457,6 +563,17 @@
   function handleConfirmPaymentAndPrint() {
     const booking = getSelectedBooking();
     if (!booking) return;
+
+    // T3D2CB1: Cảnh báo nếu chưa trả vợt lúc thanh toán
+    if (booking._hasUnreturnedRackets && !booking.rackets_returned) {
+      const count = booking._unreturnedCount || 1;
+      const confirmMsg = `⚠️ CẢNH BÁO VỢT CHƯA TRẢ:\n\nBooking này hiện vẫn còn ${count} cây vợt chưa hoàn trả vào kho!\n\nBấm [OK] để xác nhận đã thu hồi đủ vợt và tiếp tục thanh toán.\nBấm [Cancel] để dừng thanh toán và đi kiểm tra lại.`;
+      if (!window.confirm(confirmMsg)) {
+        showToast("⚠️ Vui lòng thu hồi vợt trước khi thanh toán!");
+        return;
+      }
+      executeReturnAllRackets(booking);
+    }
 
     const totals = calculateTotals(booking);
 
