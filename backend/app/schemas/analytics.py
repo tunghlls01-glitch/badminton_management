@@ -133,7 +133,22 @@ class TopServicesReportResponse(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────
-# 5. TỔNG HỢP (DASHBOARD OVERVIEW)
+# 5. SO SÁNH VỚI KỲ TRƯỚC (COMPARISON METRICS)
+# ─────────────────────────────────────────────────────────────
+
+class ComparisonMetrics(BaseModel):
+    previous_from_date: str
+    previous_to_date: str
+    previous_total_revenue: float = 0.0
+    revenue_growth_pct: float = 0.0
+    previous_total_bookings: int = 0
+    booking_growth_pct: float = 0.0
+    previous_occupancy_rate: float = 0.0
+    occupancy_growth_pts: float = 0.0
+
+
+# ─────────────────────────────────────────────────────────────
+# 6. TỔNG HỢP (DASHBOARD OVERVIEW)
 # ─────────────────────────────────────────────────────────────
 
 class AnalyticsOverviewResponse(BaseModel):
@@ -144,3 +159,4 @@ class AnalyticsOverviewResponse(BaseModel):
     occupancy: OccupancyReportResponse
     cancellations: CancellationsReportResponse
     top_services: TopServicesReportResponse
+    comparison: Optional[ComparisonMetrics] = None
