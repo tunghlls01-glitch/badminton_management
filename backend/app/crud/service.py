@@ -17,8 +17,11 @@ def get_services(
     category: Optional[str] = None,
     status: Optional[str] = None,
 ) -> list[Service]:
-    """Lấy danh sách dịch vụ, có thể lọc theo từ khoá, loại hoặc trạng thái."""
+    """Lấy danh sách dịch vụ, có thể lọc theo từ khoá, loại hoặc trạng thái. Loại trừ DELETED khỏi web."""
     query = select(Service).order_by(Service.id.asc())
+
+    # Luôn loại trừ các dịch vụ đã xóa (Soft Delete) khỏi danh sách web
+    query = query.where(Service.status.notin_(["DELETED", "Deleted"]))
 
     if keyword:
         query = query.where(Service.name.contains(keyword))
@@ -113,8 +116,24 @@ def update_service(db: Session, service: Service, data: ServiceUpdate) -> Servic
 
 
 def deactivate_service(db: Session, service: Service) -> Service:
-    """Ngừng cung cấp dịch vụ (chuyển trạng thái sang Inactive, không xoá cứng khỏi DB)."""
+    """Tạm ngừng cung cấp dịch vụ (chuyển trạng thái sang Inactive, có thể mở bán lại)."""
     service.status = ServiceStatus.INACTIVE
+    db.commit()
+    db.refresh(service)
+    return service
+
+
+def activate_service(db: Session, service: Service) -> Service:
+    """Mở bán lại dịch vụ (chuyển trạng thái sang Active)."""
+    service.status = ServiceStatus.ACTIVE
+    db.commit()
+    db.refresh(service)
+    return service
+
+
+def delete_service(db: Session, service: Service) -> Service:
+    """Xóa dịch vụ (Soft Delete: chuyển sang DELETED để ẩn vĩnh viễn khỏi web nhưng giữ trong DB)."""
+    service.status = ServiceStatus.DELETED
     db.commit()
     db.refresh(service)
     return service
