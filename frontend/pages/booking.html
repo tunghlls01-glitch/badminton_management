@@ -32,6 +32,8 @@
 <a class="brand" href="booking.html" aria-label="Sân Nhà — Trang chủ">
   <img class="logo" src="../assets/images/logo.svg" alt="Logo Web">
 </a>    <p class="brand-caption">RA SÂN. KẾT NỐI. HẾT MÌNH.</p>
+
+
     <div class="nav-label">ĐIỀU HƯỚNG</div>
     <nav class="nav">
       <button type="button" id="exploreButton"><svg><use href="#i-compass"/></svg>Khám phá sân</button>
@@ -62,7 +64,7 @@
     <div class="content">
       <section class="intro reveal">
         <div><div class="eyebrow">QUẢN LÝ LỊCH CHƠI</div><h1>Lịch đặt sân của tôi</h1><p class="subheading">Theo dõi lịch chơi, sẵn sàng cho mỗi trận đấu.</p></div>
-        <button class="primary new-booking"><svg><use href="#i-plus"/></svg>Đặt sân mới</button>
+        <a href="./timeline_grid.html" class="primary" style="text-decoration:none;display:inline-flex;align-items:center;"><svg><use href="#i-plus"/></svg>Đặt sân mới</a>
         <button class="secondary recurring-booking"><svg><use href="#i-calendar"/></svg>Đặt cố định hàng tuần</button>
       </section>
 
@@ -204,20 +206,20 @@
     </div>
     <div class="detail-body" id="cancelConfirmBody"></div>
   </dialog>
+
   <dialog id="recurringDialog" aria-labelledby="recurring-title">
     <div class="dialog-head">
       <h2 id="recurring-title">Đặt sân cố định hàng tuần</h2>
       <button type="button" class="close-dialog" aria-label="Đóng">×</button>
     </div>
     <div class="booking-type-toggle">
-      <button type="button" class="type-btn" id="rcBtnTypeSingle">Đặt theo lượt</button>
+      <button type="button" class="type-btn" id="rcBtnTypeSingle" onclick="window.location.href='timeline_grid.html'">Đặt theo lượt</button>
       <button type="button" class="type-btn active" id="rcBtnTypeRecurring">
         <svg style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px"><use href="#i-calendar"/></svg>Đặt cố định hàng tuần (4–8 tuần)
       </button>
     </div>
     <p class="form-note">Đặt cùng sân, cùng giờ, cùng thứ trong 4–8 tuần liên tiếp. Hệ thống sẽ kiểm tra từng tuần và cho bạn chọn bỏ qua tuần bị trùng.</p>
 
-    <!-- Bước 1: Form nhập thông tin -->
     <div id="recurringStep1">
       <div class="form-grid">
         <label class="field" for="rcCustomerName">Họ tên khách hàng
@@ -262,7 +264,6 @@
       </button>
     </div>
 
-    <!-- Bước 2: Kết quả kiểm tra & xác nhận -->
     <div id="recurringStep2" style="display:none">
       <div id="rcSummaryBar" class="rc-summary-bar"></div>
       <div id="rcWeeksList" class="rc-weeks-list"></div>

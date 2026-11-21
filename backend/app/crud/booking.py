@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.models.booking import Booking, BookingChannel, BookingStatus
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
 from app.models.court_block import CourtBlock
+from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.schemas.booking import (
     BookingCreate,
     RecurringCheckRequest,
@@ -19,7 +20,6 @@ from app.schemas.booking import (
 )
 from app.models.court import Court, CourtStatus
 from app.models.price_rule import PriceRule, PriceRuleStatus
-
 
 
 def generate_booking_code() -> str:
@@ -63,11 +63,7 @@ def get_or_create_user(
     return user
 
 
-
-
 # ──────────── module Sân: tính giá theo PriceRule ────────────
-
-
 
 
 def get_price_per_hour(
@@ -77,7 +73,6 @@ def get_price_per_hour(
     target_time: time,
 ) -> Decimal:
     dow = target_date.weekday()  # 0=Mon, 6=Sun
-
 
     rule = db.scalars(
         select(PriceRule)
@@ -91,12 +86,9 @@ def get_price_per_hour(
         .limit(1)
     ).first()
 
-
     if rule:
         return rule.price_per_hour
     return Decimal("50000")  # giá mặc định
-
-
 
 
 def calculate_slot_amount(
@@ -113,22 +105,17 @@ def calculate_slot_amount(
     """
     price_per_hour = get_price_per_hour(db, court_id, booking_date, start_time)
 
-
     start_dt = datetime.combine(booking_date, start_time)
     end_dt = datetime.combine(booking_date, end_time)
     duration = end_dt - start_dt
     duration_minutes = int(duration.total_seconds() / 60)
-
 
     # amount = price_per_hour * (duration / 60 phút)
     amount = (price_per_hour * Decimal(duration_minutes) / Decimal(60)).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
     )
 
-
     return price_per_hour, amount, duration_minutes
-
-
 
 
 def is_slot_available(
@@ -168,15 +155,12 @@ def is_slot_available(
         slot_query = slot_query.where(
             BookingSlot.booking_id != exclude_booking_id)
 
-
     if lock:
         slot_query = slot_query.with_for_update()
-
 
     conflict_slot = db.scalars(slot_query.limit(1)).first()
     if conflict_slot is not None:
         return False
-
 
     # --- 2. Kiểm tra CourtBlock trùng ---
     block_query = (
@@ -190,15 +174,11 @@ def is_slot_available(
     if lock:
         block_query = block_query.with_for_update()
 
-
     conflict_block = db.scalars(block_query.limit(1)).first()
     if conflict_block is not None:
         return False
 
-
     return True
-
-
 
 
 def create_booking(db: Session, data: BookingCreate) -> Booking:
@@ -214,13 +194,11 @@ def create_booking(db: Session, data: BookingCreate) -> Booking:
         raise ValueError(
             f"Sân '{court.name if hasattr(court, 'name') else court.court_name}' đang không hoạt động")
 
-
     # Tính start_at / end_at
     start_at = datetime.combine(data.booking_date, data.start_time)
     end_at = datetime.combine(data.booking_date, data.end_time)
     if end_at <= start_at:
         raise ValueError("Giờ kết thúc phải sau giờ bắt đầu")
-
 
     # 2. Lock + kiểm tra slot (trong cùng transaction)
     if not is_slot_available(db, data.court_id, start_at, end_at, lock=True):
@@ -229,12 +207,10 @@ def create_booking(db: Session, data: BookingCreate) -> Booking:
             f"tại sân id={data.court_id} đã được đặt!"
         )
 
-
     # 3. Tính giá
     price_per_hour, amount, duration_minutes = calculate_slot_amount(
         db, data.court_id, data.booking_date, data.start_time, data.end_time
     )
-
 
     # 4. Tạo hoặc lấy User
     user_id = getattr(data, "user_id", None)
@@ -258,7 +234,6 @@ def create_booking(db: Session, data: BookingCreate) -> Booking:
     db.add(booking)
     db.flush()  # lấy booking.id nhưng chưa commit
 
-
     # 5. Tạo BookingSlot
     slot = BookingSlot(
         booking_id=booking.id,
@@ -272,7 +247,6 @@ def create_booking(db: Session, data: BookingCreate) -> Booking:
     )
     db.add(slot)
 
-
     # 6. Commit toàn bộ transaction
     db.commit()
     db.refresh(booking)
@@ -285,20 +259,23 @@ def check_recurring_availability(db: Session, data: RecurringCheckRequest) -> di
     if court is None:
         raise ValueError(f"Sân id={data.court_id} không tồn tại")
 
-    court_name = getattr(court, "name", None) or getattr(court, "court_name", None) or f"Sân {court.id}"
+    court_name = getattr(court, "name", None) or getattr(
+        court, "court_name", None) or f"Sân {court.id}"
     weeks = []
     available_count = 0
     conflict_count = 0
     estimated_total = Decimal("0")
 
-    dow_names = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+    dow_names = ["Thứ Hai", "Thứ Ba", "Thứ Tư",
+                 "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
 
     for week_idx in range(data.weeks_count):
         cur_date = data.start_date + timedelta(days=week_idx * 7)
         start_at = datetime.combine(cur_date, data.start_time)
         end_at = datetime.combine(cur_date, data.end_time)
 
-        available = is_slot_available(db, data.court_id, start_at, end_at, lock=False)
+        available = is_slot_available(
+            db, data.court_id, start_at, end_at, lock=False)
         dow_str = dow_names[cur_date.weekday()]
 
         price_per_hour, amount, duration_minutes = calculate_slot_amount(
@@ -377,7 +354,8 @@ def create_recurring_booking(
             start_at = datetime.combine(cur_date, data.start_time)
             end_at = datetime.combine(cur_date, data.end_time)
 
-            available = is_slot_available(db, data.court_id, start_at, end_at, lock=True)
+            available = is_slot_available(
+                db, data.court_id, start_at, end_at, lock=True)
 
             if not available:
                 if cur_date in skip_set:
@@ -405,7 +383,8 @@ def create_recurring_booking(
             })
 
         if not slots_to_create:
-            raise ValueError("Không có tuần nào khả dụng để tạo lịch đặt sân cố định!")
+            raise ValueError(
+                "Không có tuần nào khả dụng để tạo lịch đặt sân cố định!")
 
         # Tạo hoặc lấy user
         user = get_or_create_user(
@@ -453,9 +432,14 @@ def create_recurring_booking(
         raise
 
 
-
-
-def confirm_booking(db: Session, booking_id: int) -> Booking:
+def confirm_booking(
+    db: Session,
+    booking_id: int,
+    *,
+    payment_method: PaymentMethod | None = None,
+    receipt_path: str | None = None,
+    note: str | None = None,
+) -> Booking:
     """Khách xác nhận booking đang Pending → Confirmed.
 
 
@@ -472,13 +456,11 @@ def confirm_booking(db: Session, booking_id: int) -> Booking:
             f"Chỉ xác nhận booking đang Pending. Hiện tại: {booking.status.value}"
         )
 
-
     # Tính lại tổng tiền từ các slot Active
     total = Decimal("0")
     for slot in booking.booking_slots:
         if slot.status != BookingSlotStatus.Active:
             continue
-
 
         # Re-check slot availability (loại trừ chính booking này)
         if not is_slot_available(
@@ -489,7 +471,6 @@ def confirm_booking(db: Session, booking_id: int) -> Booking:
                 f"Slot {slot.start_at} – {slot.end_at} tại sân id={slot.court_id} "
                 f"đã bị đặt bởi người khác!"
             )
-
 
         # Tính lại giá theo PriceRule hiện tại
         slot_date = slot.start_at.date()
@@ -505,16 +486,22 @@ def confirm_booking(db: Session, booking_id: int) -> Booking:
         slot.amount = amount
         total += amount
 
-
     booking.total_price = total
     booking.status = BookingStatus.Confirmed
-
+    if note is not None:
+        booking.note = note.strip() or None
+    if payment_method is not None:
+        db.add(Payment(
+            booking_id=booking.id,
+            amount=total,
+            payment_method=payment_method,
+            payment_status=PaymentStatus.PENDING,
+            receipt_path=receipt_path,
+        ))
 
     db.commit()
     db.refresh(booking)
     return booking
-
-
 
 
 def get_bookings(
@@ -541,12 +528,8 @@ def get_bookings(
     return list(db.scalars(query.distinct()))
 
 
-
-
 def get_booking(db: Session, booking_id: int) -> Booking | None:
     return db.get(Booking, booking_id)
-
-
 
 
 def update_booking_status(db: Session, booking: Booking, new_status: BookingStatus) -> Booking:
@@ -564,18 +547,21 @@ def calculate_cancellation_terms(
 
     earliest_start = None
     if booking.booking_slots:
-        active_slots = [s for s in booking.booking_slots if s.status != BookingSlotStatus.Cancelled]
+        active_slots = [
+            s for s in booking.booking_slots if s.status != BookingSlotStatus.Cancelled]
         slots_to_check = active_slots if active_slots else booking.booking_slots
         earliest_start = min(s.start_at for s in slots_to_check)
 
     if earliest_start is None:
-        raise ValueError("Lịch đặt sân không có khung giờ hợp lệ để tính chính sách hủy")
+        raise ValueError(
+            "Lịch đặt sân không có khung giờ hợp lệ để tính chính sách hủy")
 
     diff_seconds = (earliest_start - now).total_seconds()
     hours_before = round(diff_seconds / 3600.0, 2)
 
     if hours_before <= 0:
-        raise ValueError("Không thể hủy đặt sân khi đã đến hoặc qua giờ vào sân!")
+        raise ValueError(
+            "Không thể hủy đặt sân khi đã đến hoặc qua giờ vào sân!")
 
     if hours_before >= 24:
         refund_percent = 100
@@ -587,7 +573,8 @@ def calculate_cancellation_terms(
         refund_percent = 0
         policy_message = "Hủy dưới 6 giờ trước giờ vào sân: không hoàn tiền (0%)"
 
-    refund_amount = round(float(booking.total_price) * (refund_percent / 100.0), 2)
+    refund_amount = round(float(booking.total_price) *
+                          (refund_percent / 100.0), 2)
     return earliest_start, hours_before, refund_percent, refund_amount, policy_message
 
 
@@ -595,9 +582,11 @@ def get_cancellation_preview(db: Session, booking: Booking) -> dict:
     if booking.status == BookingStatus.Cancelled:
         raise ValueError("Lịch đặt sân này đã được hủy trước đó")
     if booking.status in (BookingStatus.Completed, BookingStatus.CHECKED_IN):
-        raise ValueError(f"Lịch đặt sân đang ở trạng thái {booking.status.value}, không thể hủy")
+        raise ValueError(
+            f"Lịch đặt sân đang ở trạng thái {booking.status.value}, không thể hủy")
 
-    earliest_start, hours_before, refund_percent, refund_amount, policy_message = calculate_cancellation_terms(booking)
+    earliest_start, hours_before, refund_percent, refund_amount, policy_message = calculate_cancellation_terms(
+        booking)
 
     summary_message = (
         f"Còn {hours_before:.1f} giờ trước giờ vào sân. "
@@ -622,9 +611,11 @@ def cancel_booking(db: Session, booking: Booking, reason: str | None = None) -> 
     if booking.status == BookingStatus.Cancelled:
         raise ValueError("Lịch đặt sân này đã được hủy trước đó")
     if booking.status in (BookingStatus.Completed, BookingStatus.CHECKED_IN):
-        raise ValueError(f"Lịch đặt sân đang ở trạng thái {booking.status.value}, không thể hủy")
+        raise ValueError(
+            f"Lịch đặt sân đang ở trạng thái {booking.status.value}, không thể hủy")
 
-    earliest_start, hours_before, refund_percent, refund_amount, policy_message = calculate_cancellation_terms(booking)
+    earliest_start, hours_before, refund_percent, refund_amount, policy_message = calculate_cancellation_terms(
+        booking)
 
     # 1. Cập nhật trạng thái booking
     booking.status = BookingStatus.Cancelled
@@ -653,6 +644,7 @@ def cancel_booking(db: Session, booking: Booking, reason: str | None = None) -> 
 def delete_booking(db: Session, booking: Booking) -> None:
     db.delete(booking)
     db.commit()
+
 
 
 def admin_cancel_booking(
@@ -743,12 +735,7 @@ def admin_cancel_booking(
         "notification_message": notif_title,
     }
 
-
-
-
 # ──────────── Custom exceptions ────────────
-
-
 
 
 class ConflictError(Exception):

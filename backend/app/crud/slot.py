@@ -9,6 +9,7 @@ from app.models.court import Court, CourtStatus
 from app.models.court_block import CourtBlock
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
 from app.models.booking import Booking, BookingStatus
+from app.crud.booking import generate_booking_code, get_price_per_hour
 
 from app.schemas.slot import (
     SlotDisplayStatus,
@@ -29,8 +30,8 @@ def is_slot_free(db: Session, court_id: int, start_at: datetime, end_at: datetim
     # 1. Kiểm tra khoá sân (CourtBlock)
     has_lock = db.query(CourtBlock).filter(
         CourtBlock.court_id == court_id,
-        CourtBlock.start_time < end_at,
-        CourtBlock.end_time > start_at
+        CourtBlock.start_at < end_at,
+        CourtBlock.end_at > start_at
     ).first()
 
     if has_lock:
@@ -39,6 +40,7 @@ def is_slot_free(db: Session, court_id: int, start_at: datetime, end_at: datetim
     # 2. Kiểm tra slot đã được đặt (BookingSlot join Booking)
     has_booking_slot = db.query(BookingSlot).join(Booking).filter(
         BookingSlot.court_id == court_id,
+        BookingSlot.status == BookingSlotStatus.Active,
         BookingSlot.start_at < end_at,
         BookingSlot.end_at > start_at,
         or_(
@@ -65,7 +67,7 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
     result = []
 
     open_hour = 6
-    close_hour = 22
+    close_hour = 23
     slot_duration = 1
 
     for court in courts:
@@ -94,8 +96,8 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
             # 2. Kiểm tra Lịch khoá sân theo khung giờ (CourtBlock)
             lock = db.query(CourtBlock).filter(
                 CourtBlock.court_id == court.id,
-                CourtBlock.start_time < end_dt,
-                CourtBlock.end_time > start_dt
+                CourtBlock.start_at < end_dt,
+                CourtBlock.end_at > start_dt
             ).first()
 
             if lock:
@@ -113,8 +115,16 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
             # 3. Kiểm tra BookingSlot trong khung giờ
             slot_record = db.query(BookingSlot).join(Booking).filter(
                 BookingSlot.court_id == court.id,
+                BookingSlot.status == BookingSlotStatus.Active,
                 BookingSlot.start_at < end_dt,
-                BookingSlot.end_at > start_dt
+                BookingSlot.end_at > start_dt,
+                or_(
+                    Booking.status.in_([BookingStatus.Confirmed, BookingStatus.CHECKED_IN]),
+                    and_(
+                        Booking.status == BookingStatus.Pending,
+                        Booking.hold_expires_at > now,
+                    ),
+                ),
             ).first()
 
             if slot_record:
@@ -144,7 +154,7 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
                     start_at=start_dt,
                     end_at=end_dt,
                     status=SlotDisplayStatus.FREE,
-                    price=50000
+                    price=get_price_per_hour(db, court.id, query_date, start_dt.time())
                 ))
 
         result.append(CourtSlotGrid(
@@ -174,6 +184,12 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
     user_col = _get_user_column()
 
     try:
+        if any(item.start_at <= now for item in payload.slots):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Không thể giữ khung giờ đã bắt đầu hoặc đã qua.",
+            )
+
         court = db.query(Court).filter(Court.id == payload.court_id).first()
         if not court:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy sân")
@@ -186,7 +202,7 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
 
         # 1. Khóa kiểm tra lịch bảo trì sân (CourtBlock)
         block_conditions = [
-            and_(CourtBlock.start_time < item.end_at, CourtBlock.end_time > item.start_at)
+            and_(CourtBlock.start_at < item.end_at, CourtBlock.end_at > item.start_at)
             for item in payload.slots
         ]
         has_lock = (
@@ -241,6 +257,7 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
         # 3. Tạo bản ghi Booking ở trạng thái Pending giữ chỗ 10 phút
         booking_kwargs = {
             user_col.key: payload.user_id,
+            "booking_code": generate_booking_code(),
             "status": BookingStatus.Pending,
             "hold_expires_at": hold_expires_at,
         }
@@ -251,11 +268,13 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
         # 4. Tạo các BookingSlot liền nhau gắn với new_booking.id
         held_slot_ids = []
         total_amount = Decimal("0")
-        default_price = Decimal("50000")
 
         for item in payload.slots:
             duration = int((item.end_at - item.start_at).total_seconds() // 60)
-            amount = (Decimal(duration) / Decimal(60)) * default_price
+            price_per_hour = get_price_per_hour(
+                db, payload.court_id, item.start_at.date(), item.start_at.time()
+            )
+            amount = (Decimal(duration) / Decimal(60)) * price_per_hour
             total_amount += amount
 
             new_slot = BookingSlot(
@@ -264,7 +283,7 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
                 start_at=item.start_at,
                 end_at=item.end_at,
                 duration_minutes=duration,
-                price_per_hour=default_price,
+                price_per_hour=price_per_hour,
                 amount=amount,
                 status=BookingSlotStatus.Active,
             )

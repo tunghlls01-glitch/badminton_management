@@ -9,6 +9,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/timeline_grid.css" />
+  <style>
+    #holdCountdownBox[hidden],
+    #btnGoBookingConfirm[hidden],
+    #btnProceed[hidden] {
+      display: none !important;
+    }
+
+    #holdCountdownBox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  </style>
 </head>
 
 <body>
@@ -32,9 +46,10 @@
         <a href="./booking_notification.html" class="nav-link">Hỗ trợ</a>
       </nav>
 
-      <!-- Nút tài khoản sang trang profile -->
-      <a href="./profile.html" class="btn-account" style="text-decoration: none;">
-        Tài khoản của tôi <span>›</span>
+
+      <a id="accountLink" href="./profile.html" class="btn-account" style="text-decoration: none;"
+        aria-label="Mở hồ sơ tài khoản">
+        <span id="accountLabel">Đang kiểm tra đăng nhập...</span><span>›</span>
       </a>
     </div>
   </header>
@@ -48,7 +63,7 @@
       <div>
         <span class="eyebrow-label">ĐẶT LỊCH TRỰC QUAN</span>
         <h1 class="page-title">Chọn khung giờ & sân trống</h1>
-        <p class="page-subtitle">Hệ thống cập nhật trạng thái sân theo thời gian thực tại cụm sân RK Badminton Center.
+        <p class="page-subtitle">Chọn sân từ 06:00 đến 23:00. Mỗi ô tương ứng 30 phút; trạng thái được tải từ hệ thống.
         </p>
       </div>
 
@@ -105,7 +120,7 @@
     </div>
 
     <!-- Booking Matrix Grid -->
-    <section class="grid-card" aria-label="Bảng lưới chọn sân và giờ">
+    <section class="grid-card" id="gridCard" aria-label="Bảng lưới chọn sân và giờ">
       <div class="grid-scroll-container" id="gridScrollContainer">
         <table class="booking-table" id="bookingTable">
           <thead id="bookingTableHead"></thead>
@@ -137,32 +152,31 @@
           Bỏ chọn tất cả
         </button>
 
-        <div id="holdCountdownBox" class="hold-countdown-box hidden" role="status" aria-live="polite">
+
+        <div id="holdCountdownBox" class="hold-countdown-box" hidden role="status" aria-live="polite">
           <span>⏳ Thời gian giữ chỗ còn lại:</span>
           <span id="countdownDisplay" class="countdown-timer">10:00</span>
           <button type="button" id="btnCancelHold" class="btn-cancel-hold">Hủy giữ</button>
         </div>
-      </div>
 
-      <!-- Right: Total Price & Proceed / Confirm Button -->
-      <div class="summary-right">
-        <div class="price-block">
-          <div class="price-label">Tổng thanh toán</div>
-          <div id="totalAmountDisplay" class="total-amount">0đ</div>
-          <div class="vat-note">Đã bao gồm VAT</div>
+        <!-- Right: Total Price & Proceed / Confirm Button -->
+        <div class="summary-right">
+          <div class="price-block">
+            <div class="price-label">Tổng thanh toán</div>
+            <div id="totalAmountDisplay" class="total-amount">0đ</div>
+            <div class="vat-note">Đã bao gồm VAT</div>
+          </div>
+
+          <!-- Nút bước 1: Mở modal xác nhận giữ chỗ -->
+          <button type="button" id="btnProceed" class="btn-proceed" disabled>
+            TIẾP THEO <span>→</span>
+          </button>
+          <!-- Nút bước 2: Hiện khi đang đếm ngược -> Sang bước xác nhận đặt sân -->
+          <button type="button" id="btnGoBookingConfirm" class="btn-proceed" hidden>
+            TIẾP TỤC XÁC NHẬN <span>→</span>
+          </button>
         </div>
-
-        <!-- Nút bước 1: Mở modal xác nhận giữ chỗ -->
-        <button type="button" id="btnProceed" class="btn-proceed" disabled>
-          TIẾP THEO <span>→</span>
-        </button>
-
-        <!-- Nút bước 2: Hiện khi đang đếm ngược -> Sang bước xác nhận đặt sân -->
-        <button type="button" id="btnGoBookingConfirm" class="btn-proceed hidden">
-          TIẾP TỤC XÁC NHẬN <span>→</span>
-        </button>
       </div>
-    </div>
   </footer>
 
   <!-- ======================================================================
@@ -193,46 +207,61 @@
     </div>
   </div>
 
-  <!-- ======================================================================
-       MODAL CẢNH BÁO HẾT THỜI GIAN GIỮ CHỖ (00:00)
-       ====================================================================== -->
-  <div id="holdExpiredModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="expiredModalTitle">
-    <div class="modal-card expired-modal-card">
-      <div class="modal-body expired-modal-body">
-        <div class="expired-icon-circle">⏳</div>
-        <h2 id="expiredModalTitle" class="expired-modal-title">Hết thời gian giữ chỗ</h2>
-        <p class="expired-modal-desc">
-          Thời gian giữ chỗ 10 phút đã kết thúc. Hệ thống sẽ tải lại trạng thái lưới sân mới nhất để bạn chọn lại.
-        </p>
-        <button type="button" id="btnReloadGrid" class="btn-proceed btn-reload-full">
-          Tải lại lưới sân
-        </button>
+  <div id="slotSuggestionModal" class="modal-backdrop suggestion-backdrop" role="dialog" aria-modal="true" aria-labelledby="slotSuggestionTitle">
+    <div class="modal-card slot-suggestion-modal">
+      <div class="modal-header">
+        <h2 id="slotSuggestionTitle" class="modal-title">Khung giờ vừa hết chỗ</h2>
+        <button type="button" id="btnCloseSlotSuggestions" class="modal-close" aria-label="Đóng">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="slotSuggestionDescription" class="slot-suggestion-description"></p>
+        <div id="slotSuggestionList" class="slot-suggestion-list"></div>
       </div>
     </div>
   </div>
-  <!-- ======================================================================
-       MODAL XÁC NHẬN HỦY GIỮ CHỖ
-       ====================================================================== -->
-  <div id="cancelHoldModal" class="modal-backdrop" role="dialog" aria-modal="true"
-    aria-labelledby="cancelHoldModalTitle">
-    <div class="modal-card expired-modal-card">
-      <div class="modal-body expired-modal-body">
-        <div class="expired-icon-circle">⚠️</div>
-        <h2 id="cancelHoldModalTitle" class="expired-modal-title">Xác nhận hủy giữ chỗ?</h2>
-        <p class="expired-modal-desc">
-          Các khung giờ bạn đang giữ sẽ được mở lại ngay cho người chơi khác. Bạn có chắc chắn muốn hủy không?
-        </p>
-        <div class="cancel-hold-actions">
-          <button type="button" id="btnKeepHold" class="btn-clear-all btn-half">
-            Tiếp tục giữ
-          </button>
-          <button type="button" id="btnConfirmCancelHold" class="btn-proceed btn-half">
-            Xác nhận hủy giữ
+
+   <!--======================================================================MODAL CẢNH BÁO HẾT
+    THỜI GIAN GIỮ CHỖ (00:00)======================================================================-->
+    <div id="holdExpiredModal" class="modal-backdrop" role="dialog" aria-modal="true"
+      aria-labelledby="expiredModalTitle">
+      <div class="modal-card expired-modal-card">
+        <div class="modal-body expired-modal-body">
+          <div class="expired-icon-circle">⏳</div>
+          <h2 id="expiredModalTitle" class="expired-modal-title">Hết thời gian giữ chỗ</h2>
+          <p class="expired-modal-desc">
+            Thời gian giữ chỗ 10 phút đã kết thúc. Hệ thống sẽ tải lại trạng thái lưới sân mới nhất để bạn chọn lại.
+          </p>
+          <button type="button" id="btnReloadGrid" class="btn-proceed btn-reload-full">
+            Tải lại lưới sân
           </button>
         </div>
       </div>
     </div>
-  </div>
+    <!-- ======================================================================
+       MODAL XÁC NHẬN HỦY GIỮ CHỖ
+       ====================================================================== -->
+    <div id="cancelHoldModal" class="modal-backdrop" role="dialog" aria-modal="true"
+      aria-labelledby="cancelHoldModalTitle">
+      <div class="modal-card expired-modal-card">
+        <div class="modal-body expired-modal-body">
+          <div class="expired-icon-circle">⚠️</div>
+          <h2 id="cancelHoldModalTitle" class="expired-modal-title">Xác nhận hủy giữ chỗ?</h2>
+          <p class="expired-modal-desc">
+            Các khung giờ bạn đang giữ sẽ được mở lại ngay cho người chơi khác. Bạn có chắc chắn muốn hủy không?
+          </p>
+          <div class="cancel-hold-actions">
+            <button type="button" id="btnKeepHold" class="btn-clear-all btn-half">
+              Tiếp tục giữ
+            </button>
+            <button type="button" id="btnConfirmCancelHold" class="btn-proceed btn-half">
+              Xác nhận hủy giữ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  <script src="../js/config.js"></script>
+  <script src="../js/ui-notice.js"></script>
   <script src="../js/timeline_grid.js"></script>
 </body>
 

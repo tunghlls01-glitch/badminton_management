@@ -31,6 +31,8 @@ class Payment(Base):
     payment_method = Column(Enum(PaymentMethod), nullable=False, default=PaymentMethod.CASH)
     payment_status = Column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.PENDING)
     transaction_code = Column(String(100), nullable=True)
+    # Tên file nằm trong thư mục riêng tư của backend; khách/staff lấy qua API có kiểm tra quyền.
+    receipt_path = Column(String(255), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     @property
