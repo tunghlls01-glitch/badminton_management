@@ -96,8 +96,9 @@
     const items = menu.filter((item) => item.roles.includes(user.role));
     const view =
       new URLSearchParams(global.location.search).get("view") ||
-      ({"courts.html": "courts", "pricing.html": "pricing", "services.html": "services",
-        "pos.html": "pos", "reception.html": "check-in", "admin-users.html": "users", "analytics.html": "revenue"})[global.location.pathname.split("/").pop()] ||
+      ({"dashboard.html": "dashboard", "courts.html": "courts", "pricing.html": "pricing", "services.html": "services",
+        "pos.html": "pos", "reception.html": "check-in", "admin-users.html": "users", "analytics.html": "revenue",
+        "booking.html": "bookings", "court_booking_schedule.html": "bookings", "timeline_grid.html": "bookings"})[global.location.pathname.split("/").pop()] ||
       items[0].key;
     const active = items.find((item) => item.key === view) || items[0];
 

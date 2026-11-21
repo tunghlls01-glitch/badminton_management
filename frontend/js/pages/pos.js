@@ -296,7 +296,18 @@ function applyFilterAndRenderGrid() {
     // Lọc theo danh mục
     if (currentCategory) {
       const cat = String(s.category || "").toUpperCase();
-      if (!cat.includes(currentCategory)) return false;
+      const target = currentCategory.toUpperCase();
+      if (target === "NUOC" || target === "DO_UONG" || target === "DRINK") {
+        if (!cat.includes("NUOC") && !cat.includes("DO_UONG") && !cat.includes("DRINK")) return false;
+      } else if (target === "ONG_CAU" || target === "SHUTTLECOCK") {
+        if (!cat.includes("ONG_CAU") && !cat.includes("CAU") && !cat.includes("SHUTTLE")) return false;
+      } else if (target === "THUE_VOT" || target === "RACKET_RENTAL") {
+        if (!cat.includes("THUE_VOT") && !cat.includes("VOT") && !cat.includes("RACKET")) return false;
+      } else if (target === "KHAC") {
+        if (!cat.includes("KHAC") && !cat.includes("OTHER") && !cat.includes("ACCESSORY")) return false;
+      } else {
+        if (!cat.includes(target)) return false;
+      }
     }
 
     return true;
@@ -757,7 +768,14 @@ window.handleCancelOrderFromRecent = async function (orderId) {
   }
 
   try {
-    await api.patch(`/service-orders/${orderId}/cancel`);
+    if (typeof api !== "undefined" && typeof api.patch === "function") {
+      await api.patch(`/service-orders/${orderId}/cancel`);
+    } else {
+      const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+      await axios.patch(`${CONFIG.API_BASE_URL}/service-orders/${orderId}/cancel`, {}, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+    }
     showToast(
       `Đã hủy đơn #ORD-${orderId} và hoàn kho thành công!`,
       "success",
