@@ -421,16 +421,34 @@ function setupEventListeners() {
   // Bộ lọc lịch sử
   const historyService = document.getElementById("history-filter-service");
   const historyType = document.getElementById("history-filter-type");
+  const historyFromDate = document.getElementById("history-filter-from-date");
+  const historyToDate = document.getElementById("history-filter-to-date");
   const btnClearHistory = document.getElementById("btn-clear-history-filter");
 
   if (historyService) historyService.addEventListener("change", loadHistoryTab);
   if (historyType) historyType.addEventListener("change", loadHistoryTab);
+  if (historyFromDate) historyFromDate.addEventListener("change", loadHistoryTab);
+  if (historyToDate) historyToDate.addEventListener("change", loadHistoryTab);
   if (btnClearHistory) {
     btnClearHistory.addEventListener("click", () => {
-      historyService.value = "";
-      historyType.value = "";
+      if (historyService) historyService.value = "";
+      if (historyType) historyType.value = "";
+      if (historyFromDate) historyFromDate.value = "";
+      if (historyToDate) historyToDate.value = "";
       loadHistoryTab();
     });
+  }
+
+  // [T3D32A7] Nút xuất CSV tồn kho
+  const btnExportInv = document.getElementById("btn-export-inventory-csv");
+  if (btnExportInv) {
+    btnExportInv.addEventListener("click", handleExportInventoryCSV);
+  }
+
+  // [T3D32A7] Nút xuất CSV lịch sử nhập/xuất kho
+  const btnExportHist = document.getElementById("btn-export-history-csv");
+  if (btnExportHist) {
+    btnExportHist.addEventListener("click", handleExportHistoryCSV);
   }
 
   // Làm mới cảnh báo
@@ -870,21 +888,34 @@ async function loadStockLogs() {
   const tbody = document.getElementById("history-table-body");
   const selectedServiceId = document.getElementById("history-filter-service")?.value;
   const filterType = document.getElementById("history-filter-type")?.value;
+  const fromDate = document.getElementById("history-filter-from-date")?.value;
+  const toDate = document.getElementById("history-filter-to-date")?.value;
 
   try {
     let logs = [];
-    if (selectedServiceId) {
-      logs = await api.get(`/services/${selectedServiceId}/stock-logs`);
-    } else if (allServices.length > 0) {
-      // Tải logs của các dịch vụ đầu tiên để minh họa bảng
-      const topServices = allServices.slice(0, 5);
-      const promises = topServices.map(s => api.get(`/services/${s.id}/stock-logs`).catch(() => []));
-      const results = await Promise.all(promises);
-      results.forEach(resLogs => {
-        if (Array.isArray(resLogs)) logs.push(...resLogs);
-      });
-      // Sắp xếp ngày mới nhất lên đầu
-      logs.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    const params = [];
+    if (selectedServiceId) params.push(`service_id=${encodeURIComponent(selectedServiceId)}`);
+    if (filterType) params.push(`change_type=${encodeURIComponent(filterType)}`);
+    if (fromDate) params.push(`from_date=${encodeURIComponent(fromDate)}`);
+    if (toDate) params.push(`to_date=${encodeURIComponent(toDate)}`);
+    const qs = params.length > 0 ? `?${params.join("&")}` : "";
+
+    try {
+      logs = await api.get(`/services/stock-logs${qs}`);
+    } catch (_) {
+      if (selectedServiceId) {
+        logs = await api.get(`/services/${selectedServiceId}/stock-logs`);
+      } else if (allServices.length > 0) {
+        // Tải logs của các dịch vụ đầu tiên để minh họa bảng
+        const topServices = allServices.slice(0, 5);
+        const promises = topServices.map(s => api.get(`/services/${s.id}/stock-logs`).catch(() => []));
+        const results = await Promise.all(promises);
+        results.forEach(resLogs => {
+          if (Array.isArray(resLogs)) logs.push(...resLogs);
+        });
+        // Sắp xếp ngày mới nhất lên đầu
+        logs.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      }
     }
 
     if (filterType) {
@@ -1034,4 +1065,83 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+// ====================================================================
+// [T3D32A7] XỬ LÝ XUẤT CSV TỒN KHO & LỊCH SỬ BIẾN ĐỘNG KHO
+// ====================================================================
+
+async function downloadCSV(url, defaultFilename) {
+  try {
+    showToast("Đang chuẩn bị file CSV...", "info");
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token") || (typeof authStorage !== "undefined" ? authStorage.getToken() : null);
+    const headers = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const fullUrl = url.startsWith("http") ? url : `${CONFIG.API_BASE_URL}${url}`;
+    const response = await fetch(fullUrl, {
+      method: "GET",
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error("Vui lòng đăng nhập lại để xuất báo cáo.");
+      if (response.status === 403) throw new Error("Bạn không có quyền xuất báo cáo kho (yêu cầu ADMIN hoặc STAFF).");
+      throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+    }
+
+    let filename = defaultFilename;
+    const disposition = response.headers.get("Content-Disposition");
+    if (disposition && disposition.indexOf("filename=") !== -1) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) {
+        filename = decodeURIComponent(match[1]);
+      }
+    }
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(blobUrl);
+
+    showToast("Xuất file CSV thành công!", "success");
+  } catch (err) {
+    showToast(`Không thể xuất CSV: ${err.message}`, "error");
+  }
+}
+
+async function handleExportInventoryCSV() {
+  const category = document.getElementById("filter-category")?.value || "";
+  const status = document.getElementById("filter-status")?.value || "";
+  const params = [];
+  if (category) params.push(`category=${encodeURIComponent(category)}`);
+  if (status) params.push(`status=${encodeURIComponent(status)}`);
+  const qs = params.length > 0 ? `?${params.join("&")}` : "";
+
+  const defaultFilename = `bao_cao_ton_kho_dich_vu_${new Date().toISOString().slice(0, 10)}.csv`;
+  await downloadCSV(`/services/export/inventory-csv${qs}`, defaultFilename);
+}
+
+async function handleExportHistoryCSV() {
+  const serviceId = document.getElementById("history-filter-service")?.value;
+  const changeType = document.getElementById("history-filter-type")?.value;
+  const fromDate = document.getElementById("history-filter-from-date")?.value;
+  const toDate = document.getElementById("history-filter-to-date")?.value;
+
+  const params = [];
+  if (serviceId) params.push(`service_id=${encodeURIComponent(serviceId)}`);
+  if (changeType) params.push(`change_type=${encodeURIComponent(changeType)}`);
+  if (fromDate) params.push(`from_date=${encodeURIComponent(fromDate)}`);
+  if (toDate) params.push(`to_date=${encodeURIComponent(toDate)}`);
+
+  const qs = params.length > 0 ? `?${params.join("&")}` : "";
+  const defaultFilename = `bao_cao_nhap_xuat_kho_${new Date().toISOString().slice(0, 10)}.csv`;
+  await downloadCSV(`/services/export/stock-logs-csv${qs}`, defaultFilename);
 }

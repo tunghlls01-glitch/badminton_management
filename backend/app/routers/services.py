@@ -13,8 +13,10 @@
     POST   /api/services/{id}/adjust         Điều chỉnh tồn kho kiểm kê có lý do (Yêu cầu ADMIN / STAFF)
     GET    /api/services/{id}/stock-logs     Xem lịch sử biến động kho của dịch vụ (Yêu cầu ADMIN / STAFF)
 """
+from datetime import date, datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user, require_roles
@@ -68,6 +70,121 @@ def list_low_stock_services(
 ):
     """Lấy danh sách các dịch vụ sắp hết hàng. Chỉ dành cho Quản trị viên (ADMIN) và Nhân viên (STAFF)."""
     return service_crud.get_low_stock_services(db, threshold=threshold)
+
+
+# ====================================================================
+# [T3D32A7] XUẤT BÁO CÁO KHO DỊCH VỤ RA CSV & TRUY VẤN LỊCH SỬ KHO
+# ====================================================================
+
+@router.get("/export/inventory-csv")
+def export_inventory_csv(
+    category: Optional[ServiceCategory] = Query(None, description="Lọc theo loại dịch vụ"),
+    status: Optional[ServiceStatus] = Query(None, description="Lọc theo trạng thái"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+):
+    """[T3D32A7] Xuất báo cáo tồn kho dịch vụ ra file CSV (Mã hóa UTF-8 BOM hiển thị chuẩn tiếng Việt trên Excel)."""
+    category_val = category.value if category else None
+    status_val = status.value if status else None
+    services = service_crud.get_services(db, category=category_val, status=status_val)
+    csv_bytes = service_crud.generate_inventory_csv(services)
+
+    filename = f"bao_cao_ton_kho_dich_vu_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
+
+
+@router.get("/export/stock-logs-csv")
+def export_stock_logs_csv(
+    from_date: Optional[date] = Query(None, description="Từ ngày (YYYY-MM-DD)"),
+    to_date: Optional[date] = Query(None, description="Đến ngày (YYYY-MM-DD)"),
+    service_id: Optional[int] = Query(None, description="Lọc theo ID dịch vụ"),
+    change_type: Optional[str] = Query(None, description="Lọc theo loại giao dịch (IMPORT, SALE, ADJUSTMENT, EXPORT)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+):
+    """[T3D32A7] Xuất lịch sử biến động nhập/xuất dịch vụ theo khoảng thời gian ra file CSV."""
+    logs = service_crud.get_filtered_stock_logs(
+        db=db,
+        from_date=from_date,
+        to_date=to_date,
+        service_id=service_id,
+        change_type=change_type,
+    )
+    csv_bytes = service_crud.generate_stock_logs_csv(logs)
+
+    date_range_str = ""
+    if from_date and to_date:
+        date_range_str = f"_{from_date}_{to_date}"
+    elif from_date:
+        date_range_str = f"_tu_{from_date}"
+    elif to_date:
+        date_range_str = f"_den_{to_date}"
+    else:
+        date_range_str = f"_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    filename = f"bao_cao_nhap_xuat_kho{date_range_str}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
+
+
+@router.get("/export-csv")
+def export_csv_unified(
+    report_type: str = Query("inventory", description="Loại báo cáo: 'inventory' (tồn kho) hoặc 'stock_logs' / 'history' (lịch sử nhập xuất)"),
+    from_date: Optional[date] = Query(None, description="Từ ngày (YYYY-MM-DD)"),
+    to_date: Optional[date] = Query(None, description="Đến ngày (YYYY-MM-DD)"),
+    service_id: Optional[int] = Query(None, description="Lọc theo ID dịch vụ"),
+    change_type: Optional[str] = Query(None, description="Lọc theo loại biến động"),
+    category: Optional[ServiceCategory] = Query(None, description="Lọc theo loại dịch vụ"),
+    status: Optional[ServiceStatus] = Query(None, description="Lọc theo trạng thái"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+):
+    """[T3D32A7] API xuất CSV linh hoạt hỗ trợ cả 2 loại báo cáo: tồn kho hiện tại hoặc lịch sử nhập/xuất."""
+    if report_type.lower() in ["inventory", "ton_kho", "stock"]:
+        return export_inventory_csv(category=category, status=status, db=db, current_user=current_user)
+    else:
+        return export_stock_logs_csv(
+            from_date=from_date,
+            to_date=to_date,
+            service_id=service_id,
+            change_type=change_type,
+            db=db,
+            current_user=current_user,
+        )
+
+
+@router.get("/stock-logs", response_model=list[ServiceStockLogOut])
+def list_all_stock_logs(
+    from_date: Optional[date] = Query(None, description="Từ ngày (YYYY-MM-DD)"),
+    to_date: Optional[date] = Query(None, description="Đến ngày (YYYY-MM-DD)"),
+    service_id: Optional[int] = Query(None, description="Lọc theo ID dịch vụ"),
+    change_type: Optional[str] = Query(None, description="Lọc theo loại biến động"),
+    limit: int = Query(200, ge=1, le=1000, description="Giới hạn số lượng bản ghi"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+):
+    """Lấy danh sách lịch sử biến động kho trên toàn bộ hệ thống hoặc theo bộ lọc thời gian."""
+    return service_crud.get_filtered_stock_logs(
+        db=db,
+        from_date=from_date,
+        to_date=to_date,
+        service_id=service_id,
+        change_type=change_type,
+        limit=limit,
+    )
 
 
 @router.get("/{service_id}", response_model=ServiceOut)
