@@ -62,6 +62,8 @@ class Booking(Base):
     status: Mapped[BookingStatus] = mapped_column(
         Enum(BookingStatus), default=BookingStatus.Pending, server_default="Pending", nullable=False
     )
+    # Thời điểm hết hạn giữ chỗ tạm; NULL với booking không thuộc phiên giữ.
+    hold_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     note: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
