@@ -30,7 +30,7 @@
     receptionURL: page("reception.html"),
     posURL: page("pos.html"),
     // Các module do thành viên phụ trách nối URL thật tại đây.
-    dashboardLinks: custom.dashboardLinks || {
+    dashboardLinks: {
       "admin.dashboard": page("dashboard.html") + "?view=dashboard",
       "admin.courts": page("courts.html"),
       "staff.courts": page("courts.html"),
@@ -46,6 +46,7 @@
       "staff.check-in": page("reception.html"),
       "admin.check-in": page("reception.html"),
       "admin.revenue": page("analytics.html"),
+      ...custom.dashboardLinks,
     },
   });
   global.RK_NAV = {

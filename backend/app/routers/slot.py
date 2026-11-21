@@ -1,8 +1,9 @@
-from datetime import date, datetime
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
+from app.crud.booking import vietnam_now
 from app.db.session import get_db
 from app.models.booking import Booking, BookingStatus
 from app.models.booking_slot import BookingSlotStatus
@@ -83,7 +84,7 @@ def get_current_slot_hold(
     current_user: User = Depends(get_current_user),
 ):
     """Khôi phục phiên giữ còn hạn của tài khoản khi trình duyệt mất sessionStorage."""
-    now = datetime.now()
+    now = vietnam_now()
     booking = (
         db.query(Booking)
         .filter(
@@ -124,7 +125,7 @@ def get_slot_hold(
         }
     if booking.status != BookingStatus.Pending:
         raise HTTPException(status_code=404, detail="Phiên giữ chỗ không còn ở trạng thái chờ xác nhận.")
-    if not booking.hold_expires_at or booking.hold_expires_at <= datetime.now():
+    if not booking.hold_expires_at or booking.hold_expires_at <= vietnam_now():
         raise HTTPException(status_code=410, detail="Phiên giữ chỗ đã hết hạn.")
     return _hold_session_payload(booking)
 

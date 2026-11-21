@@ -1,14 +1,19 @@
-import os
 import uuid
 from fastapi import HTTPException, UploadFile, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud import court as court_crud
+from app.core.config import BASE_DIR
 from app.models.booking_slot import BookingSlot
 from app.models.court import Court
 from app.schemas.court import CourtCreate, CourtUpdate
 
-UPLOAD_DIR = "static/uploads/courts"
+COURT_IMAGE_URL = "/static/uploads/courts"
+UPLOAD_DIR = BASE_DIR / "static" / "uploads" / "courts"
+IMAGE_EXTENSIONS = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+IMAGE_TYPES = {extension: mime for mime, extension in IMAGE_EXTENSIONS.items()}
+IMAGE_TYPES[".jpeg"] = "image/jpeg"
 
 
 def get_court_by_id(db: Session, court_id: int) -> Court:
@@ -42,25 +47,31 @@ def delete_court_with_check(db: Session, court_id: int) -> None:
             detail="Sân đã có lịch đặt (booking), không thể xóa! Vui lòng chuyển trạng thái sang BẢO TRÌ hoặc NGỪNG HOẠT ĐỘNG.",
         )
 
-    court_crud.delete_court(db, court)
+    try:
+        court_crud.delete_court(db, court)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Không thể xóa sân vì còn dữ liệu liên quan.") from exc
 
 
 async def save_court_image(db: Session, court_id: int, file: UploadFile) -> Court:
     court = get_court_by_id(db, court_id)
 
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File tải lên phải là định dạng hình ảnh!")
+    extension = IMAGE_EXTENSIONS.get(file.content_type)
+    if extension is None:
+        raise HTTPException(status_code=400, detail="Ảnh sân phải có định dạng PNG, JPEG hoặc WebP.")
+    max_size = 5 * 1024 * 1024
+    content = await file.read(max_size + 1)
+    if not content or len(content) > max_size:
+        raise HTTPException(status_code=400, detail="Ảnh sân phải có nội dung và không vượt quá 5 MB.")
 
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    file_ext = os.path.splitext(file.filename)[1]
-    unique_filename = f"court_{court.id}_{uuid.uuid4().hex[:8]}{file_ext}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    unique_filename = f"court_{court.id}_{uuid.uuid4().hex[:8]}{extension}"
+    file_path = UPLOAD_DIR / unique_filename
 
-    with open(file_path, "wb") as buffer:
-        content = await file.read()
-        buffer.write(content)
+    file_path.write_bytes(content)
 
-    court.image_url = f"/static/uploads/courts/{unique_filename}"
+    court.image_url = f"{COURT_IMAGE_URL}/{unique_filename}"
     db.add(court)
     db.commit()
     db.refresh(court)

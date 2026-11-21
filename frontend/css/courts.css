@@ -165,8 +165,12 @@
   overflow-wrap: anywhere;
 }
 
-/* Override the shared .rk-app img width: 100% for table thumbnails. */
-.rk-app .court-thumb {
+.court-cell > .court-thumb-frame {
+  flex: 0 0 78px;
+}
+
+.rk-app .court-thumb,
+.court-thumb-frame .rk-court-photo-placeholder {
   width: 78px;
   min-width: 78px;
   max-width: 78px;
@@ -174,7 +178,6 @@
   border-radius: 7px;
   object-fit: cover;
   border: 1px solid #e5e7eb;
-  background: #f3f4f6;
   flex-shrink: 0;
 }
 
@@ -441,13 +444,13 @@
   flex-shrink: 0;
 }
 
-.rk-upload-preview-wrap img {
+.rk-upload-preview-wrap img,
+.rk-upload-preview-wrap .rk-court-photo-placeholder {
   width: 104px;
   height: 68px;
   border-radius: 7px;
   object-fit: cover;
   border: 1px solid #e5e7eb;
-  background: #ffffff;
 }
 
 .rk-upload-preview-wrap span {
