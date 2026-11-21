@@ -29,10 +29,13 @@
     staffHome: custom.staffHome || page("dashboard.html") + "?view=bookings",
     receptionURL: page("reception.html"),
     posURL: page("pos.html"),
-    // Các module còn lại do thành viên phụ trách nối URL thật tại đây.
+    // Các module do thành viên phụ trách nối URL thật tại đây.
     dashboardLinks: custom.dashboardLinks || {
+      "admin.dashboard": page("dashboard.html") + "?view=dashboard",
       "admin.courts": page("courts.html"),
       "staff.courts": page("courts.html"),
+      "admin.bookings": page("booking.html"),
+      "staff.bookings": page("court_booking_schedule.html"),
       "admin.pricing": page("pricing.html"),
       "admin.users": page("admin-users.html") + "?view=users",
       "admin.customers": page("admin-users.html") + "?view=customers",
@@ -42,6 +45,7 @@
       "staff.pos": page("pos.html"),
       "staff.check-in": page("reception.html"),
       "admin.check-in": page("reception.html"),
+      "admin.revenue": page("analytics.html"),
     },
   });
   global.RK_NAV = {

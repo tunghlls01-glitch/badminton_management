@@ -12,6 +12,8 @@
   const touched = new Set();
   let busy = false;
   const emailOK = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  const phoneOK = (value) => /^(0[35789]\d{8}|\+84[35789]\d{8})$/.test(value.trim());
+  const accountOK = (value) => emailOK(value) || (!register && phoneOK(value));
   function values() {
     return Object.fromEntries(
       ["full_name", "phone", "email", "password"].map((name) => [
@@ -26,11 +28,13 @@
       errors.full_name = "Vui lòng nhập họ và tên từ 2 ký tự.";
     if (
       register &&
-      !/^(0[35789]\d{8}|\+84[35789]\d{8})$/.test(data.phone.trim())
+      !phoneOK(data.phone)
     )
       errors.phone = "Số điện thoại chưa hợp lệ. Ví dụ: 0912345678.";
-    if (!emailOK(data.email))
-      errors.email = "Vui lòng nhập địa chỉ email hợp lệ.";
+    if (!accountOK(data.email))
+      errors.email = register
+        ? "Vui lòng nhập địa chỉ email hợp lệ."
+        : "Vui lòng nhập email hoặc số điện thoại hợp lệ.";
     if (!data.password) errors.password = "Vui lòng nhập mật khẩu.";
     else if (
       register &&
@@ -54,7 +58,7 @@
       input.setAttribute("aria-describedby", "password-hint");
     else input.removeAttribute("aria-describedby");
     if (name === "email") {
-      const valid = touched.has("email") && emailOK(input.value) && !text;
+      const valid = touched.has("email") && accountOK(input.value) && !text;
       wrapper.classList.toggle("is-valid", valid);
       wrapper.querySelector(".rk-valid-icon").hidden = !valid;
     }
