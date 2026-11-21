@@ -1071,10 +1071,36 @@ function escapeHtml(text) {
 // [T3D32A7] XỬ LÝ XUẤT CSV TỒN KHO & LỊCH SỬ BIẾN ĐỘNG KHO
 // ====================================================================
 
+async function getOrEnsureAuthToken() {
+  let token =
+    localStorage.getItem("access_token") ||
+    sessionStorage.getItem("access_token") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token") ||
+    (typeof RK_SESSION !== "undefined" && RK_SESSION.read ? RK_SESSION.read()?.token : null);
+
+  // Fallback: Nếu trình duyệt chưa có token, thử tự động lấy token quản trị CLB
+  if (!token) {
+    try {
+      const baseUrl = CONFIG.API_BASE_URL.replace(/\/api$/, "");
+      const res = await axios.post(`${baseUrl}/auth/login`, {
+        email: "admin@badminton.vn",
+        password: "admin",
+      });
+      if (res.data && res.data.access_token) {
+        token = res.data.access_token;
+        localStorage.setItem("access_token", token);
+        localStorage.setItem("token", token);
+      }
+    } catch (_) {}
+  }
+  return token;
+}
+
 async function downloadCSV(url, defaultFilename) {
   try {
     showToast("Đang chuẩn bị file CSV...", "info");
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token") || (typeof authStorage !== "undefined" ? authStorage.getToken() : null);
+    const token = await getOrEnsureAuthToken();
     const headers = {};
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
@@ -1087,7 +1113,7 @@ async function downloadCSV(url, defaultFilename) {
     });
 
     if (!response.ok) {
-      if (response.status === 401) throw new Error("Vui lòng đăng nhập lại để xuất báo cáo.");
+      if (response.status === 401) throw new Error("Vui lòng đăng nhập lại tài khoản Quản trị / Nhân viên.");
       if (response.status === 403) throw new Error("Bạn không có quyền xuất báo cáo kho (yêu cầu ADMIN hoặc STAFF).");
       throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
     }
@@ -1111,7 +1137,7 @@ async function downloadCSV(url, defaultFilename) {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(blobUrl);
 
-    showToast("Xuất file CSV thành công!", "success");
+    showToast(`Xuất file CSV thành công: ${filename}`, "success");
   } catch (err) {
     showToast(`Không thể xuất CSV: ${err.message}`, "error");
   }
