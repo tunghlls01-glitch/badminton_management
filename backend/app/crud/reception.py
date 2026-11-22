@@ -217,16 +217,27 @@ def checkout_booking(
         db.add(invoice)
         db.flush()  # sinh invoice.id
 
-        # 5. Tạo bản ghi Thanh toán (Payment)
-        payment = Payment(
-            booking_id=booking.id,
-            invoice_id=invoice.id,
-            amount=grand_total,
-            payment_method=PaymentMethod(payment_method_str),
-            payment_status=PaymentStatus.SUCCESS,
-            transaction_code=data.transaction_code.strip() if data.transaction_code else None,
+        # Nếu khách đã gửi yêu cầu thanh toán online, cập nhật bản ghi Pending đó
+        # thay vì tạo thêm một Payment trùng cho cùng lần thanh toán.
+        payment = (
+            db.query(Payment)
+            .filter(
+                Payment.booking_id == booking.id,
+                Payment.payment_status == PaymentStatus.PENDING,
+            )
+            .order_by(Payment.id.desc())
+            .with_for_update()
+            .first()
         )
-        db.add(payment)
+        if payment is None:
+            payment = Payment(booking_id=booking.id)
+            db.add(payment)
+        payment.invoice_id = invoice.id
+        payment.amount = grand_total
+        payment.payment_method = PaymentMethod(payment_method_str)
+        payment.payment_status = PaymentStatus.SUCCESS
+        if data.transaction_code and data.transaction_code.strip():
+            payment.transaction_code = data.transaction_code.strip()
 
         # 6. Đổi trạng thái các đơn dịch vụ liên quan -> COMPLETED
         for order in service_orders:

@@ -9,15 +9,22 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError
 
 from app import models  # noqa: F401 - import để SQLAlchemy biết các bảng
+from app.models import maintenance_block  # noqa: F401 - đăng ký bảng court_maintenance_blocks
 from app.core.config import settings
 from app.db.session import Base, engine
+
+from app.seeds.seed_courts import seed_courts
+from app.routers import auth, health, items, reception, service_orders, services
+
 from app.routers import auth, health, items, reception, service_orders, services, racket_rentals
+
 from app.routers import slot
 from app.routers import booking
-from app.routers import court_management, price_rule_management
+from app.routers import court_management, price_rule_management, maintenance_blocks
 from app.routers import profile, admin_users, analytics, notification
 
 @asynccontextmanager
@@ -25,6 +32,29 @@ async def lifespan(app: FastAPI):
     # Tự tạo các bảng còn thiếu khi server khởi động (bảng đã có thì bỏ qua).
     try:
         Base.metadata.create_all(bind=engine)
+        # create_all() tạo bảng còn thiếu nhưng không thêm cột vào bảng đã tồn tại.
+        # Bổ sung cột giữ chỗ một lần khi khởi động nếu database cũ chưa có.
+        booking_columns = {
+            column["name"] for column in inspect(engine).get_columns("bookings")
+        }
+        if "hold_expires_at" not in booking_columns:
+            with engine.begin() as connection:
+                connection.execute(
+                    text("ALTER TABLE bookings ADD COLUMN hold_expires_at DATETIME NULL")
+                )
+            print("[DB] Đã thêm cột bookings.hold_expires_at")
+        payment_columns = {
+            column["name"] for column in inspect(engine).get_columns("payments")
+        }
+        if "receipt_path" not in payment_columns:
+            with engine.begin() as connection:
+                connection.execute(
+                    text("ALTER TABLE payments ADD COLUMN receipt_path VARCHAR(255) NULL")
+                )
+            print("[DB] Đã thêm cột payments.receipt_path")
+        added_courts = seed_courts()
+        if added_courts:
+            print(f"[SEED] Đã thêm {added_courts} sân mẫu vào database")
         print(f"[DB] Đã kết nối MySQL {settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
     except OperationalError as error:
         print("[DB] KHÔNG kết nối được MySQL! Kiểm tra MySQL đã bật chưa và file .env.")
@@ -75,8 +105,10 @@ app.include_router(profile.router, prefix="/api")
 app.include_router(admin_users.router, prefix="/api")
 app.include_router(court_management.router, prefix="/api")
 app.include_router(price_rule_management.router, prefix="/api")
+app.include_router(maintenance_blocks.router, prefix="/api")
 app.include_router(notification.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} đang chạy. Xem tài liệu API tại /docs"}

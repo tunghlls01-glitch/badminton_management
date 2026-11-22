@@ -156,6 +156,56 @@
     </div>
   </div>
 
+  <!-- Drawer Khoá sân bảo trì theo thời gian (Task T3D23A6) -->
+  <div class="rk-overlay" id="lockDrawerOverlay">
+    <aside class="rk-drawer" role="dialog" aria-modal="true" aria-labelledby="lockDrawerTitle">
+      <div class="rk-drawer-head">
+        <div>
+          <h2 id="lockDrawerTitle">Khoá sân bảo trì</h2>
+          <p id="lockDrawerSubtitle">Khoá sân theo khoảng thời gian và kiểm tra booking bị ảnh hưởng.</p>
+        </div>
+        <button type="button" class="rk-icon-button" id="btnCloseLockDrawer" aria-label="Đóng">×</button>
+      </div>
+
+      <form id="lockCourtForm" class="rk-drawer-body">
+        <input type="hidden" id="lockCourtId" />
+        <div class="rk-drawer-caption">THIẾT LẬP KHOẢNG THỜI GIAN KHOÁ</div>
+
+        <div class="rk-field">
+          <label for="lockStartAt">Từ thời điểm <span class="req">*</span></label>
+          <input type="datetime-local" id="lockStartAt" required />
+        </div>
+
+        <div class="rk-field">
+          <label for="lockEndAt">Đến thời điểm <span class="req">*</span></label>
+          <input type="datetime-local" id="lockEndAt" required />
+        </div>
+
+        <div class="rk-field">
+          <label for="lockReason">Lý do khoá <span class="req">*</span></label>
+          <input type="text" id="lockReason" required maxlength="255" placeholder="VD: Sửa lưới, tổ chức giải đấu..." />
+        </div>
+
+        <div class="rk-form-error" id="lockFormErrorBox"></div>
+
+        <div id="affectedBookingsBox" class="rk-affected-box" hidden>
+          <div class="rk-affected-title" id="affectedBookingsTitle">Booking bị ảnh hưởng</div>
+          <ul id="affectedBookingsList" class="rk-affected-list"></ul>
+        </div>
+
+        <div class="rk-lock-list-wrap">
+          <div class="rk-drawer-caption" style="margin-top: 8px;">LỊCH KHOÁ ĐANG ÁP DỤNG</div>
+          <div id="courtLocksList" class="rk-lock-list">Đang tải...</div>
+        </div>
+
+        <div class="rk-drawer-foot">
+          <button type="button" class="rk-btn-cancel" id="btnCancelLockDrawer">Đóng</button>
+          <button type="submit" class="rk-btn rk-primary rk-btn-save" id="btnSubmitLockCourt">Xác nhận khoá sân</button>
+        </div>
+      </form>
+    </aside>
+  </div>
+
   <div class="rk-toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
@@ -180,5 +230,6 @@
   <script src="../js/t3d2096-ui.js"></script>
   <script src="../js/rk-layout.js"></script>
   <script src="../js/pages/courts.js"></script>
+  <script src="../js/pages/court-lock.js"></script>
 </body>
 </html>
