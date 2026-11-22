@@ -23,6 +23,7 @@ class Court(Base):
     court_name = synonym("name")
 
     description = Column(String(255), nullable=True)
+    image_url = Column(String(500), nullable=True)
     status = Column(Enum(CourtStatus), default=CourtStatus.Active, server_default="Active", nullable=False)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 

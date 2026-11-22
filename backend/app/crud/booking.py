@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 import uuid
@@ -118,6 +118,18 @@ def calculate_slot_amount(
     return price_per_hour, amount, duration_minutes
 
 
+def vietnam_now() -> datetime:
+    return datetime.now(timezone(timedelta(hours=7))).replace(tzinfo=None)
+
+
+def booking_blocks_slot(now: datetime):
+    return or_(
+        Booking.status.in_([BookingStatus.Confirmed, BookingStatus.CHECKED_IN]),
+        and_(
+            Booking.status == BookingStatus.Pending,
+            or_(Booking.hold_expires_at.is_(None), Booking.hold_expires_at > now),
+        ),
+    )
 def is_slot_available(
     db: Session,
     court_id: int,
@@ -144,8 +156,7 @@ def is_slot_available(
         .where(
             BookingSlot.court_id == court_id,
             BookingSlot.status == BookingSlotStatus.Active,
-            Booking.status.in_(
-                [BookingStatus.Pending, BookingStatus.Confirmed, BookingStatus.CHECKED_IN]),
+            booking_blocks_slot(vietnam_now()),
             # overlap: slot_start < end_at AND slot_end > start_at
             BookingSlot.start_at < end_at,
             BookingSlot.end_at > start_at,

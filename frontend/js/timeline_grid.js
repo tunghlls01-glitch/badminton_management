@@ -146,10 +146,25 @@ function buildAvailableDates(count = 8) {
 }
 
 const AVAILABLE_DATES = buildAvailableDates();
+const overviewDay = new URLSearchParams(window.location.search).get("day");
+if (/^\d{4}-\d{2}-\d{2}$/.test(overviewDay || "") &&
+    !AVAILABLE_DATES.some((item) => item.dateStr === overviewDay)) {
+  const day = new Date(overviewDay + "T12:00:00");
+  if (!Number.isNaN(day.getTime())) AVAILABLE_DATES.push({
+    dateStr: overviewDay,
+    dayLabel: day.toLocaleDateString("vi-VN", { weekday: "long" }),
+    dayNum: overviewDay.slice(8, 10),
+    fullLabel: day.toLocaleDateString("vi-VN", { dateStyle: "full" }).toUpperCase(),
+    shortLabel: day.toLocaleDateString("vi-VN"),
+    badge: "",
+  });
+}
+
+const GRID_REFRESH_MS = 15_000;
 
 // 2. STATE QUẢN LÝ ỨNG DỤNG
 const appState = {
-  currentDate: AVAILABLE_DATES[0],
+  currentDate: AVAILABLE_DATES.find((item) => item.dateStr === overviewDay) || AVAILABLE_DATES[0],
   gridData: [],
   selectedSlots: new Map(),
   holdSession: null,
