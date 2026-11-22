@@ -64,7 +64,11 @@
           <h1 class="page-title" id="page-title-text">Quản lý dịch vụ</h1>
           <p class="page-subtitle" id="page-subtitle-text">Quản lý dịch vụ, giá cả và tồn kho tại một nơi.</p>
         </div>
-        <div id="page-header-actions">
+        <div id="page-header-actions" style="display:flex; gap:10px; align-items:center;">
+          <button class="btn-outline-export" id="btn-export-inventory-csv" title="Xuất toàn bộ danh sách tồn kho dịch vụ ra file CSV (Mã hóa UTF-8 BOM chuẩn tiếng Việt)">
+            <span>📥</span>
+            <span>Xuất CSV tồn kho</span>
+          </button>
           <button class="btn-primary-red" id="btn-open-create">
             <span>+</span>
             <span>Thêm dịch vụ mới</span>
@@ -343,26 +347,38 @@
 
         <!-- Section Lịch sử biến động kho -->
         <div class="card-box">
-          <div class="filter-bar">
+          <div class="filter-bar" style="flex-wrap: wrap; gap: 12px;">
             <div>
               <h2 style="font-size: 17px; font-weight: 700;">Lịch sử kho</h2>
-              <p style="font-size: 12px; color: var(--text-muted); margin-top:2px;">Lưu đầy đủ lịch sử thay đổi tồn kho.</p>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top:2px;">Lưu đầy đủ lịch sử thay đổi tồn kho theo thời gian.</p>
             </div>
 
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-secondary); background:#f9fafb; padding:4px 10px; border-radius:6px; border:1px solid #e5e7eb;">
+                <span>Từ:</span>
+                <input type="date" class="form-input" id="history-filter-from-date" style="padding:3px 6px; width:auto; font-size:12px; border:1px solid #d1d5db; border-radius:4px; background:#fff;">
+                <span>Đến:</span>
+                <input type="date" class="form-input" id="history-filter-to-date" style="padding:3px 6px; width:auto; font-size:12px; border:1px solid #d1d5db; border-radius:4px; background:#fff;">
+              </div>
+
               <select class="select-filter" id="history-filter-service">
                 <option value="">Tất cả dịch vụ</option>
               </select>
 
               <select class="select-filter" id="history-filter-type">
                 <option value="">Tất cả loại giao dịch</option>
-                <option value="Nhập hàng">Nhập hàng</option>
-                <option value="Bán lẻ">Bán lẻ (POS)</option>
-                <option value="Điều chỉnh">Điều chỉnh</option>
+                <option value="IMPORT">Nhập hàng</option>
+                <option value="SALE">Bán lẻ (POS)</option>
+                <option value="ADJUSTMENT">Điều chỉnh kiểm kê</option>
                 <option value="EXPORT">Xuất kho</option>
               </select>
 
               <button class="btn-page" id="btn-clear-history-filter" title="Xóa bộ lọc">✕</button>
+
+              <button class="btn-primary-red" id="btn-export-history-csv" style="height:36px; padding:0 14px; font-size:13px; gap:6px; background:#059669;" title="Xuất lịch sử nhập/xuất theo khoảng thời gian ra file CSV">
+                <span>📊</span>
+                <span>Xuất CSV lịch sử</span>
+              </button>
             </div>
           </div>
 

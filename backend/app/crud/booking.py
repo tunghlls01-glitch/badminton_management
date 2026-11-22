@@ -130,8 +130,6 @@ def booking_blocks_slot(now: datetime):
             or_(Booking.hold_expires_at.is_(None), Booking.hold_expires_at > now),
         ),
     )
-
-
 def is_slot_available(
     db: Session,
     court_id: int,

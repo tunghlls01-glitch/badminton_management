@@ -101,7 +101,7 @@ document.getElementById("copy-reference").addEventListener("click", async () => 
 });
 
 document.getElementById("view-booking").addEventListener("click", () => {
-  window.location.href = `court_booking_schedule.html?booking=${encodeURIComponent(booking.id)}`;
+  window.location.href = `booking.html?booking=${encodeURIComponent(booking.id)}`;
 });
 
 document.getElementById("book-another").addEventListener("click", () => {

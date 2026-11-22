@@ -160,6 +160,8 @@ if (/^\d{4}-\d{2}-\d{2}$/.test(overviewDay || "") &&
   });
 }
 
+const GRID_REFRESH_MS = 15_000;
+
 // 2. STATE QUẢN LÝ ỨNG DỤNG
 const appState = {
   currentDate: AVAILABLE_DATES.find((item) => item.dateStr === overviewDay) || AVAILABLE_DATES[0],
