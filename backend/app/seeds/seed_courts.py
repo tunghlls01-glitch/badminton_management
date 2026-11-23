@@ -18,14 +18,18 @@ SAMPLE_COURTS = [
 
 
 def seed_courts():
-    with SessionLocal.begin() as db:
-        existing = {name for (name,) in db.query(Court.name).all()}
-        added = 0
-        for name, description, status in SAMPLE_COURTS:
-            if name not in existing:
-                db.add(Court(name=name, description=description, status=status))
-                added += 1
-        return added
+    try:
+        with SessionLocal.begin() as db:
+            existing = {name for (name,) in db.query(Court.name).all()}
+            added = 0
+            for name, description, status in SAMPLE_COURTS:
+                if name not in existing:
+                    db.add(Court(name=name, description=description, status=status))
+                    added += 1
+            return added
+    except Exception as e:
+        print(f"[SEED] Bỏ qua seed courts do lỗi: {e}")
+        return 0
 
 
 if __name__ == "__main__":

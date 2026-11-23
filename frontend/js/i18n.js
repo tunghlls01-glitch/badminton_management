@@ -640,6 +640,7 @@
   }
 
   function createLanguageSwitcher() {
+    return; // Đã tắt nút chuyển đổi ngôn ngữ theo yêu cầu
     if (document.getElementById("rk-lang-switcher")) return;
 
     // Inject CSS

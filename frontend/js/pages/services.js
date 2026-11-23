@@ -321,7 +321,7 @@ function renderServicesTable(list) {
 
     if (!isServiceActive(s)) {
       statusPillClass = "inactive";
-      statusText = "Ngừng bán";
+      statusText = "Tạm ngừng";
     } else if (stock <= 0) {
       stockClass = "out";
       statusPillClass = "out-of-stock";
@@ -358,8 +358,11 @@ function renderServicesTable(list) {
           <div class="action-buttons">
             <button class="btn-icon" title="Xem chi tiết" onclick="viewServiceDetail(${s.id})">👁</button>
             <button class="btn-icon" title="Sửa thông tin" onclick="editService(${s.id})">✏</button>
-            <button class="btn-icon delete" title="Ngừng / Bật kinh doanh" onclick="toggleDeactivateService(${s.id})">
-              ${isServiceActive(s) ? "🗑" : "↺"}
+            <button class="btn-icon" title="${isServiceActive(s) ? 'Tạm ngừng kinh doanh' : 'Mở bán lại'}" onclick="toggleServiceStatus(${s.id})">
+              ${isServiceActive(s) ? "⏸" : "↺"}
+            </button>
+            <button class="btn-icon delete" title="Xóa dịch vụ (ẩn vĩnh viễn khỏi web)" onclick="openConfirmDeleteModal(${s.id})">
+              🗑
             </button>
           </div>
         </td>
@@ -459,6 +462,79 @@ function setupEventListeners() {
       showToast("Đã cập nhật cảnh báo mới nhất!", "success");
     });
   }
+
+  // Modal xác nhận xóa 2 bước
+  const btnConfirmDel = document.getElementById("btn-confirm-delete");
+  const btnCancelDel = document.getElementById("btn-cancel-delete");
+  const btnCancelDelX = document.getElementById("btn-cancel-delete-x");
+
+  if (btnConfirmDel) {
+    btnConfirmDel.addEventListener("click", async () => {
+      if (!pendingDeleteServiceId) return;
+      try {
+        const token = (typeof getOrEnsureAuthToken === "function" ? await getOrEnsureAuthToken() : null) ||
+          localStorage.getItem("access_token") ||
+          localStorage.getItem("token") ||
+          sessionStorage.getItem("access_token");
+
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const baseUrl = typeof CONFIG !== "undefined" && CONFIG.API_BASE_URL ? CONFIG.API_BASE_URL : "http://127.0.0.1:8000/api";
+        const res = await fetch(`${baseUrl}/services/${pendingDeleteServiceId}`, {
+          method: "DELETE",
+          headers: headers,
+        });
+
+        if (!res.ok) {
+          let errMsg = `Lỗi ${res.status}`;
+          try {
+            const errJson = await res.json();
+            if (errJson && errJson.detail) {
+              errMsg = typeof errJson.detail === "string" ? errJson.detail : JSON.stringify(errJson.detail);
+            }
+          } catch (_) {}
+          throw new Error(errMsg);
+        }
+
+        closeConfirmDeleteModal();
+        showToast("Đã xóa dịch vụ thành công! Mặt hàng đã được ẩn hoàn toàn khỏi web.", "success");
+        await loadData();
+      } catch (err) {
+        showToast("Không thể xóa dịch vụ: " + err.message, "error");
+      }
+    });
+  }
+
+  if (btnCancelDel) btnCancelDel.addEventListener("click", closeConfirmDeleteModal);
+  if (btnCancelDelX) btnCancelDelX.addEventListener("click", closeConfirmDeleteModal);
+
+  // Modal xác nhận Tạm ngừng / Mở bán lại dịch vụ
+  const btnConfirmStatus = document.getElementById("btn-confirm-status");
+  const btnCancelStatus = document.getElementById("btn-cancel-status");
+  const btnCancelStatusX = document.getElementById("btn-cancel-status-x");
+
+  if (btnConfirmStatus) {
+    btnConfirmStatus.addEventListener("click", async () => {
+      if (!pendingStatusServiceId) return;
+      try {
+        if (pendingStatusIsActive) {
+          await api.patch(`/services/${pendingStatusServiceId}/deactivate`);
+          showToast("Đã tạm ngừng kinh doanh dịch vụ thành công!", "success");
+        } else {
+          await api.patch(`/services/${pendingStatusServiceId}/activate`);
+          showToast("Đã mở bán lại dịch vụ thành công!", "success");
+        }
+        closeConfirmStatusModal();
+        await loadData();
+      } catch (err) {
+        showToast("Không thể thay đổi trạng thái: " + err.message, "error");
+      }
+    });
+  }
+
+  if (btnCancelStatus) btnCancelStatus.addEventListener("click", closeConfirmStatusModal);
+  if (btnCancelStatusX) btnCancelStatusX.addEventListener("click", closeConfirmStatusModal);
 }
 
 function applyFilterAndRender() {
@@ -467,6 +543,11 @@ function applyFilterAndRender() {
   const status = document.getElementById("filter-status")?.value || "";
 
   filteredServices = allServices.filter(s => {
+    // 0. Luôn loại bỏ các mặt hàng đã xóa khỏi web
+    const statusStr = String(s.status || "").toUpperCase();
+    const nameStr = String(s.name || "").toUpperCase();
+    if (statusStr.includes("DELETED") || nameStr.startsWith("[DELETED]")) return false;
+
     // Tìm kiếm tên hoặc mã SVC
     const code = `svc-${String(s.id).padStart(3, "0")}`;
     const nameMatch = (s.name || "").toLowerCase().includes(keyword) || code.includes(keyword);
@@ -537,31 +618,98 @@ window.viewServiceDetail = function(id) {
   document.getElementById("detail-modal").style.display = "flex";
 };
 
-window.toggleDeactivateService = async function(id) {
+let pendingDeleteServiceId = null;
+
+window.openConfirmDeleteModal = function(id) {
   const service = allServices.find(s => s.id === id);
   if (!service) return;
 
-  const isCurrentlyActive = isServiceActive(service);
-  const actionPrompt = isCurrentlyActive ? "xóa" : "khôi phục (mở bán lại)";
-  const successMsg = isCurrentlyActive
-    ? "Đã xóa dịch vụ thành công!"
-    : "Đã khôi phục dịch vụ thành công!";
+  pendingDeleteServiceId = id;
+  const nameEl = document.getElementById("delete-service-name");
+  if (nameEl) {
+    nameEl.textContent = `${service.name} (SVC-${String(service.id).padStart(3, "0")})`;
+  }
+  const modal = document.getElementById("confirm-delete-modal");
+  if (modal) {
+    modal.style.display = "flex";
+  }
+};
 
-  if (!confirm(`Bạn có chắc muốn ${actionPrompt} dịch vụ '${service.name}'?`)) {
-    return;
+window.closeConfirmDeleteModal = function() {
+  pendingDeleteServiceId = null;
+  const modal = document.getElementById("confirm-delete-modal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+};
+
+let pendingStatusServiceId = null;
+let pendingStatusIsActive = false;
+
+window.openConfirmStatusModal = function(id) {
+  const service = allServices.find(s => s.id === id);
+  if (!service) return;
+
+  pendingStatusServiceId = id;
+  pendingStatusIsActive = isServiceActive(service);
+
+  const modal = document.getElementById("confirm-status-modal");
+  const header = document.getElementById("status-modal-header");
+  const title = document.getElementById("status-modal-title");
+  const icon = document.getElementById("status-modal-icon");
+  const titleText = document.getElementById("status-modal-title-text");
+  const question = document.getElementById("status-modal-question");
+  const nameEl = document.getElementById("status-service-name");
+  const noteBox = document.getElementById("status-modal-note-box");
+  const noteText = document.getElementById("status-modal-note-text");
+  const btnConfirm = document.getElementById("btn-confirm-status");
+
+  const serviceName = `${service.name} (SVC-${String(service.id).padStart(3, "0")})`;
+  if (nameEl) nameEl.textContent = serviceName;
+
+  if (pendingStatusIsActive) {
+    // Đang bán -> Muốn Tạm ngừng
+    header.style.background = "#fffbeb";
+    header.style.borderBottom = "1px solid #fde68a";
+    title.style.color = "#b45309";
+    icon.textContent = "⏸";
+    titleText.textContent = "Xác nhận tạm ngừng kinh doanh";
+    question.textContent = "Bạn có chắc chắn muốn tạm ngừng kinh doanh dịch vụ:";
+    nameEl.style.color = "#b45309";
+    noteBox.style.background = "#fffbeb";
+    noteBox.style.borderLeft = "4px solid #f59e0b";
+    noteBox.style.color = "#92400e";
+    noteText.textContent = "Mặt hàng này sẽ tạm ngừng kinh doanh và có thể mở bán lại bất kỳ lúc nào.";
+    btnConfirm.style.background = "#d97706";
+    btnConfirm.textContent = "Xác nhận tạm ngừng";
+  } else {
+    // Đang tạm ngừng -> Muốn Mở bán lại
+    header.style.background = "#f0fdf4";
+    header.style.borderBottom = "1px solid #bbf7d0";
+    title.style.color = "#15803d";
+    icon.textContent = "🔄";
+    titleText.textContent = "Xác nhận mở bán lại dịch vụ";
+    question.textContent = "Bạn có chắc chắn muốn mở bán lại dịch vụ:";
+    nameEl.style.color = "#15803d";
+    noteBox.style.background = "#f0fdf4";
+    noteBox.style.borderLeft = "4px solid #22c55e";
+    noteBox.style.color = "#166534";
+    noteText.textContent = "Mặt hàng này sẽ được mở bán lại và hiển thị trên toàn bộ menu dịch vụ.";
+    btnConfirm.style.background = "#16a34a";
+    btnConfirm.textContent = "Xác nhận mở bán";
   }
 
-  try {
-    if (isCurrentlyActive) {
-      await api.delete(`/services/${id}`);
-    } else {
-      await api.put(`/services/${id}`, { status: "Active" });
-    }
-    showToast(successMsg, "success");
-    await loadData();
-  } catch (err) {
-    showToast("Không thể thay đổi trạng thái: " + err.message, "error");
-  }
+  if (modal) modal.style.display = "flex";
+};
+
+window.closeConfirmStatusModal = function() {
+  pendingStatusServiceId = null;
+  const modal = document.getElementById("confirm-status-modal");
+  if (modal) modal.style.display = "none";
+};
+
+window.toggleServiceStatus = function(id) {
+  openConfirmStatusModal(id);
 };
 
 async function handleSaveService(e) {
@@ -992,7 +1140,11 @@ window.switchTabToInventoryWithService = function(serviceId) {
    ========================================================================== */
 function isServiceActive(s) {
   const statusStr = String(s.status || "").toUpperCase();
-  return statusStr.includes("ACTIVE") && !statusStr.includes("INACTIVE");
+  const nameStr = String(s.name || "").toUpperCase();
+  return statusStr.includes("ACTIVE") &&
+    !statusStr.includes("INACTIVE") &&
+    !statusStr.includes("DELETED") &&
+    !nameStr.startsWith("[DELETED]");
 }
 
 function getAvatarClass(cat) {
@@ -1084,7 +1236,7 @@ async function getOrEnsureAuthToken() {
     try {
       const baseUrl = CONFIG.API_BASE_URL.replace(/\/api$/, "");
       const res = await axios.post(`${baseUrl}/auth/login`, {
-        email: "admin@badminton.vn",
+        account: "admin@badminton.vn",
         password: "admin",
       });
       if (res.data && res.data.access_token) {
