@@ -39,6 +39,10 @@ async def lifespan(app: FastAPI):
             columns = inspect(connection).get_columns("courts")
             if not any(column["name"] == "image_url" for column in columns):
                 connection.execute(text("ALTER TABLE courts ADD COLUMN image_url VARCHAR(500) NULL"))
+            try:
+                connection.execute(text("ALTER TABLE courts MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'"))
+            except Exception:
+                pass
         # create_all() tạo bảng còn thiếu nhưng không thêm cột vào bảng đã tồn tại.
         # Bổ sung cột giữ chỗ một lần khi khởi động nếu database cũ chưa có.
         booking_columns = {
