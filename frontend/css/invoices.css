@@ -1,0 +1,1566 @@
+/* ==========================================================================
+   RK BADMINTON · Hóa đơn & Chốt ca lễ tân (Figma High-Fidelity CSS)
+   Màu chủ đạo: #BA0000 (Đỏ RK) · #1E293B (Slate-900) · #F8FAFC (Slate-50)
+   ========================================================================== */
+
+:root {
+  --inv-brand-red: #ba0000;
+  --inv-brand-red-hover: #990000;
+  --inv-brand-red-light: #fff5f5;
+  --inv-brand-red-border: #fecaca;
+  --inv-text-primary: #1e293b;
+  --inv-text-secondary: #475569;
+  --inv-text-muted: #64748b;
+  --inv-border-color: #e2e8f0;
+  --inv-border-focus: #cbd5e1;
+  --inv-bg-page: #f8fafc;
+  --inv-bg-card: #ffffff;
+  --inv-green-text: #15803d;
+  --inv-green-dark: #166534;
+  --inv-green-bg: #f0fdf4;
+  --inv-green-border: #bbf7d0;
+  --inv-blue-text: #1d4ed8;
+  --inv-blue-bg: #eff6ff;
+  --inv-blue-border: #bfdbfe;
+}
+
+/* ==========================================================================
+   TOP NAVIGATION BAR (Figma Frame 27:60)
+   ========================================================================== */
+#rk-dashboard-header.rk-dashboard-header {
+  height: 80px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+.inv-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.inv-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.inv-breadcrumb-root {
+  color: #64748b;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.inv-breadcrumb-root:hover {
+  color: #1e293b;
+}
+
+.inv-breadcrumb-sep {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.inv-breadcrumb-current {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.inv-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.inv-club-status-pill {
+  background: #f0fdf4;
+  height: 32px;
+  border-radius: 16px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #15803d;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #bbf7d0;
+}
+
+.inv-club-status-pill .status-dot-green {
+  color: #15803d;
+  font-size: 10px;
+}
+
+.inv-topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inv-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.inv-user-name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.inv-user-role {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.inv-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #ba0000;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fecaca;
+  flex: none;
+}
+
+.inv-header-logout-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.inv-header-logout-btn:hover {
+  background: #fef2f2;
+  color: #ba0000;
+}
+
+.rk-dashboard-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  color: #475569;
+}
+
+/* ==========================================================================
+   SIDEBAR CUSTOMIZATION (Figma Frame 27:7)
+   ========================================================================== */
+#rk-sidebar {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+#rk-sidebar .brand-badge {
+  background: #ba0000;
+  color: #ffffff;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  flex: none;
+}
+
+#rk-sidebar .rk-logo-text {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.2px;
+}
+
+#rk-sidebar nav a, #rk-sidebar nav button {
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  border-radius: 6px;
+  padding: 10px 12px;
+  min-height: 44px;
+  gap: 12px;
+  transition: background 0.15s, color 0.15s;
+}
+
+#rk-sidebar nav a:hover {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+#rk-sidebar nav .active,
+#rk-sidebar nav .active:hover {
+  background: #ba0000 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-radius: 6px;
+}
+
+#rk-sidebar nav .active svg {
+  stroke: #ffffff !important;
+}
+
+@media (max-width: 900px) {
+  .rk-dashboard-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #rk-dashboard-header.rk-dashboard-header {
+    padding: 0 16px;
+    height: 64px;
+  }
+}
+
+/* Page Layout */
+.inv-page-container {
+  padding: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   PAGE HEADER (Figma Frame 27:3)
+   ========================================================================== */
+.inv-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.inv-page-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--inv-text-primary);
+  margin: 0 0 6px 0;
+  line-height: 1.2;
+}
+
+.inv-page-subtitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--inv-text-secondary);
+  margin: 0;
+}
+
+.inv-header-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.inv-meta-date {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--inv-text-secondary);
+}
+
+.inv-meta-status {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--inv-green-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot-green {
+  color: var(--inv-green-text);
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   2-COLUMN DASHBOARD GRID (Figma Frame 27:2)
+   Left column ~65%, Right column ~35%
+   ========================================================================== */
+.inv-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(360px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1120px) {
+  .inv-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   LEFT COLUMN: BỘ LỌC HÓA ĐƠN (Figma Frame 27:4)
+   ========================================================================== */
+.inv-left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inv-filter-card {
+  background: var(--inv-bg-card);
+  border: 1px solid var(--inv-border-color);
+  border-radius: 10px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(30, 41, 59, 0.02);
+}
+
+.inv-filter-top-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.inv-filter-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.inv-filter-field-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--inv-text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.inv-date-picker-box,
+.inv-select-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 38px;
+  background: #ffffff;
+  border: 1px solid var(--inv-border-color);
+  border-radius: 6px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.inv-date-picker-box:focus-within,
+.inv-select-box:focus-within {
+  border-color: var(--inv-brand-red);
+}
+
+.inv-calendar-icon {
+  font-size: 14px;
+  margin-right: 8px;
+  color: var(--inv-text-muted);
+}
+
+.inv-chevron-icon {
+  font-size: 14px;
+  color: var(--inv-text-muted);
+  pointer-events: none;
+  margin-left: 6px;
+}
+
+.inv-date-input-field {
+  border: none;
+  outline: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--inv-text-primary);
+  background: transparent;
+  width: 100%;
+}
+
+.inv-select-field {
+  border: none;
+  outline: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--inv-text-primary);
+  background: transparent;
+  width: 100%;
+  appearance: none;
+  cursor: pointer;
+}
+
+.inv-filter-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--inv-green-text);
+  padding-bottom: 8px;
+  white-space: nowrap;
+}
+
+.inv-filter-bottom-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Segmented control: Tất cả | Tiền mặt | Chuyển khoản */
+.inv-segmented-controls {
+  display: inline-flex;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 4px;
+  height: 40px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.inv-seg-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 0 16px;
+  height: 32px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--inv-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.inv-seg-btn:hover {
+  color: var(--inv-text-primary);
+}
+
+.inv-seg-btn.active {
+  background: #ffffff;
+  color: var(--inv-brand-red);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(30, 41, 59, 0.08);
+}
+
+/* Ô tìm kiếm */
+.inv-search-box {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 220px;
+  height: 40px;
+  background: #ffffff;
+  border: 1px solid var(--inv-border-color);
+  border-radius: 6px;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.inv-search-box:focus-within {
+  border-color: var(--inv-brand-red);
+}
+
+.inv-search-icon {
+  font-size: 16px;
+  color: var(--inv-text-muted);
+  margin-right: 8px;
+}
+
+.inv-search-input-field {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--inv-text-primary);
+}
+
+.inv-search-input-field::placeholder {
+  color: var(--inv-text-muted);
+}
+
+/* ==========================================================================
+   LEFT COLUMN: DANH SÁCH HÓA ĐƠN (Figma Frame 27:5)
+   ========================================================================== */
+.inv-table-card {
+  background: var(--inv-bg-card);
+  border: 1px solid var(--inv-border-color);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(30, 41, 59, 0.02);
+  overflow: hidden;
+}
+
+.inv-table-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+}
+
+.inv-table-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inv-table-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--inv-text-primary);
+  margin: 0;
+}
+
+.inv-count-badge {
+  background: #f1f5f9;
+  color: var(--inv-text-secondary);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 14px;
+}
+
+.inv-table-status-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--inv-green-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inv-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.inv-figma-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.inv-figma-table thead tr {
+  background: #f8fafc;
+  height: 46px;
+}
+
+.inv-figma-table th {
+  padding: 10px 16px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--inv-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-top: 1px solid var(--inv-border-color);
+  border-bottom: 1px solid var(--inv-border-color);
+  white-space: nowrap;
+}
+
+.inv-figma-table tbody tr {
+  height: 68px;
+  border-bottom: 1px solid var(--inv-border-color);
+  transition: background-color 0.1s ease;
+  position: relative;
+}
+
+.inv-figma-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.inv-figma-table tbody tr.row-selected {
+  background: #fff7f7;
+}
+
+.inv-figma-table tbody tr.row-selected td:first-child::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--inv-brand-red);
+}
+
+.inv-figma-table td {
+  padding: 12px 16px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--inv-text-primary);
+  vertical-align: middle;
+}
+
+/* Các trường cụ thể trong bảng */
+.inv-td-code {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--inv-brand-red);
+  margin-bottom: 2px;
+}
+
+.inv-td-sub {
+  font-size: 9.5px;
+  color: var(--inv-text-muted);
+}
+
+.inv-td-court {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--inv-text-primary);
+  margin-bottom: 2px;
+}
+
+.inv-td-customer {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--inv-text-primary);
+  line-height: 1.3;
+}
+
+.inv-td-staff {
+  font-size: 11px;
+  color: var(--inv-text-secondary);
+  line-height: 1.3;
+}
+
+.inv-td-amount {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--inv-text-primary);
+}
+
+/* Badges thanh toán */
+.inv-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 25px;
+  padding: 0 10px;
+  border-radius: 5px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.inv-badge-pill.pill-cash {
+  background: var(--inv-green-bg);
+  color: var(--inv-green-dark);
+}
+
+.inv-badge-pill.pill-bank {
+  background: var(--inv-blue-bg);
+  color: var(--inv-blue-text);
+  font-size: 9px;
+}
+
+/* Nút thao tác trong hàng */
+.inv-action-btn-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.inv-btn-detail {
+  height: 30px;
+  padding: 0 10px;
+  background: #f8fafc;
+  border: 1px solid var(--inv-border-color);
+  border-radius: 5px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.inv-btn-detail:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.inv-btn-reprint {
+  height: 30px;
+  padding: 0 10px;
+  background: #ffffff;
+  border: 1px solid var(--inv-border-color);
+  border-radius: 5px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--inv-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.inv-btn-reprint:hover {
+  background: #f8fafc;
+  border-color: var(--inv-brand-red);
+  color: var(--inv-brand-red);
+}
+
+/* Thanh phân trang */
+.inv-pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-top: 1px solid var(--inv-border-color);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.inv-page-stat-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--inv-text-secondary);
+}
+
+.inv-pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inv-page-btn {
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  border: 1px solid var(--inv-border-color);
+  border-radius: 5px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--inv-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.inv-page-btn:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.inv-page-btn.active {
+  background: var(--inv-brand-red);
+  color: #ffffff;
+  border-color: var(--inv-brand-red);
+}
+
+.inv-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   RIGHT COLUMN: CHỐT CA VÀ BÀN GIAO (Figma Frame 27:6)
+   ========================================================================== */
+.inv-shift-card {
+  background: var(--inv-bg-card);
+  border: 1px solid var(--inv-border-color);
+  border-radius: 10px;
+  padding: 24px;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(30, 41, 59, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Viền đỏ đầu thẻ (Figma Frame 27:253) */
+.inv-shift-red-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--inv-brand-red);
+  border-radius: 10px 10px 0 0;
+}
+
+.inv-shift-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.inv-shift-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--inv-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.inv-shift-subtitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--inv-text-secondary);
+  margin: 0;
+}
+
+.inv-shift-open-badge {
+  background: var(--inv-green-bg);
+  color: var(--inv-green-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Chọn lễ tân trong ca */
+.inv-shift-staff-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 42px;
+  background: #ffffff;
+  border: 1px solid var(--inv-border-color);
+  border-radius: 6px;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.inv-shift-staff-select {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--inv-text-primary);
+  appearance: none;
+  cursor: pointer;
+}
+
+/* Số hóa đơn trong ca */
+.inv-shift-metric-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 7px;
+  height: 58px;
+  padding: 0 16px;
+}
+
+.inv-metric-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--inv-text-secondary);
+}
+
+.inv-metric-val {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--inv-text-primary);
+}
+
+/* Tổng tiền mặt & chuyển khoản */
+.inv-shift-stat-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f8fafc;
+  border-radius: 7px;
+  height: 76px;
+  padding: 0 14px;
+}
+
+.inv-stat-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  background: #ffffff;
+  border: 1px solid var(--inv-border-color);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.inv-currency-symbol {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--inv-green-dark);
+}
+
+.inv-qr-symbol {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--inv-blue-text);
+}
+
+.inv-stat-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.inv-stat-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--inv-text-secondary);
+  margin-bottom: 2px;
+}
+
+.inv-stat-amount {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--inv-text-primary);
+  line-height: 1.2;
+}
+
+/* TỔNG DOANH THU TRONG CA */
+.inv-shift-grand-box {
+  background: var(--inv-brand-red-light);
+  border: 1px solid var(--inv-brand-red-border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inv-grand-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--inv-brand-red);
+  letter-spacing: 0.5px;
+}
+
+.inv-grand-amount {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--inv-brand-red);
+  line-height: 1.1;
+}
+
+/* Đối soát két tiền mặt */
+.inv-audit-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.inv-audit-heading {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--inv-text-primary);
+  margin: 0;
+}
+
+.inv-audit-sublabel {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--inv-text-secondary);
+}
+
+.inv-cash-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid var(--inv-border-focus);
+  border-radius: 6px;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.inv-cash-input-wrap:focus-within {
+  border-color: var(--inv-brand-red);
+}
+
+.inv-cash-amount-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--inv-text-primary);
+}
+
+.inv-currency-tag {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--inv-text-muted);
+  margin-left: 8px;
+}
+
+/* Banner Chênh lệch */
+.inv-diff-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 36px;
+  border-radius: 6px;
+  padding: 0 12px;
+}
+
+.inv-diff-banner.banner-matched {
+  background: var(--inv-green-bg);
+}
+
+.inv-diff-banner.banner-mismatched {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+}
+
+.diff-title-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--inv-green-dark);
+}
+
+.diff-val-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--inv-green-text);
+}
+
+.inv-diff-banner.banner-mismatched .diff-title-text {
+  color: #92400e;
+}
+
+.inv-diff-banner.banner-mismatched .diff-val-text {
+  color: #b45309;
+}
+
+/* Ghi chú bàn giao */
+.inv-notes-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inv-notes-heading {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--inv-text-secondary);
+}
+
+.inv-notes-input {
+  border: 1px solid var(--inv-border-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--inv-text-secondary);
+  line-height: 1.4;
+  outline: none;
+  resize: vertical;
+}
+
+.inv-notes-input:focus {
+  border-color: var(--inv-brand-red);
+}
+
+/* Nút hành động Chốt ca */
+.inv-shift-buttons-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.inv-btn-primary-action {
+  height: 44px;
+  background: var(--inv-brand-red);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.inv-btn-primary-action:hover {
+  background: var(--inv-brand-red-hover);
+}
+
+.inv-btn-secondary-action {
+  height: 38px;
+  background: #ffffff;
+  color: var(--inv-text-secondary);
+  border: 1px solid var(--inv-border-color);
+  border-radius: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.inv-btn-secondary-action:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* ==========================================================================
+   MODAL: CHI TIẾT HÓA ĐƠN & IN LẠI (Figma Frame 27:304 / 27:591)
+   ========================================================================== */
+.inv-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.inv-modal-overlay.open {
+  display: flex;
+}
+
+.inv-figma-modal-card {
+  width: 720px;
+  max-width: 100%;
+  max-height: 92vh;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inv-modal-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--inv-border-color);
+}
+
+.inv-modal-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--inv-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.inv-modal-subtitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--inv-text-muted);
+  margin: 0;
+}
+
+.inv-modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.inv-modal-paid-tag {
+  background: var(--inv-green-bg);
+  color: var(--inv-green-text);
+  border: 1px solid var(--inv-green-border);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 14px;
+}
+
+.inv-modal-x-close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: var(--inv-text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.inv-modal-x-close:hover {
+  color: var(--inv-text-primary);
+}
+
+.inv-modal-receipt-container {
+  padding: 24px 28px;
+  overflow-y: auto;
+}
+
+/* Hóa đơn dạng phiếu nhiệt thanh toán */
+.inv-thermal-sheet {
+  border: 1px solid var(--inv-border-color);
+  border-radius: 8px;
+  padding: 24px;
+  background: #ffffff;
+}
+
+.inv-sheet-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.inv-sheet-brand-mark {
+  width: 32px;
+  height: 32px;
+  background: var(--inv-brand-red);
+  color: #ffffff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.inv-sheet-brand-name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--inv-text-primary);
+  letter-spacing: 0.5px;
+}
+
+.inv-sheet-address,
+.inv-sheet-phone {
+  text-align: center;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--inv-text-secondary);
+  margin: 2px 0;
+}
+
+.inv-sheet-heading {
+  text-align: center;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--inv-text-primary);
+  margin: 16px 0 18px 0;
+  letter-spacing: 0.5px;
+}
+
+/* Meta grid 2 cột */
+.inv-sheet-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+  margin-bottom: 20px;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11.5px;
+}
+
+.meta-lbl {
+  color: var(--inv-text-muted);
+}
+
+.meta-val {
+  color: var(--inv-text-primary);
+  font-weight: 600;
+}
+
+.meta-val.meta-green {
+  color: var(--inv-green-text);
+}
+
+/* Bảng chi tiết dịch vụ */
+.inv-sheet-items-table-wrap {
+  margin-bottom: 20px;
+}
+
+.inv-sheet-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.inv-sheet-table thead tr {
+  background: #f8fafc;
+  height: 36px;
+}
+
+.inv-sheet-table th {
+  padding: 8px 12px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--inv-text-secondary);
+  text-align: left;
+  border-radius: 4px;
+}
+
+.inv-sheet-table tbody tr {
+  border-bottom: 1px solid var(--inv-border-color);
+}
+
+.inv-sheet-table td {
+  padding: 10px 12px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--inv-text-primary);
+  vertical-align: top;
+}
+
+.item-main-title {
+  font-weight: 500;
+  color: var(--inv-text-primary);
+  margin-bottom: 2px;
+}
+
+.item-sub-desc {
+  font-size: 10px;
+  color: var(--inv-text-muted);
+}
+
+/* Tổng thanh toán */
+.inv-sheet-totals-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 12px 6px 12px;
+  border-top: 1px solid var(--inv-border-color);
+  margin-top: 6px;
+}
+
+.inv-sheet-grand-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.grand-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--inv-text-primary);
+}
+
+.grand-num {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--inv-brand-red);
+}
+
+.inv-sheet-sub-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--inv-text-secondary);
+}
+
+.sub-num {
+  font-weight: 600;
+  color: var(--inv-text-primary);
+}
+
+.inv-sheet-thanks {
+  text-align: center;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--inv-text-muted);
+  margin: 24px 0 0 0;
+}
+
+.inv-sheet-note {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--inv-text-secondary);
+  margin: 14px 0 0 0;
+}
+
+/* Footer nút modal */
+.inv-modal-bottom-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 28px;
+  border-top: 1px solid var(--inv-border-color);
+  background: #ffffff;
+  gap: 16px;
+}
+
+.inv-modal-btn-cancel {
+  height: 46px;
+  padding: 0 32px;
+  background: #ffffff;
+  border: 1px solid var(--inv-border-color);
+  border-radius: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--inv-text-secondary);
+  cursor: pointer;
+}
+
+.inv-modal-btn-cancel:hover {
+  background: #f8fafc;
+}
+
+.inv-modal-btn-print {
+  flex: 1;
+  max-width: 360px;
+  height: 46px;
+  background: var(--inv-brand-red);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.inv-modal-btn-print:hover {
+  background: var(--inv-brand-red-hover);
+}
+
+/* Toast Message */
+.inv-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+  display: none;
+  z-index: 100000;
+}
+
+.inv-toast.show {
+  display: block;
+}
+
+/* ==========================================================================
+   PRINT STYLES
+   ========================================================================== */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .inv-modal-overlay.open,
+  .inv-modal-overlay.open .inv-thermal-sheet,
+  .inv-modal-overlay.open .inv-thermal-sheet * {
+    visibility: visible;
+  }
+
+  .inv-modal-overlay.open {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .inv-figma-modal-card {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: 80mm !important;
+    margin: 0 auto !important;
+  }
+
+  .inv-modal-top-header,
+  .inv-modal-bottom-actions,
+  .inv-sheet-note {
+    display: none !important;
+  }
+
+  .inv-modal-receipt-container {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .inv-thermal-sheet {
+    border: none !important;
+    padding: 0 !important;
+    width: 80mm !important;
+  }
+}

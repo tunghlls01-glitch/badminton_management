@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   invoice_code         VARCHAR(30) NOT NULL UNIQUE,
   booking_id           INT NOT NULL UNIQUE,
   customer_id          INT NOT NULL,
+  staff_id             INT NULL,
   total_court_amount   DECIMAL(12, 2) NOT NULL DEFAULT 0,
   total_service_amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
   discount_amount      DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
@@ -64,7 +65,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   grand_total          DECIMAL(12, 2) NOT NULL,
   created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_invoices_booking_id (booking_id),
-  INDEX idx_invoices_customer_id (customer_id)
+  INDEX idx_invoices_customer_id (customer_id),
+  INDEX idx_invoices_staff_id (staff_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 13. Module Dịch vụ, Kho hàng và Đơn dịch vụ

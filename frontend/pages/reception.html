@@ -46,10 +46,15 @@
       <main class="reception-content">
         
         <!-- Page Heading (Figma node 2:5) -->
-        <div class="page-heading">
+        <div class="page-heading" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
             <h1 class="heading-title">Nhận sân &amp; thanh toán</h1>
             <p class="heading-subtitle">Chọn lượt đặt sân để nhận sân hoặc thanh toán.</p>
+          </div>
+          <div>
+            <a href="invoices.html" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 600; color: #1e293b; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+              <span>🧾</span> Lịch sử hóa đơn &amp; Chốt ca
+            </a>
           </div>
         </div>
 
@@ -329,7 +334,6 @@
   </div>
 
   <!-- Scripts -->
-  <script src="../js/pages/reception.js"></script>
   <script src="../js/axios.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/t3d2096-config.js"></script>
@@ -340,5 +344,6 @@
   <script src="../js/t3d2096-ui.js"></script>
   <script src="../js/rk-layout.js"></script>
   <script src="../js/pages/admin-sidebar.js"></script>
+  <script src="../js/pages/reception.js"></script>
 </body>
 </html>

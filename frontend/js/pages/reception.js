@@ -438,7 +438,7 @@
   }
 
   // --- Check-in Action ---
-  function handleCheckIn(bookingId) {
+  async function handleCheckIn(bookingId) {
     const booking = state.bookings.find((b) => b.id === bookingId);
     if (!booking) return;
 
@@ -450,11 +450,19 @@
     state.selectedId = bookingId;
     renderBookingsList();
     renderCheckoutPanel();
+
+    if (window.axiosClient) {
+      try {
+        await window.axiosClient.post(`/reception/bookings/${bookingId}/check-in`);
+      } catch (err) {
+        console.warn("Check-in API fallback:", err);
+      }
+    }
     showToast(`✓ Đã nhận sân thành công cho ${booking.customer_name}!`);
   }
 
   // --- Confirm Payment Action ---
-  function handleConfirmPaymentAndPrint() {
+  async function handleConfirmPaymentAndPrint() {
     const booking = getSelectedBooking();
     if (!booking) return;
 
@@ -464,6 +472,22 @@
     renderBookingsList();
     renderCheckoutPanel();
     renderThermalReceipt();
+
+    if (window.axiosClient) {
+      try {
+        const payload = {
+          payment_method: state.paymentMethod, // "CASH" | "BANK_TRANSFER"
+          discount_amount: booking.discount_amount || 0,
+          discount_reason: booking.discount_reason || (booking.discount_amount > 0 ? "Chiết khấu lễ tân" : null)
+        };
+        const res = await window.axiosClient.post(`/reception/bookings/${booking.id}/checkout`, payload);
+        if (res.data && res.data.invoice_code) {
+          booking.invoice_code = res.data.invoice_code;
+        }
+      } catch (err) {
+        console.warn("Checkout API fallback:", err);
+      }
+    }
 
     showToast(`✓ Đã ghi nhận thanh toán ${formatMoney(totals.grandTotal)} VND!`);
 
@@ -626,11 +650,52 @@
     });
   }
 
+  // --- Load Bookings from Backend API ---
+  async function loadBookingsFromAPI() {
+    if (!window.axiosClient) return;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await window.axiosClient.get(`/reception/bookings?booking_date=${today}`);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        state.bookings = res.data.map((b) => {
+          const firstSlot = b.slots && b.slots[0] ? b.slots[0] : null;
+          const hours = firstSlot ? (firstSlot.duration_minutes / 60) : 1;
+          const rate = firstSlot ? firstSlot.price_per_hour : 180000;
+          return {
+            id: b.id,
+            booking_code: b.booking_code,
+            customer_name: b.user_name || "Khách vãng lai",
+            customer_phone: b.user_phone || "",
+            court_name: b.court_name || (firstSlot ? firstSlot.court_name : "Sân 1"),
+            court_type: "Sân tiêu chuẩn",
+            time_slot: b.start_time && b.end_time ? `${b.start_time}–${b.end_time}` : "14:00–15:00",
+            hours: hours,
+            court_hourly_rate: rate,
+            court_fee: b.total_price || 180000,
+            status: b.status, // "CHECKED_IN", "Confirmed", "Completed"
+            checked_in_at: b.status === "CHECKED_IN" ? "14:02" : null,
+            services: [],
+            discount_amount: 0,
+            discount_reason: ""
+          };
+        });
+        if (!state.bookings.some((b) => b.id === state.selectedId)) {
+          state.selectedId = state.bookings[0].id;
+        }
+        renderBookingsList();
+        renderCheckoutPanel();
+      }
+    } catch (err) {
+      console.warn("Chưa tải được booking từ API, duy trì dữ liệu quầy mẫu:", err);
+    }
+  }
+
   // --- Initialization ---
   document.addEventListener("DOMContentLoaded", () => {
     cacheDOMElements();
     initEventListeners();
     renderBookingsList();
     renderCheckoutPanel();
+    loadBookingsFromAPI();
   });
 })();

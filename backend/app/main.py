@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
+from sqlalchemy import text
 from app import models  # noqa: F401 - import để SQLAlchemy biết các bảng
 from app.core.config import settings
 from app.db.session import Base, engine
@@ -18,13 +19,18 @@ from app.routers import auth, health, items, reception, service_orders, services
 from app.routers import slot
 from app.routers import booking
 from app.routers import court_management, price_rule_management
-from app.routers import profile, admin_users, analytics, notification
+from app.routers import profile, admin_users, analytics, notification, invoice
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Tự tạo các bảng còn thiếu khi server khởi động (bảng đã có thì bỏ qua).
     try:
         Base.metadata.create_all(bind=engine)
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE invoices ADD COLUMN staff_id INT NULL;"))
+        except Exception:
+            pass
         print(f"[DB] Đã kết nối MySQL {settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
     except OperationalError as error:
         print("[DB] KHÔNG kết nối được MySQL! Kiểm tra MySQL đã bật chưa và file .env.")
@@ -75,6 +81,7 @@ app.include_router(court_management.router, prefix="/api")
 app.include_router(price_rule_management.router, prefix="/api")
 app.include_router(notification.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+app.include_router(invoice.router, prefix="/api")
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} đang chạy. Xem tài liệu API tại /docs"}

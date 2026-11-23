@@ -12,11 +12,11 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.core.security import require_roles
+from app.core.security import require_roles, get_current_user
 from app.crud import reception as reception_crud
 from app.crud.reception import NotFoundError
 from app.db.session import get_db
-from app.models.user import UserRole
+from app.models.user import User, UserRole
 from app.routers.booking import _to_booking_out
 from app.schemas.booking import (
     BookingCheckoutRequest,
@@ -77,10 +77,11 @@ def checkout_booking(
     booking_id: int,
     data: BookingCheckoutRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Thanh toán tổng kết (tiền sân + dịch vụ, giảm giá, tạo hóa đơn, chuyển Completed trong 1 transaction)."""
     try:
-        return reception_crud.checkout_booking(db, booking_id, data)
+        return reception_crud.checkout_booking(db, booking_id, data, staff_id=current_user.id)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:

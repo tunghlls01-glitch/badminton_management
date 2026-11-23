@@ -53,6 +53,12 @@
       icon: "card",
       roles: ["admin", "staff"],
     },
+    {
+      key: "invoices",
+      label: "Hóa đơn & Chốt ca",
+      icon: "card",
+      roles: ["admin", "staff"],
+    },
     { key: "courts", label: "Danh sách sân", icon: "grid", roles: ["staff"] },
     {
       key: "services",
@@ -97,7 +103,7 @@
     const view =
       new URLSearchParams(global.location.search).get("view") ||
       ({"courts.html": "courts", "pricing.html": "pricing", "services.html": "services",
-        "pos.html": "pos", "reception.html": "check-in", "admin-users.html": "users", "analytics.html": "revenue"})[global.location.pathname.split("/").pop()] ||
+        "pos.html": "pos", "reception.html": "check-in", "invoices.html": "invoices", "admin-users.html": "users", "analytics.html": "revenue"})[global.location.pathname.split("/").pop()] ||
       items[0].key;
     const active = items.find((item) => item.key === view) || items[0];
 
