@@ -1,4 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const STORAGE_KEY = "rk_pricing_rules_v1";
+  const DEFAULT_RULES = [
+    { id: 1, name: "Giờ vàng buổi sáng", day_type: "WEEKDAY", start_time: "06:00", end_time: "11:00", price: 120000, status: "Active" },
+    { id: 2, name: "Giờ tiêu chuẩn trưa", day_type: "WEEKDAY", start_time: "11:00", end_time: "17:00", price: 90000, status: "Active" },
+    { id: 3, name: "Giờ cao điểm tối", day_type: "WEEKDAY", start_time: "17:00", end_time: "22:00", price: 180000, status: "Active" },
+    { id: 4, name: "Cuối tuần trọn gói", day_type: "WEEKEND", start_time: "06:00", end_time: "22:00", price: 150000, status: "Active" }
+  ];
+
   let pricingRules = [];
 
   const tableBody = document.getElementById("pricingTableBody");
@@ -25,16 +33,36 @@ document.addEventListener("DOMContentLoaded", () => {
   const previewDateInput = document.getElementById("previewDate");
   const previewResult = document.getElementById("previewResult");
 
+  function savePricingRules() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pricingRules));
+    } catch (err) {
+      console.error("Không thể lưu bảng giá vào localStorage:", err);
+    }
+  }
+
+  function loadStoredRules() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
   function fetchPricingRules() {
     try {
       tableBody.innerHTML = `<tr><td colspan="5" class="pricing-state-cell">Đang tải quy tắc giá...</td></tr>`;
-      
-      pricingRules = [
-        { id: 1, name: "Giờ vàng buổi sáng", day_type: "WEEKDAY", start_time: "06:00", end_time: "11:00", price: 120000, status: "Active" },
-        { id: 2, name: "Giờ tiêu chuẩn trưa", day_type: "WEEKDAY", start_time: "11:00", end_time: "17:00", price: 90000, status: "Active" },
-        { id: 3, name: "Giờ cao điểm tối", day_type: "WEEKDAY", start_time: "17:00", end_time: "22:00", price: 180000, status: "Active" },
-        { id: 4, name: "Cuối tuần trọn gói", day_type: "WEEKEND", start_time: "06:00", end_time: "22:00", price: 150000, status: "Active" }
-      ];
+
+      const stored = loadStoredRules();
+      if (stored && stored.length > 0) {
+        pricingRules = stored;
+      } else {
+        pricingRules = DEFAULT_RULES.map((r) => ({ ...r }));
+        savePricingRules();
+      }
 
       checkTimeOverlaps();
       renderTable();
@@ -126,13 +154,18 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      const existingRule = ruleIdInput.value
+        ? pricingRules.find(r => r.id === Number(ruleIdInput.value))
+        : null;
+
       const newRule = {
         id: ruleIdInput.value ? Number(ruleIdInput.value) : Date.now(),
         name: ruleNameInput.value.trim(),
         day_type: dayTypeSelect.value,
         start_time: sTime,
         end_time: eTime,
-        price: Number(priceValueInput.value)
+        price: Number(priceValueInput.value),
+        status: existingRule?.status || "Active"
       };
 
       if (ruleIdInput.value) {
@@ -142,6 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
         pricingRules.push(newRule);
       }
 
+      savePricingRules();
       closeDrawer();
       checkTimeOverlaps();
       renderTable();
@@ -166,6 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.deleteRule = (id) => {
     if (confirm("Bạn có chắc chắn muốn xóa quy tắc giá này?")) {
       pricingRules = pricingRules.filter(r => r.id !== id);
+      savePricingRules();
       checkTimeOverlaps();
       renderTable();
     }
@@ -189,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!selectedDateStr) return;
 
       const dateObj = new Date(selectedDateStr);
-      const dayOfWeek = dateObj.getDay(); 
+      const dayOfWeek = dateObj.getDay();
       const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
 
       const applicableRules = pricingRules.filter(r => {
