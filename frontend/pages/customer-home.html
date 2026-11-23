@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#B91C1C" />
+    <title>Trang chủ | RK BADMINTON</title>
+    <link rel="stylesheet" href="../css/t3d2096.css" />
+  </head>
+  <body class="rk-app" data-root="../" data-page="home">
+    <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
+    <header id="rk-header" class="rk-header"></header>
+    <main id="main-content">
+      <div
+        id="rk-session-state"
+        class="rk-container rk-session-state"
+        hidden
+      ></div>
+      <section class="rk-container rk-hero" aria-labelledby="home-title">
+        <div class="rk-hero-copy">
+          <span class="rk-opening">MỞ CỬA HÀNG NGÀY 06:00 - 23:00</span>
+          <h1 id="home-title">Sân chuẩn thi đấu.<br />Sẵn sàng bùng nổ.</h1>
+          <p class="rk-hero-lead">Đặt sân nhanh chóng, không cần chờ đợi.</p>
+          <p class="rk-hero-description">
+            Chọn sân yêu thích, khung giờ phù hợp và ra sân ngay.
+          </p>
+          <div class="rk-hero-actions">
+            <a class="rk-btn rk-primary" data-require-auth href="booking.html"
+              >Đặt sân ngay <span aria-hidden="true">→</span></a
+            ><a class="rk-secondary" href="#courts"
+              >Xem danh sách sân <span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <div class="rk-hero-features">
+            <span>Mặt sân đạt chuẩn thi đấu</span
+            ><span>Đặt sân trực tuyến dễ dàng</span>
+          </div>
+        </div>
+        <div class="rk-hero-visual">
+          <img
+            src="../assets/images/rk-court-hero.png"
+            alt="Ảnh minh họa sân cầu lông thảm xanh trong nhà, mái cao và ánh sáng tự nhiên"
+            width="900"
+            height="760"
+            fetchpriority="high"
+          />
+          <div class="rk-photo-caption">
+            <small>KHÔNG GIAN THỂ THAO CHO MỌI TRÌNH ĐỘ</small
+            ><strong>Sân tiêu chuẩn giải đấu. Phục vụ mỗi ngày.</strong>
+          </div>
+        </div>
+      </section>
+      <section id="courts" class="rk-courts" aria-labelledby="courts-title">
+        <div class="rk-container">
+          <div class="rk-section-heading">
+            <div>
+              <span class="rk-eyebrow">ĐẶT SÂN TRỰC TUYẾN</span>
+              <h2 id="courts-title">Sân cầu lông cho mọi trình độ.</h2>
+              <p>
+                Bề mặt mịn màng, ánh sáng rực rỡ cùng không gian lý tưởng cho
+                những trận đấu đẹp và các bài tập.
+              </p>
+            </div>
+            <span id="rk-court-summary" class="rk-court-summary" hidden></span>
+          </div>
+          <div id="rk-court-grid" class="rk-court-grid" aria-busy="true"></div>
+          <div id="rk-court-state" class="rk-data-note" aria-live="polite">
+            <p role="status">Đang tải danh sách sân...</p>
+          </div>
+        </div>
+      </section>
+      <section
+        id="pricing"
+        class="rk-container rk-pricing"
+        aria-labelledby="pricing-title"
+      >
+        <div class="rk-section-heading">
+          <div>
+            <span class="rk-eyebrow">BẢNG GIÁ THAM KHẢO</span>
+            <h2 id="pricing-title">Chơi thả ga, giá hợp lý.</h2>
+            <p>
+              Lựa chọn khung giờ chơi phù hợp, tận hưởng tiện ích đạt chuẩn với
+              mức giá ưu đãi từng ngày.
+            </p>
+          </div>
+        </div>
+        <div
+          class="rk-table-scroll"
+          role="region"
+          aria-label="Bảng giá tham khảo, cuộn ngang trên điện thoại"
+          tabindex="0"
+        >
+          <table class="rk-pricing-table">
+            <caption class="rk-sr-only">
+              Giá tham khảo cho một sân trong một giờ
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">KHUNG GIỜ</th>
+                <th scope="col">NGÀY THƯỜNG (T2 - T6)</th>
+                <th scope="col">CUỐI TUẦN (T7 - CN)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <span>Buổi sáng</span><small>06:00 - 12:00</small>
+                </th>
+                <td>180.000đ <small>/ giờ</small></td>
+                <td>200.000đ <small>/ giờ</small></td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <span>Buổi chiều</span><small>12:00 - 17:00</small>
+                </th>
+                <td>180.000đ <small>/ giờ</small></td>
+                <td>220.000đ <small>/ giờ</small></td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <span>Buổi tối - Giờ cao điểm</span
+                  ><small>17:00 - 23:00</small>
+                </th>
+                <td>240.000đ <small>/ giờ</small></td>
+                <td>280.000đ <small>/ giờ</small></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="rk-price-note">
+          Áp dụng cho 1 sân. Giá tham khảo theo thiết kế; vui lòng xác nhận giá
+          thực tế theo sân và khung giờ trước khi đặt.
+        </p>
+      </section>
+    </main>
+    <footer id="rk-footer" class="rk-footer"></footer>
+    <noscript
+      ><p class="rk-container">
+        Vui lòng bật JavaScript để đăng nhập và tải dữ liệu.
+      </p></noscript
+    >
+    <script src="../js/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/t3d2096-config.js"></script>
+    <script src="../js/court-photos.js"></script>
+    <script src="../js/authStorage.js"></script>
+    <script src="../js/axiosClient.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/ProtectedRoute.js"></script>
+    <script src="../js/t3d2096-ui.js"></script>
+    <script src="../js/rk-layout.js"></script>
+    <script src="../js/pages/customer-home.js"></script>
+  </body>
+</html>

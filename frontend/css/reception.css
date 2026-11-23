@@ -1,0 +1,1481 @@
+/* ==========================================================================
+   RK BADMINTON · Reception Check-in & Counter Checkout Stylesheet
+   Matches Figma design: "Reception · Check-in & checkout" & "Thermal receipt preview"
+   ========================================================================== */
+
+:root {
+  --rk-brand: #ba0000;
+  --rk-brand-hover: #991b1b;
+  --rk-brand-active: #7f1d1d;
+  --rk-brand-light: #fff1f1;
+  --rk-brand-subtle: #fff5f5;
+  --rk-text-primary: #1e293b;
+  --rk-text-secondary: #475569;
+  --rk-text-muted: #64748b;
+  --rk-text-subtle: #94a3b8;
+  --rk-border: #e2e8f0;
+  --rk-border-input: #cbd5e1;
+  --rk-bg-canvas: #f8fafc;
+  --rk-bg-surface: #ffffff;
+  --rk-status-green: #047857;
+  --rk-status-green-bg: #ecfdf5;
+  --rk-status-amber: #92400e;
+  --rk-status-amber-bg: #fffbeb;
+  --rk-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --rk-font-mono: 'Roboto Mono', 'Courier New', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body.rk-reception-body {
+  font-family: var(--rk-font);
+  background-color: var(--rk-bg-canvas);
+  color: var(--rk-text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* App container */
+.reception-app {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  align-items: stretch;
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar (Figma node 2:3)
+   -------------------------------------------------------------------------- */
+.reception-sidebar {
+  width: 240px;
+  min-width: 240px;
+  background-color: var(--rk-bg-surface);
+  border-right: 1px solid var(--rk-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  height: auto;
+  align-self: stretch;
+  z-index: 20;
+}
+
+.sidebar-logo {
+  height: 78px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  border-bottom: 1px solid transparent;
+  text-decoration: none;
+}
+
+.brand-badge {
+  width: 34px;
+  height: 34px;
+  background-color: var(--rk-brand);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.brand-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--rk-text-primary);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.sidebar-nav {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 7px;
+  color: var(--rk-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  background-color: transparent;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-item:hover:not(.active) {
+  background-color: #f1f5f9;
+  color: var(--rk-text-primary);
+}
+
+.nav-item.active {
+  background-color: var(--rk-brand-light);
+  color: var(--rk-brand);
+  font-weight: 600;
+}
+
+.nav-item svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 12px 24px;
+  border-top: 1px solid var(--rk-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-help {
+  font-size: 12px;
+  color: var(--rk-text-muted);
+  text-decoration: none;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+}
+
+.sidebar-help:hover {
+  background-color: #f1f5f9;
+  color: var(--rk-text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Main Content Layout
+   -------------------------------------------------------------------------- */
+.reception-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Top Navigation (Figma node 2:4) */
+.reception-topbar {
+  height: 80px;
+  background-color: var(--rk-bg-surface);
+  border-bottom: 1px solid var(--rk-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 15;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.club-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 15px;
+  background-color: var(--rk-status-green-bg);
+  color: var(--rk-status-green);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-info {
+  text-align: right;
+}
+
+.user-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+  line-height: 1.2;
+}
+
+.user-role {
+  display: block;
+  font-size: 11px;
+  color: var(--rk-text-muted);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  border: 1px solid var(--rk-border);
+  color: var(--rk-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reception-logout-btn {
+  background: transparent;
+  border: 1px solid var(--rk-border);
+  color: var(--rk-text-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 2px;
+}
+
+/* Page Body Container */
+.reception-content {
+  padding: 24px 32px 48px;
+  max-width: 1400px;
+  width: 100%;
+}
+
+/* Page Heading (Figma node 2:5) */
+.page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.heading-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--rk-text-primary);
+  line-height: 1.2;
+}
+
+.heading-subtitle {
+  font-size: 13px;
+  color: var(--rk-text-muted);
+  margin-top: 6px;
+}
+
+.heading-clock {
+  text-align: right;
+}
+
+.clock-date {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--rk-text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.clock-time {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+  line-height: 1.1;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Two-column grid layout */
+.reception-grid {
+  display: grid;
+  grid-template-columns: 490px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .reception-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Common Card */
+.card-panel {
+  background-color: var(--rk-bg-surface);
+  border-radius: 12px;
+  border: 1px solid var(--rk-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  padding: 24px;
+}
+
+/* --------------------------------------------------------------------------
+   Left Column: Today's Bookings (Figma node 2:6)
+   -------------------------------------------------------------------------- */
+.bookings-card-header {
+  margin-bottom: 16px;
+}
+
+.bookings-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+.bookings-count {
+  font-size: 12px;
+  color: var(--rk-text-muted);
+  margin-top: 4px;
+}
+
+/* Search input */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  border: 1px solid var(--rk-border);
+  border-radius: 7px;
+  background-color: var(--rk-bg-surface);
+  padding: 0 12px;
+  margin-bottom: 12px;
+  transition: border-color 0.15s ease;
+}
+
+.search-box:focus-within {
+  border-color: var(--rk-brand);
+  box-shadow: 0 0 0 1px var(--rk-brand);
+}
+
+.search-icon {
+  font-size: 18px;
+  color: var(--rk-text-muted);
+  user-select: none;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 12px;
+  color: var(--rk-text-primary);
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: var(--rk-text-subtle);
+}
+
+/* Filter tabs (Segmented control) */
+.filter-tabs {
+  display: flex;
+  background-color: #f1f5f9;
+  border-radius: 7px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.filter-tab {
+  flex: 1;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--rk-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.filter-tab.active {
+  background-color: var(--rk-bg-surface);
+  color: var(--rk-text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Bookings list */
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 700px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Booking Card Item */
+.booking-item {
+  position: relative;
+  background-color: var(--rk-bg-surface);
+  border: 1px solid var(--rk-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.booking-item:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.booking-item.selected {
+  background-color: var(--rk-brand-subtle);
+  border-color: #fca5a5;
+}
+
+.booking-item.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  background-color: var(--rk-brand);
+  border-radius: 1px;
+}
+
+.booking-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.booking-time-court {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  background-color: #f1f5f9;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--rk-text-secondary);
+}
+
+.court-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+.booking-status-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 5px;
+  line-height: 1.2;
+}
+
+.status-tag-checkedin {
+  background-color: var(--rk-status-green-bg);
+  color: var(--rk-status-green);
+}
+
+.status-tag-confirmed {
+  background-color: #f1f5f9;
+  color: var(--rk-text-muted);
+}
+
+.status-tag-completed {
+  background-color: #eff6ff;
+  color: #1e40af;
+}
+
+.booking-item-body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.booking-customer-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+  line-height: 1.2;
+}
+
+.booking-customer-phone {
+  font-size: 11px;
+  color: var(--rk-text-muted);
+  margin-top: 4px;
+}
+
+.booking-action-btn {
+  height: 32px;
+  min-width: 104px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: none;
+  background-color: #f1f5f9;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.booking-action-btn:hover {
+  background-color: #e2e8f0;
+  color: var(--rk-text-primary);
+}
+
+.booking-action-btn.btn-checkout {
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+.booking-action-btn.btn-checkin {
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+.booking-action-btn.btn-view-invoice {
+  background-color: var(--rk-status-green-bg);
+  color: var(--rk-status-green);
+}
+
+/* --------------------------------------------------------------------------
+   Right Column: Counter Checkout (Figma node 2:7)
+   -------------------------------------------------------------------------- */
+.checkout-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.checkout-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+.checkout-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.checkout-status-badge.pending {
+  background-color: var(--rk-status-amber-bg);
+  color: var(--rk-status-amber);
+}
+
+.checkout-status-badge.completed {
+  background-color: var(--rk-status-green-bg);
+  color: var(--rk-status-green);
+}
+
+.checkout-booking-code {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rk-text-muted);
+}
+
+.checkout-customer-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 10px;
+}
+
+.checkout-cust-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+  line-height: 1.2;
+}
+
+.checkout-cust-phone {
+  font-size: 12px;
+  color: var(--rk-text-muted);
+  margin-top: 4px;
+}
+
+.checkout-court-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+  text-align: right;
+}
+
+.checkout-checkin-time {
+  font-size: 11px;
+  color: var(--rk-text-muted);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.checkout-divider {
+  height: 1px;
+  background-color: var(--rk-border);
+  margin: 16px 0;
+}
+
+/* Court fee section */
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+.currency-tag {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--rk-text-subtle);
+}
+
+.court-fee-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.court-fee-desc {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rk-text-primary);
+}
+
+.court-fee-formula {
+  font-size: 11px;
+  color: var(--rk-text-muted);
+  margin-top: 2px;
+}
+
+.court-fee-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+/* Services itemized table */
+.services-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.2fr 1.2fr;
+  height: 32px;
+  align-items: center;
+  padding: 0 14px;
+  background-color: var(--rk-bg-canvas);
+  border-radius: 4px;
+  margin-top: 10px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--rk-text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.services-table-body {
+  margin-top: 4px;
+}
+
+.services-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.2fr 1.2fr;
+  align-items: center;
+  padding: 10px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.service-col-name {
+  font-weight: 500;
+  color: var(--rk-text-primary);
+}
+
+.service-col-qty {
+  text-align: center;
+  color: var(--rk-text-primary);
+}
+
+.service-col-unit {
+  text-align: right;
+  color: var(--rk-text-primary);
+}
+
+.service-col-amount {
+  text-align: right;
+  font-weight: 500;
+  color: var(--rk-text-primary);
+}
+
+.services-subtotal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 0;
+  font-size: 12px;
+}
+
+.services-subtotal-label {
+  color: var(--rk-text-muted);
+}
+
+.services-subtotal-value {
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+/* Payment summary box & Cash calculator (Figma node 2:178) */
+.payment-summary-box {
+  background-color: var(--rk-bg-canvas);
+  border-radius: 8px;
+  padding: 18px;
+  margin-top: 18px;
+}
+
+.grand-total-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.grand-total-label-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.grand-total-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+.grand-total-currency {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--rk-text-muted);
+  margin-top: 2px;
+}
+
+.grand-total-amount {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--rk-text-primary);
+  line-height: 1;
+}
+
+/* Payment method selector */
+.payment-method-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 36px;
+  background-color: var(--rk-border);
+  border-radius: 6px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 14px;
+}
+
+.method-btn {
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--rk-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.method-btn.active {
+  background-color: var(--rk-bg-surface);
+  color: var(--rk-brand);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Cash Received Row */
+.cash-received-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--rk-text-primary);
+  margin-bottom: 6px;
+}
+
+.cash-received-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cash-input-wrap {
+  flex: 1;
+  height: 38px;
+  background-color: var(--rk-bg-surface);
+  border: 1px solid var(--rk-border-input);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 6px;
+  transition: border-color 0.15s ease;
+}
+
+.cash-input-wrap:focus-within {
+  border-color: var(--rk-brand);
+  box-shadow: 0 0 0 1px var(--rk-brand);
+}
+
+.cash-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+  width: 100%;
+  font-family: inherit;
+}
+
+/* ==========================================================================
+   T3D2CB1: Racket Rental & Return Warning Box
+   ========================================================================== */
+.racket-rental-alert-box {
+  margin-top: 14px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.25s ease-in-out;
+}
+
+.rental-warning-card {
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-left: 5px solid #d97706;
+  padding: 12px 14px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.12);
+}
+
+.rental-warning-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b45309;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.2px;
+}
+
+.rental-warning-body {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #78350f;
+  line-height: 1.5;
+}
+
+.rental-warning-list {
+  margin-top: 6px;
+  padding-left: 18px;
+  font-size: 11.5px;
+  color: #92400e;
+}
+
+.rental-warning-actions {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #fde68a;
+}
+
+.btn-return-racket-quick {
+  background: #d97706;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn-return-racket-quick:hover {
+  background: #b45309;
+  transform: translateY(-1px);
+}
+
+.btn-return-racket-quick:active {
+  transform: translateY(0);
+}
+
+.rental-returned-card {
+  background: #ecfdf5;
+  border: 1.5px solid #10b981;
+  border-left: 5px solid #059669;
+  padding: 10px 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rental-returned-text {
+  color: #065f46;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+.cash-input-currency {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--rk-text-subtle);
+  user-select: none;
+}
+
+.cash-quick-btn {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--rk-border-input);
+  background-color: var(--rk-bg-surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rk-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cash-quick-btn:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.cash-quick-btn.active {
+  border-color: var(--rk-brand);
+  color: var(--rk-brand);
+}
+
+/* Change due row */
+.change-due-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--rk-border);
+}
+
+.change-due-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+.change-due-amount {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--rk-text-primary);
+}
+
+.change-due-amount.negative {
+  color: var(--rk-brand);
+  font-size: 15px;
+}
+
+/* Checkout Actions at bottom */
+.btn-print-preview {
+  display: block;
+  margin: 16px auto 8px;
+  background: none;
+  border: none;
+  color: var(--rk-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.btn-print-preview:hover {
+  background-color: #f1f5f9;
+}
+
+.btn-confirm-payment {
+  width: 100%;
+  height: 48px;
+  border-radius: 6px;
+  border: none;
+  background-color: var(--rk-brand);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-confirm-payment:hover {
+  background-color: var(--rk-brand-hover);
+}
+
+.btn-confirm-payment:active {
+  background-color: var(--rk-brand-active);
+}
+
+/* --------------------------------------------------------------------------
+   Thermal Receipt Drawer Modal (Figma node 2:205 / 2:409)
+   -------------------------------------------------------------------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.thermal-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 440px;
+  max-width: 100vw;
+  background-color: var(--rk-bg-canvas);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+.modal-overlay.open .thermal-drawer {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  padding: 24px 24px 16px;
+  background-color: var(--rk-bg-surface);
+  border-bottom: 1px solid var(--rk-border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.drawer-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--rk-text-primary);
+}
+
+.drawer-subtitle {
+  font-size: 12px;
+  color: var(--rk-text-muted);
+  margin-top: 4px;
+}
+
+.drawer-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: var(--rk-text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.drawer-close-btn:hover {
+  color: var(--rk-text-primary);
+}
+
+.drawer-body {
+  padding: 20px 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 80mm Thermal Receipt Paper */
+.thermal-receipt-paper {
+  width: 302px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  border: 1px solid var(--rk-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 20px 16px;
+  font-family: var(--rk-font-mono);
+  font-size: 10px;
+  color: #000000;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.receipt-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.receipt-brand-mark {
+  background-color: var(--rk-brand);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--rk-font);
+}
+
+.receipt-brand-name {
+  font-family: var(--rk-font);
+  font-size: 16px;
+  font-weight: 700;
+  color: #000000;
+}
+
+.receipt-address {
+  font-size: 10px;
+  color: #000000;
+  line-height: 1.35;
+}
+
+.receipt-divider {
+  margin: 8px 0;
+  text-align: center;
+  letter-spacing: -1px;
+  color: #000000;
+  user-select: none;
+}
+
+.receipt-title {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+.receipt-meta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.receipt-meta-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.receipt-table-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  margin: 6px 0 4px;
+}
+
+.receipt-item-group {
+  margin: 6px 0;
+}
+
+.receipt-item-name {
+  font-weight: 600;
+}
+
+.receipt-item-calc {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1px;
+}
+
+.receipt-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 8px 0 4px;
+}
+
+.receipt-tender-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.receipt-footer-msg {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 10px;
+}
+
+/* Drawer actions */
+.drawer-footer {
+  padding: 16px 24px 24px;
+  background-color: var(--rk-bg-canvas);
+  border-top: 1px solid var(--rk-border);
+}
+
+.drawer-status-text {
+  font-size: 12px;
+  color: var(--rk-text-muted);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.btn-print-receipt {
+  width: 100%;
+  height: 46px;
+  background-color: var(--rk-brand);
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-print-receipt:hover {
+  background-color: var(--rk-brand-hover);
+}
+
+.btn-back-checkout {
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  border: 1px solid var(--rk-border);
+  color: var(--rk-text-primary);
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-back-checkout:hover {
+  background-color: #f1f5f9;
+}
+
+.drawer-print-note {
+  font-size: 10px;
+  color: var(--rk-text-muted);
+  text-align: center;
+  margin-top: 12px;
+}
+
+/* Toast notification */
+.rk-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: var(--rk-text-primary);
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 200;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.rk-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   PRINT MEDIA QUERY (@media print)
+   Standard 80mm POS Thermal Receipt Printing
+   ========================================================================== */
+@media print {
+  /* Hide all regular application elements */
+  body, html {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+  }
+
+  .reception-sidebar,
+  .reception-topbar,
+  .page-heading,
+  .reception-grid,
+  .modal-overlay:not(.open),
+  .drawer-header,
+  .drawer-footer,
+  .rk-toast,
+  .btn-print-preview,
+  .btn-confirm-payment {
+    display: none !important;
+  }
+
+  /* Show only the receipt container in isolation */
+  .modal-overlay.open {
+    position: static !important;
+    background: none !important;
+    backdrop-filter: none !important;
+    inset: auto !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .thermal-drawer {
+    position: static !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    transform: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+  }
+
+  .drawer-body {
+    padding: 0 !important;
+  }
+
+  .thermal-receipt-paper {
+    width: 76mm !important;
+    max-width: 76mm !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 2mm !important;
+    margin: 0 auto !important;
+    font-size: 10pt !important;
+    color: #000000 !important;
+  }
+
+  .receipt-brand-name,
+  .receipt-title,
+  .receipt-total-row,
+  .receipt-meta-row,
+  .receipt-item-group,
+  .receipt-footer-msg {
+    color: #000000 !important;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+}

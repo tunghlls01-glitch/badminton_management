@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174b38">
+  <title>Xác nhận đặt sân — Sân Nhà</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/booking_notification.css">
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+    <symbol id="calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-13 4h2m4 0h2"/></symbol>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="pin" viewBox="0 0 24 24"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/></symbol>
+    <symbol id="copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></symbol>
+    <symbol id="shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="shuttle" viewBox="0 0 24 24"><path d="m5 15 7 4 9-7-4-7-4-2-2 4-4-1-2 9Zm2-9 5 13M11 7l1 12m5-14-5 14m9-7-9 7M5 15c-4 3-1 7 2 6l5-2"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <a href="booking.html" class="brand" aria-label="Sân Nhà — Trang chủ">
+      <img class="logo" src ="../assets/images/logo.svg" alt="Logo Web" > <use href="#shuttle"/>
+    </a>
+    <span class="header-note"><svg><use href="#shield"/></svg>Đặt sân an tâm. Chơi hết mình.</span>
+  </header>
+
+  <main>
+    <nav class="breadcrumb reveal" aria-label="Đường dẫn">
+      <a href="booking.html">Trang chủ</a>
+      <svg><use href="#arrow"/></svg>
+      <a href="booking.html">Lịch đặt sân</a>
+      <svg><use href="#arrow"/></svg>
+      <span aria-current="page">Xác nhận đặt sân</span>
+    </nav>
+
+    <section class="confirmation reveal" aria-labelledby="confirmation-title">
+      <div class="success-heading">
+        <div class="success-mark" aria-hidden="true"><svg><use href="#check"/></svg></div>
+        <div class="eyebrow">HẸN GẶP BẠN TRÊN SÂN</div>
+        <h1 id="confirmation-title">Đặt sân thành công!</h1>
+        <p>Lịch chơi của bạn đã được xác nhận.<br>Chuẩn bị vợt và sẵn sàng cho trận đấu tiếp theo nhé.</p>
+        <div class="booking-reference">
+          <span>Mã đặt sân</span>
+          <strong id="reference-code">SN-261111-003</strong>
+          <button class="copy-button" id="copy-reference" aria-label="Sao chép mã đặt sân">
+            <svg><use href="#copy"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="booking-body">
+        <div class="details">
+          <div class="section-label">THÔNG TIN LƯỢT ĐẶT</div>
+          <div class="venue-heading">
+            <div>
+              <h2 id="confirmation-court">Sân cầu lông 03</h2>
+              <p class="location"><svg><use href="#pin"/></svg><span id="confirmation-venue">Sân Nhà · Cơ sở Thảo Điền</span></p>
+            </div>
+            <span class="status" id="confirmation-status">Đã xác nhận</span>
+          </div>
+
+          <div class="schedule">
+            <div class="schedule-item">
+              <svg><use href="#calendar"/></svg>
+              <div>
+                <small>NGÀY CHƠI</small>
+                <strong id="confirmation-date">Thứ 4, 11/11/2026</strong>
+                <p>Một buổi chơi thật vui</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <svg><use href="#clock"/></svg>
+              <div>
+                <small>KHUNG GIỜ</small>
+                <strong id="confirmation-time">18:00 – 20:00</strong>
+                <p id="confirmation-duration">Thời lượng: 2 giờ</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="customer"><span>Người đặt</span><strong>Nguyễn Minh Anh</strong></div>
+          <div class="customer"><span>Số điện thoại</span><strong>090 ••• •• 68</strong></div>
+          <div class="customer"><span>Hình thức thanh toán</span><strong>Thanh toán tại sân</strong></div>
+        </div>
+
+        <aside class="payment" aria-label="Chi phí đặt sân">
+          <div class="court-visual" aria-hidden="true">
+            <svg viewBox="0 0 160 90">
+              <rect x="5" y="5" width="150" height="80"/>
+              <path d="M80 5v80M5 20h150M5 70h150M25 5v80M135 5v80M5 45h150"/>
+            </svg>
+          </div>
+          <div class="section-label">CHI PHÍ ĐẶT SÂN</div>
+          <div class="payment-line"><span>Giá sân / giờ</span><span id="confirmation-price-per-hour">120.000đ</span></div>
+          <div class="payment-line"><span>Thời lượng</span><span id="confirmation-price-duration">2 giờ</span></div>
+          <div class="total">
+            <small>Tổng thanh toán</small>
+            <strong id="confirmation-total">240.000đ</strong>
+          </div>
+          <p class="payment-note"><svg><use href="#clock"/></svg>Chưa thanh toán · Thanh toán tại sân</p>
+        </aside>
+      </div>
+
+      <div class="confirmation-footer">
+        <div class="reminder">
+          <svg><use href="#clock"/></svg>
+          <div>
+            <strong>Đến sớm một chút, chơi vui hơn!</strong>
+            <p>Vui lòng có mặt trước 15 phút và cung cấp mã đặt sân cho nhân viên khi nhận sân.</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="button" id="view-booking">Xem lịch đặt sân<svg><use href="#arrow"/></svg></button>
+          <button class="button secondary" id="book-another">Đặt sân khác</button>
+          <button class="button secondary" id="add-calendar"><svg><use href="#calendar"/></svg>Thêm vào lịch</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="support reveal">Cần thay đổi lịch chơi? <a href="mailto:hotro@sannha.example">Liên hệ hỗ trợ</a> <span>· Email minh họa</span></p>
+  </main>
+
+  <footer class="page-footer">© 2026 Sân Nhà. <a href="booking.html">Đặt sân</a> · <a href="booking.html">Lịch của tôi</a></footer>
+
+  <dialog id="booking-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-heading">
+      <h2 id="dialog-title">Lượt đặt của bạn</h2>
+      <button class="close-button" id="close-dialog" aria-label="Đóng"><svg><use href="#close"/></svg></button>
+    </div>
+    <div class="dialog-row"><span>Mã đặt sân</span><strong id="dialog-reference">SN-261111-003</strong></div>
+    <div class="dialog-row"><span>Sân</span><strong id="dialog-court">Sân cầu lông 03</strong></div>
+    <div class="dialog-row"><span>Cơ sở</span><strong id="dialog-venue">Thảo Điền</strong></div>
+    <div class="dialog-row"><span>Ngày chơi</span><strong id="dialog-date">11/11/2026</strong></div>
+    <div class="dialog-row"><span>Khung giờ</span><strong id="dialog-time">18:00 – 20:00</strong></div>
+    <div class="dialog-row"><span>Tổng tiền</span><strong id="dialog-total">240.000đ · Chưa thanh toán</strong></div>
+    <button class="button secondary dialog-action" id="print-booking"><svg><use href="#download"/></svg>In / lưu xác nhận PDF</button>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/pages/booking_notification.js" defer></script>
+</body>
+</html>

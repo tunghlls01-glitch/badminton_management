@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#B91C1C" />
+    <title>Không gian quản lý | RK BADMINTON</title>
+    <link rel="stylesheet" href="../css/t3d2096.css" />
+    <link rel="stylesheet" href="../css/admin-sidebar.css">
+    <link rel="stylesheet" href="../css/admin-overview.css">
+</head>
+  <body class="rk-app" data-root="../" data-page="dashboard">
+    <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
+    <div
+      id="rk-dashboard-state"
+      class="rk-container rk-session-state"
+      role="status"
+      aria-live="polite"
+    >
+      Đang kiểm tra quyền truy cập...
+    </div>
+    <div id="rk-dashboard" class="rk-dashboard" hidden>
+      <button
+        type="button"
+        id="rk-backdrop"
+        class="rk-backdrop"
+        data-rk-action="sidebar-close"
+        aria-label="Đóng menu"
+        hidden
+      ></button>
+      <aside
+        id="rk-sidebar"
+        class="rk-sidebar"
+        aria-label="Thanh bên quản lý"
+      ></aside>
+      <div class="rk-dashboard-body">
+        <header id="rk-dashboard-header" class="rk-dashboard-header"></header>
+        <main id="main-content" class="rk-dashboard-content">
+          <section id="admin-overview" class="ov" hidden aria-label="Tổng quan hoạt động">
+            <template id="ov-header-template">
+              <form class="ov-header-search" role="search">
+                <span data-ov-icon="search"></span>
+                <input type="search" maxlength="100" aria-label="Tìm mã đặt hoặc số điện thoại" placeholder="Tìm mã đặt, số điện thoại…" />
+              </form>
+              <div class="ov-header-status">
+                <span class="ov-session">Phiên đã xác minh</span>
+                <button type="button" class="ov-notifications rk-icon-button" aria-label="Thông báo" aria-expanded="false" hidden>
+                  <span data-ov-icon="bell"></span><span class="ov-unread" hidden></span>
+                </button>
+                <div class="ov-notification-panel" role="region" aria-label="Thông báo của bạn" hidden></div>
+              </div>
+            </template>
+            <div class="ov-intro">
+              <div><span class="rk-eyebrow">KHÔNG GIAN QUẢN LÝ</span><h1>Tổng quan hoạt động</h1>
+                <p>Theo dõi sân, lịch đặt và công việc trong ngày.</p></div>
+              <div class="ov-controls">
+                <input id="ov-day" type="date" aria-label="Ngày xem tổng quan" />
+                <a class="ov-button ov-outline" id="ov-calendar" href="#ov-schedule"><span data-ov-icon="calendar"></span>Xem lịch sân</a>
+                <a class="ov-button ov-primary" id="ov-create" href="admin/manage_booking.html?action=new"><span aria-hidden="true">＋</span>Đặt sân mới</a>
+              </div>
+            </div>
+            <div class="ov-feedback" id="ov-feedback" hidden>
+              <span role="status" id="ov-feedback-text"></span>
+              <button type="button" class="ov-button ov-outline" id="ov-retry" hidden>Thử lại</button>
+            </div>
+            <div class="ov-metrics">
+              <article class="ov-card"><span class="ov-tile" data-ov-icon="card"></span><div><h2 id="ov-revenue-title">Doanh thu hôm nay</h2><strong id="ov-revenue">—</strong><p>Đã thanh toán</p></div></article>
+              <article class="ov-card"><span class="ov-tile" data-ov-icon="calendar"></span><div><h2 id="ov-count-title">Lượt đặt hôm nay</h2><strong id="ov-count">—</strong><p id="ov-confirmed">—</p></div></article>
+              <article class="ov-card"><span class="ov-tile" data-ov-icon="grid"></span><div><h2>Sân đang sử dụng</h2><strong id="ov-using">—</strong><p id="ov-free">Hiện tại</p></div></article>
+              <article class="ov-card"><span class="ov-tile" data-ov-icon="warning"></span><div><h2>Cần xử lý</h2><strong id="ov-tasks">—</strong><p id="ov-task-note">—</p></div></article>
+            </div>
+            <div class="ov-row ov-middle">
+              <section class="ov-card ov-panel" id="ov-schedule" tabindex="-1">
+                <div class="ov-panel-head"><h2 id="ov-grid-title">Lịch sân hôm nay</h2><a id="ov-full-grid" href="timeline_grid.html">Xem toàn bộ →</a></div>
+                <div class="ov-scroll"><table class="ov-grid" aria-labelledby="ov-grid-title" id="ov-grid"></table></div>
+                <p class="ov-placeholder" id="ov-grid-empty">Đang tải lịch sân…</p>
+                <div class="ov-legend"><span>Trống</span><span class="is-booked">Đã đặt</span><span class="is-selected">Đang chọn</span><span class="is-locked">Khóa</span><span class="is-hold">Giữ chỗ</span></div>
+                <p id="ov-selection" class="ov-selection" role="status" hidden></p>
+              </section>
+              <section class="ov-card ov-panel ov-work">
+                <h2>Việc cần xử lý</h2>
+                <div class="ov-task"><span class="ov-tile" data-ov-icon="calendar"></span><strong id="ov-pending">— đơn chờ xác nhận</strong><a id="ov-pending-link" class="ov-button ov-outline" hidden>Xem đơn</a></div>
+                <div class="ov-task"><span class="ov-tile" data-ov-icon="clock"></span><strong id="ov-checkin">— lượt có thể check-in</strong><a id="ov-checkin-link" class="ov-button ov-primary" hidden>Check-in</a></div>
+                <h3>Thao tác nhanh</h3>
+                <nav class="ov-shortcuts" aria-label="Thao tác nhanh">
+                  <a id="ov-quick-create" href="admin/manage_booking.html?action=new"><span data-ov-icon="calendar"></span>Đặt sân</a>
+                  <a href="admin-users.html?view=customers"><span data-ov-icon="users"></span>Khách hàng</a>
+                  <a href="pos.html"><span data-ov-icon="cart"></span>Bán hàng</a>
+                  <a href="reception.html?source=overview"><span data-ov-icon="grid"></span>Check-in</a>
+                </nav>
+              </section>
+            </div>
+            <div class="ov-row ov-bottom">
+              <section class="ov-card ov-panel" id="ov-bookings">
+                <div class="ov-panel-head"><h2 id="ov-bookings-title">Lượt đặt gần đây</h2><a id="ov-bookings-link" href="admin/manage_booking.html">Xem tất cả →</a></div>
+                <div class="ov-scroll"><table class="ov-bookings">
+                  <thead><tr><th>Mã đặt</th><th>Khách hàng</th><th>Sân / Giờ chơi</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
+                  <tbody id="ov-booking-rows"></tbody>
+                </table></div>
+                <p class="ov-placeholder" id="ov-bookings-empty">Đang tải lượt đặt…</p>
+                <button type="button" id="ov-clear-search" class="ov-button ov-outline" hidden>Xóa tìm kiếm</button>
+              </section>
+              <section class="ov-card ov-panel">
+                <div class="ov-panel-head"><h2>Doanh thu 7 ngày</h2><a href="analytics.html">Báo cáo →</a></div>
+                <div id="ov-chart" class="ov-chart" role="img" aria-label="Doanh thu trong bảy ngày"></div>
+                <p class="ov-placeholder" id="ov-chart-empty">Đang tải doanh thu…</p>
+              </section>
+            </div>
+          </section>
+          <div id="rk-dashboard-workspace">
+          <div class="rk-workspace-title">
+            <span class="rk-eyebrow">KHÔNG GIAN QUẢN LÝ</span>
+            <h1 data-welcome>Chào mừng bạn.</h1>
+            <p>Chọn chức năng trong thanh điều hướng để bắt đầu.</p>
+          </div>
+          <section class="rk-access-card">
+            <span class="rk-access-icon" aria-hidden="true">✓</span>
+            <div>
+              <strong>Phiên đăng nhập đã được xác minh</strong>
+              <p data-role-label></p>
+            </div>
+          </section>
+          <section
+            id="rk-dashboard-outlet"
+            class="rk-workspace-panel"
+            aria-label="Nội dung chức năng"
+          >
+            <h2>Khu vực làm việc của bạn</h2>
+            <p>Một số chức năng đang được hoàn thiện.</p>
+          </section>
+          </div>
+        </main>
+      </div>
+    </div>
+    <noscript
+      ><p class="rk-container">
+        Vui lòng bật JavaScript để đăng nhập và tải dữ liệu.
+      </p></noscript
+    >
+    <script src="../js/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/t3d2096-config.js"></script>
+    <script src="../js/authStorage.js"></script>
+    <script src="../js/axiosClient.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/ProtectedRoute.js"></script>
+    <script src="../js/t3d2096-ui.js"></script>
+    <script src="../js/rk-layout.js"></script>
+    <script src="../js/pages/admin-overview.js"></script>
+    <script src="../js/pages/dashboard-layout.js"></script>
+  </body>
+</html>

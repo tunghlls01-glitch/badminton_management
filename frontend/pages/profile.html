@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hồ sơ cá nhân | RK Badminton</title>
+  <link rel="stylesheet" href="../css/t3d2096.css">
+  <link rel="stylesheet" href="../css/profile.css">
+</head>
+<body class="rk-app profile-screen" data-root="../">
+  <header id="rk-header" class="rk-header"></header>
+  <main class="profile-page">
+    <div class="profile-heading">
+      <small>Tài khoản &nbsp;/&nbsp; Hồ sơ cá nhân</small>
+      <h1>Hồ sơ cá nhân</h1>
+      <p>Cập nhật thông tin cá nhân và quản lý mật khẩu của bạn.</p>
+    </div>
+    <div id="profile-state" role="status" aria-live="polite">Đang tải hồ sơ...</div>
+    <div id="profile-content" hidden>
+      <section class="profile-card">
+        <h2>Thông tin cá nhân</h2>
+        <form id="profile-form">
+          <fieldset id="profile-fields">
+            <div class="avatar-row">
+              <div class="avatar-picture"><span id="avatar-initial" aria-hidden="true"></span><img id="avatar-preview" alt="Ảnh đại diện" hidden></div>
+              <div><label class="avatar-picker">Thay đổi ảnh<input id="avatar" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="avatar-help"></label>
+              <small id="avatar-help">PNG, JPEG hoặc WebP · Tối đa 1 MB</small></div>
+            </div>
+            <label for="full-name">Họ tên</label>
+            <input id="full-name" name="full_name" required maxlength="100" autocomplete="name">
+            <label for="phone">Số điện thoại</label>
+            <input id="phone" name="phone" type="tel" required pattern="(0[35789][0-9]{8}|\+84[35789][0-9]{8})" title="Số di động Việt Nam: 10 chữ số hoặc +84" autocomplete="tel">
+            <label for="email">Email (chỉ đọc)</label>
+            <input id="email" type="email" readonly autocomplete="email">
+            <div class="form-actions"><p id="profile-message" role="status" aria-live="polite" hidden></p>
+              <button class="rk-btn rk-primary" type="submit">Lưu thay đổi</button>
+            </div>
+          </fieldset>
+        </form>
+      </section>
+      <section class="profile-card">
+        <h2>Đổi mật khẩu</h2>
+        <form id="password-form">
+          <fieldset id="password-fields">
+            <label for="old-password">Mật khẩu cũ</label>
+            <input placeholder="Nhập mật khẩu cũ" id="old-password" type="password" required autocomplete="current-password" maxlength="1024">
+            <label for="new-password">Mật khẩu mới</label>
+            <input placeholder="Nhập mật khẩu mới" id="new-password" type="password" required autocomplete="new-password" maxlength="72" aria-describedby="password-help">
+            <small id="password-help">Tối đa 72 byte UTF-8.</small>
+            <label for="confirm-password">Xác nhận mật khẩu mới</label>
+            <input placeholder="Nhập lại mật khẩu mới" id="confirm-password" type="password" required autocomplete="new-password" maxlength="72">
+            <div class="form-actions"><p id="password-message" role="status" aria-live="polite" hidden></p>
+              <button class="rk-btn rk-primary" type="submit">Cập nhật mật khẩu</button>
+            </div>
+          </fieldset>
+        </form>
+      </section>
+    </div>
+  </main>
+  <script src="../js/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/t3d2096-config.js"></script>
+  <script src="../js/authStorage.js"></script>
+  <script src="../js/axiosClient.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/ProtectedRoute.js"></script>
+  <script src="../js/t3d2096-ui.js"></script>
+  <script src="../js/rk-layout.js"></script>
+  <script src="../js/pages/profile.js"></script>
+</body>
+</html>

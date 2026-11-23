@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đặt lịch trực quan — RK Badminton</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/timeline_grid.css" />
+  <style>
+    #holdCountdownBox[hidden],
+    #btnGoBookingConfirm[hidden],
+    #btnProceed[hidden] {
+      display: none !important;
+    }
+
+    #holdCountdownBox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ======================================================================
+       HEADER NAVIGATION
+       ====================================================================== -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <!-- Logo về trang chủ khách hàng -->
+      <a href="./customer-home.html" class="brand-logo">
+        <span class="brand-icon">//</span>
+        <span class="brand-name">RK Badminton</span>
+      </a>
+
+      <!-- Menu chính -->
+      <nav class="nav-menu" aria-label="Menu chính">
+        <a href="./timeline_grid.html" class="nav-link active">Khám phá sân</a>
+        <a href="./booking.html" class="nav-link">Lịch đặt của tôi</a>
+        <a href="./services.html" class="nav-link">Ưu đãi</a>
+        <a href="./booking_notification.html" class="nav-link">Hỗ trợ</a>
+      </nav>
+
+
+      <a id="accountLink" href="./profile.html" class="btn-account" style="text-decoration: none;"
+        aria-label="Mở hồ sơ tài khoản">
+        <span id="accountLabel">Đang kiểm tra đăng nhập...</span><span>›</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       MAIN CONTENT
+       ====================================================================== -->
+  <main class="container">
+    <!-- Title & Month Selector -->
+    <section class="booking-header">
+      <div>
+        <span class="eyebrow-label">ĐẶT LỊCH TRỰC QUAN</span>
+        <h1 class="page-title">Chọn khung giờ & sân trống</h1>
+        <p class="page-subtitle">Chọn sân từ 06:00 đến 23:00. Mỗi ô tương ứng 30 phút; trạng thái được tải từ hệ thống.
+        </p>
+      </div>
+
+      <div class="month-picker-wrap">
+        <select id="monthSelect" class="month-select" aria-label="Chọn tháng">
+          <option value="2026-11" selected>Tháng 11, 2026</option>
+          <option value="2026-12">Tháng 12, 2026</option>
+        </select>
+        <span class="month-picker-icon">▾</span>
+      </div>
+    </section>
+
+    <!-- Horizontal 8-Day Selector -->
+    <section class="date-strip-wrapper" aria-label="Chọn ngày đặt sân">
+      <div id="dateCardsContainer" class="date-cards-list"></div>
+      <button type="button" id="btnNextDays" class="btn-next-days" title="Xem các ngày tiếp theo">></button>
+    </section>
+
+    <!-- Legend Bar -->
+    <section class="legend-bar">
+      <div class="legend-items">
+        <div class="legend-item">
+          <span class="legend-box available"></span>
+          <span>Trống</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-box selected">✓</span>
+          <span>Đang chọn</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-box booked"></span>
+          <span>Đã đặt</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-box locked"></span>
+          <span>Khoá</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-box event"></span>
+          <span>Sự kiện</span>
+        </div>
+      </div>
+
+      <a href="#pricing-info" id="btnPricingInfo" class="pricing-link">
+        Xem sân & bảng giá <span>↗</span>
+      </a>
+    </section>
+
+    <!-- Notice Banner -->
+    <div class="notice-banner" role="note">
+      <span class="notice-icon">i</span>
+      <span>Lưu ý: Mỗi ô tương ứng 30 phút. Chọn các ô liền nhau trên cùng một sân để đặt lịch. Giá có thể thay đổi theo
+        khung giờ.</span>
+    </div>
+
+    <!-- Booking Matrix Grid -->
+    <section class="grid-card" id="gridCard" aria-label="Bảng lưới chọn sân và giờ">
+      <div class="grid-scroll-container" id="gridScrollContainer">
+        <table class="booking-table" id="bookingTable">
+          <thead id="bookingTableHead"></thead>
+          <tbody id="bookingTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================================================================
+       STICKY BOTTOM SUMMARY BAR (TÍCH HỢP ĐẾM NGƯỢC 10 PHÚT)
+       ====================================================================== -->
+  <footer id="bottomSummaryBar" class="bottom-summary-bar">
+    <div class="container bottom-summary-inner">
+      <!-- Left: Count Badge & Grouped Slot Details -->
+      <div class="summary-left">
+        <div id="slotCountBadge" class="slot-count-badge empty">00</div>
+        <div class="summary-info">
+          <div id="summaryTitle" class="summary-title">Chưa chọn khung giờ nào</div>
+          <div id="summaryDetails" class="summary-details">Vui lòng chạm vào các ô trống màu trắng trên lưới để bắt đầu
+            đặt sân</div>
+          <div id="summaryMeta" class="summary-meta">Đơn giá tiêu chuẩn: 60.000đ / 30 phút</div>
+        </div>
+      </div>
+
+      <!-- Center: Clear Selection HOẶC Đồng hồ đếm ngược giữ chỗ 10 phút -->
+      <div class="summary-center">
+        <button type="button" id="btnClearAll" class="btn-clear-all" disabled>
+          Bỏ chọn tất cả
+        </button>
+
+
+        <div id="holdCountdownBox" class="hold-countdown-box" hidden role="status" aria-live="polite">
+          <span>⏳ Thời gian giữ chỗ còn lại:</span>
+          <span id="countdownDisplay" class="countdown-timer">10:00</span>
+          <button type="button" id="btnCancelHold" class="btn-cancel-hold">Hủy giữ</button>
+        </div>
+
+        <!-- Right: Total Price & Proceed / Confirm Button -->
+        <div class="summary-right">
+          <div class="price-block">
+            <div class="price-label">Tổng thanh toán</div>
+            <div id="totalAmountDisplay" class="total-amount">0đ</div>
+            <div class="vat-note">Đã bao gồm VAT</div>
+          </div>
+
+          <!-- Nút bước 1: Mở modal xác nhận giữ chỗ -->
+          <button type="button" id="btnProceed" class="btn-proceed" disabled>
+            TIẾP THEO <span>→</span>
+          </button>
+          <!-- Nút bước 2: Hiện khi đang đếm ngược -> Sang bước xác nhận đặt sân -->
+          <button type="button" id="btnGoBookingConfirm" class="btn-proceed" hidden>
+            TIẾP TỤC XÁC NHẬN <span>→</span>
+          </button>
+        </div>
+      </div>
+  </footer>
+
+  <!-- ======================================================================
+       MODAL XÁC NHẬN GIỮ CHỖ
+       ====================================================================== -->
+  <div id="confirmModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modalTitle" class="modal-title">Xác nhận thông tin giữ chỗ</h2>
+        <button type="button" id="btnCloseModal" class="modal-close" aria-label="Đóng">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-date-line">
+          Ngày đặt: <strong id="modalDateText"></strong>
+        </p>
+        <ul id="modalBookingList" class="modal-summary-list"></ul>
+        <div class="modal-total-row">
+          <span class="modal-total-label">Tổng cộng (Đã gồm VAT):</span>
+          <span id="modalTotalPrice" class="modal-total-value">0đ</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btnCancelModal" class="btn-clear-all">Quay lại chỉnh sửa</button>
+        <button type="button" id="btnConfirmSubmit" class="btn-proceed btn-modal-submit">
+          Xác nhận giữ chỗ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="slotSuggestionModal" class="modal-backdrop suggestion-backdrop" role="dialog" aria-modal="true" aria-labelledby="slotSuggestionTitle">
+    <div class="modal-card slot-suggestion-modal">
+      <div class="modal-header">
+        <h2 id="slotSuggestionTitle" class="modal-title">Khung giờ vừa hết chỗ</h2>
+        <button type="button" id="btnCloseSlotSuggestions" class="modal-close" aria-label="Đóng">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="slotSuggestionDescription" class="slot-suggestion-description"></p>
+        <div id="slotSuggestionList" class="slot-suggestion-list"></div>
+      </div>
+    </div>
+  </div>
+
+   <!--======================================================================MODAL CẢNH BÁO HẾT
+    THỜI GIAN GIỮ CHỖ (00:00)======================================================================-->
+    <div id="holdExpiredModal" class="modal-backdrop" role="dialog" aria-modal="true"
+      aria-labelledby="expiredModalTitle">
+      <div class="modal-card expired-modal-card">
+        <div class="modal-body expired-modal-body">
+          <div class="expired-icon-circle">⏳</div>
+          <h2 id="expiredModalTitle" class="expired-modal-title">Hết thời gian giữ chỗ</h2>
+          <p class="expired-modal-desc">
+            Thời gian giữ chỗ 10 phút đã kết thúc. Hệ thống sẽ tải lại trạng thái lưới sân mới nhất để bạn chọn lại.
+          </p>
+          <button type="button" id="btnReloadGrid" class="btn-proceed btn-reload-full">
+            Tải lại lưới sân
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- ======================================================================
+       MODAL XÁC NHẬN HỦY GIỮ CHỖ
+       ====================================================================== -->
+    <div id="cancelHoldModal" class="modal-backdrop" role="dialog" aria-modal="true"
+      aria-labelledby="cancelHoldModalTitle">
+      <div class="modal-card expired-modal-card">
+        <div class="modal-body expired-modal-body">
+          <div class="expired-icon-circle">⚠️</div>
+          <h2 id="cancelHoldModalTitle" class="expired-modal-title">Xác nhận hủy giữ chỗ?</h2>
+          <p class="expired-modal-desc">
+            Các khung giờ bạn đang giữ sẽ được mở lại ngay cho người chơi khác. Bạn có chắc chắn muốn hủy không?
+          </p>
+          <div class="cancel-hold-actions">
+            <button type="button" id="btnKeepHold" class="btn-clear-all btn-half">
+              Tiếp tục giữ
+            </button>
+            <button type="button" id="btnConfirmCancelHold" class="btn-proceed btn-half">
+              Xác nhận hủy giữ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  <script src="../js/config.js"></script>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/ui-notice.js"></script>
+  <script src="../js/timeline_grid.js"></script>
+</body>
+
+</html>
