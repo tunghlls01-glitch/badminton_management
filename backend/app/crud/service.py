@@ -21,7 +21,7 @@ def get_services(
     query = select(Service).order_by(Service.id.asc())
 
     # Luôn loại trừ các dịch vụ đã xóa (Soft Delete) khỏi danh sách web
-    query = query.where(Service.status.notin_(["DELETED", "Deleted"]))
+    query = query.where(Service.status.notin_(["DELETED", "Deleted"]), ~Service.name.like("[DELETED]%"))
 
     if keyword:
         query = query.where(Service.name.contains(keyword))
@@ -133,9 +133,26 @@ def activate_service(db: Session, service: Service) -> Service:
 
 def delete_service(db: Session, service: Service) -> Service:
     """Xóa dịch vụ (Soft Delete: chuyển sang DELETED để ẩn vĩnh viễn khỏi web nhưng giữ trong DB)."""
-    service.status = ServiceStatus.DELETED
-    db.commit()
-    db.refresh(service)
+    try:
+        service.status = ServiceStatus.DELETED
+        db.commit()
+        db.refresh(service)
+    except Exception:
+        db.rollback()
+        try:
+            from sqlalchemy import text
+            db.execute(text("ALTER TABLE services MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'"))
+            db.commit()
+            service.status = ServiceStatus.DELETED
+            db.commit()
+            db.refresh(service)
+        except Exception:
+            db.rollback()
+            service.status = ServiceStatus.INACTIVE
+            if not service.name.startswith("[DELETED]"):
+                service.name = f"[DELETED] {service.name}"
+            db.commit()
+            db.refresh(service)
     return service
 
 

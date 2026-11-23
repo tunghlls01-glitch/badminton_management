@@ -472,7 +472,31 @@ function setupEventListeners() {
     btnConfirmDel.addEventListener("click", async () => {
       if (!pendingDeleteServiceId) return;
       try {
-        await api.delete(`/services/${pendingDeleteServiceId}`);
+        const token = (typeof getOrEnsureAuthToken === "function" ? await getOrEnsureAuthToken() : null) ||
+          localStorage.getItem("access_token") ||
+          localStorage.getItem("token") ||
+          sessionStorage.getItem("access_token");
+
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const baseUrl = typeof CONFIG !== "undefined" && CONFIG.API_BASE_URL ? CONFIG.API_BASE_URL : "http://127.0.0.1:8000/api";
+        const res = await fetch(`${baseUrl}/services/${pendingDeleteServiceId}`, {
+          method: "DELETE",
+          headers: headers,
+        });
+
+        if (!res.ok) {
+          let errMsg = `Lỗi ${res.status}`;
+          try {
+            const errJson = await res.json();
+            if (errJson && errJson.detail) {
+              errMsg = typeof errJson.detail === "string" ? errJson.detail : JSON.stringify(errJson.detail);
+            }
+          } catch (_) {}
+          throw new Error(errMsg);
+        }
+
         closeConfirmDeleteModal();
         showToast("Đã xóa dịch vụ thành công! Mặt hàng đã được ẩn hoàn toàn khỏi web.", "success");
         await loadData();
@@ -494,7 +518,8 @@ function applyFilterAndRender() {
   filteredServices = allServices.filter(s => {
     // 0. Luôn loại bỏ các mặt hàng đã xóa khỏi web
     const statusStr = String(s.status || "").toUpperCase();
-    if (statusStr.includes("DELETED")) return false;
+    const nameStr = String(s.name || "").toUpperCase();
+    if (statusStr.includes("DELETED") || nameStr.startsWith("[DELETED]")) return false;
 
     // Tìm kiếm tên hoặc mã SVC
     const code = `svc-${String(s.id).padStart(3, "0")}`;
@@ -1046,7 +1071,11 @@ window.switchTabToInventoryWithService = function(serviceId) {
    ========================================================================== */
 function isServiceActive(s) {
   const statusStr = String(s.status || "").toUpperCase();
-  return statusStr.includes("ACTIVE") && !statusStr.includes("INACTIVE") && !statusStr.includes("DELETED");
+  const nameStr = String(s.name || "").toUpperCase();
+  return statusStr.includes("ACTIVE") &&
+    !statusStr.includes("INACTIVE") &&
+    !statusStr.includes("DELETED") &&
+    !nameStr.startsWith("[DELETED]");
 }
 
 function getAvatarClass(cat) {
@@ -1138,7 +1167,7 @@ async function getOrEnsureAuthToken() {
     try {
       const baseUrl = CONFIG.API_BASE_URL.replace(/\/api$/, "");
       const res = await axios.post(`${baseUrl}/auth/login`, {
-        email: "admin@badminton.vn",
+        account: "admin@badminton.vn",
         password: "admin",
       });
       if (res.data && res.data.access_token) {

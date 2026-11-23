@@ -29,10 +29,19 @@ const http = axios.create({
 // Tự động gắn token đăng nhập cho mọi request nếu có:
 http.interceptors.request.use((config) => {
   const token =
-    localStorage.getItem("token") ||
     localStorage.getItem("access_token") ||
-    sessionStorage.getItem("access_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("access_token") ||
+    sessionStorage.getItem("token") ||
+    (typeof RK_SESSION !== "undefined" && RK_SESSION.read ? RK_SESSION.read()?.token : null);
+  if (token) {
+    if (config.headers && typeof config.headers.set === "function") {
+      config.headers.set("Authorization", `Bearer ${token}`);
+    } else if (config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+      config.headers["authorization"] = `Bearer ${token}`;
+    }
+  }
   return config;
 });
 
