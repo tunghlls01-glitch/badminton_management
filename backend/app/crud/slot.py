@@ -9,7 +9,7 @@ from app.models.court import Court, CourtStatus
 from app.models.court_block import CourtBlock
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
 from app.models.booking import Booking, BookingStatus
-from app.crud.booking import generate_booking_code, get_price_per_hour
+from app.crud.booking import booking_blocks_slot, generate_booking_code, get_price_per_hour, vietnam_now
 
 from app.schemas.slot import (
     SlotDisplayStatus,
@@ -25,7 +25,7 @@ def is_slot_free(db: Session, court_id: int, start_at: datetime, end_at: datetim
     """
     Hàm dùng chung kiểm tra slot có trống không.
     """
-    now = datetime.now()
+    now = vietnam_now()
 
     # 1. Kiểm tra khoá sân (CourtBlock)
     has_lock = db.query(CourtBlock).filter(
@@ -43,13 +43,7 @@ def is_slot_free(db: Session, court_id: int, start_at: datetime, end_at: datetim
         BookingSlot.status == BookingSlotStatus.Active,
         BookingSlot.start_at < end_at,
         BookingSlot.end_at > start_at,
-        or_(
-            Booking.status.in_([BookingStatus.Confirmed, BookingStatus.CHECKED_IN]),
-            and_(
-                Booking.status == BookingStatus.Pending,
-                Booking.hold_expires_at > now
-            )
-        )
+        booking_blocks_slot(now),
     ).first()
 
     if has_booking_slot:
@@ -62,7 +56,7 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
     """
     Quét ma trận slot theo ngày chuẩn xác theo Model.
     """
-    now = datetime.now()
+    now = vietnam_now()
     courts = db.query(Court).all()
     result = []
 
@@ -118,18 +112,14 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
                 BookingSlot.status == BookingSlotStatus.Active,
                 BookingSlot.start_at < end_dt,
                 BookingSlot.end_at > start_dt,
-                or_(
-                    Booking.status.in_([BookingStatus.Confirmed, BookingStatus.CHECKED_IN]),
-                    and_(
-                        Booking.status == BookingStatus.Pending,
-                        Booking.hold_expires_at > now,
-                    ),
-                ),
+                booking_blocks_slot(now),
             ).first()
 
             if slot_record:
                 booking = slot_record.booking
-                if booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN):
+                if booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN) or (
+                    booking.status == BookingStatus.Pending and booking.hold_expires_at is None
+                ):
                     status_display = SlotDisplayStatus.BOOKED
                 elif booking.status == BookingStatus.Pending and getattr(booking, 'hold_expires_at', None) and booking.hold_expires_at > now:
                     status_display = SlotDisplayStatus.HOLD
@@ -178,7 +168,7 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
     """
     Giữ tạm một hoặc nhiều slot liền nhau trong 10 phút (dùng transaction with_for_update chống trùng).
     """
-    now = datetime.now()
+    now = vietnam_now()
     hold_expires_at = now + timedelta(minutes=10)
     cancelled_status = _get_cancelled_booking_status()
     user_col = _get_user_column()
@@ -236,7 +226,9 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
 
         for slot in existing_slots:
             booking = slot.booking
-            is_booked = booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN)
+            is_booked = booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN) or (
+                booking.status == BookingStatus.Pending and booking.hold_expires_at is None
+            )
             is_holding = (
                 booking.status == BookingStatus.Pending
                 and getattr(booking, "hold_expires_at", None) is not None

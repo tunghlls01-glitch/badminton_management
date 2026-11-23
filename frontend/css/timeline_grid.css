@@ -178,6 +178,48 @@ button, select {
   background: var(--bg-subtle);
 }
 
+.customer-account-shell,
+.customer-account,
+.customer-account-profile,
+.customer-account-logout {
+  display: flex;
+  align-items: center;
+}
+
+.customer-account-shell { flex: none; }
+.customer-account[hidden],
+.customer-account-login[hidden] { display: none !important; }
+.customer-account { gap: 34px; }
+.customer-account-profile { gap: 12px; color: var(--text-primary); text-decoration: none; }
+.customer-account-avatar {
+  width: 54px;
+  height: 54px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 16px;
+  font-weight: 700;
+}
+.customer-account-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 600; }
+.customer-account-logout {
+  gap: 7px;
+  padding: 8px 2px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font: 600 16px Inter, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.customer-account-logout svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.customer-account-profile:hover .customer-account-name,
+.customer-account-logout:hover { color: #334155; }
+.customer-account-profile:focus-visible,
+.customer-account-logout:focus-visible { outline: 3px solid #fca5a5; outline-offset: 4px; border-radius: 6px; }
+
 /* ==========================================================================
 3. PAGE HEADER & DATE STRIP SELECTOR
    ========================================================================== */
@@ -1118,6 +1160,26 @@ tr.has-selection .court-selected-dot {
   .nav-menu { display: none; }
   .bottom-summary-inner { flex-wrap: wrap; }
   .summary-center { order: 3; }
+}
+
+@media (max-width: 560px) {
+  .navbar-inner { gap: 12px; }
+  .brand-logo { gap: 8px; }
+  .brand-name { font-size: 16px; }
+  .customer-account { gap: 8px; }
+  .customer-account-avatar { width: 36px; height: 36px; }
+  .customer-account-name { max-width: 82px; font-size: 12px; }
+  .customer-account-logout { gap: 4px; font-size: 12px; }
+  .customer-account-logout svg { width: 20px; height: 20px; }
+}
+
+@media (max-width: 420px) {
+  .customer-account-name { max-width: 64px; }
+  .customer-account-logout span { display: none; }
+}
+
+@media (max-width: 360px) {
+  .brand-name { display: none; }
 }
 
 .cancel-hold-actions {

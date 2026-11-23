@@ -2,11 +2,14 @@ from typing import List
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.security import require_roles
 from app.crud import court_service
 from app.db.session import get_db
+from app.models.user import UserRole
 from app.schemas.court import CourtCreate, CourtResponse, CourtUpdate
 
 router = APIRouter(prefix="/courts", tags=["Court Management"])
+admin_only = [Depends(require_roles(UserRole.ADMIN))]
 
 
 @router.get("", response_model=List[CourtResponse])
@@ -21,25 +24,29 @@ def get_court(court_id: int, db: Session = Depends(get_db)):
     return court_service.get_court_by_id(db, court_id)
 
 
-@router.post("", response_model=CourtResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CourtResponse, status_code=status.HTTP_201_CREATED, dependencies=admin_only)
 def create_court(data: CourtCreate, db: Session = Depends(get_db)):
     """Thêm mới sân"""
     return court_service.create_new_court(db, data)
 
 
-@router.put("/{court_id}", response_model=CourtResponse)
+@router.put("/{court_id}", response_model=CourtResponse, dependencies=admin_only)
 def update_court(court_id: int, data: CourtUpdate, db: Session = Depends(get_db)):
     """Sửa thông tin sân / Đổi trạng thái hoạt động - bảo trì"""
     return court_service.update_existing_court(db, court_id, data)
 
 
-@router.delete("/{court_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{court_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=admin_only)
 def delete_court(court_id: int, db: Session = Depends(get_db)):
     """Xóa sân (Không cho xóa nếu sân đã có booking)"""
     court_service.delete_court_with_check(db, court_id)
 
 
-@router.post("/{court_id}/upload-image", response_model=CourtResponse)
+@router.post(
+    "/{court_id}/upload-image",
+    response_model=CourtResponse,
+    dependencies=admin_only,
+)
 async def upload_court_image(
     court_id: int,
     file: UploadFile = File(...),

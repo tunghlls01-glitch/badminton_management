@@ -5,32 +5,40 @@ Tài liệu API tự sinh: http://127.0.0.1:8000/docs
 """
 import traceback
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect, text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from app import models  # noqa: F401 - import để SQLAlchemy biết các bảng
-from app.core.config import settings
+from app.models import maintenance_block  # noqa: F401 - đăng ký bảng court_maintenance_blocks
+from app.core.config import BASE_DIR, settings
+from app.crud import court_service
 from app.db.session import Base, engine
 
 from app.seeds.seed_courts import seed_courts
-from app.routers import auth, health, items, reception, service_orders, services
-
 from app.routers import auth, health, items, reception, service_orders, services, racket_rentals
 
 from app.routers import slot
 from app.routers import booking
-from app.routers import court_management, price_rule_management
+from app.routers import court_management, price_rule_management, maintenance_blocks
 from app.routers import profile, admin_users, analytics, notification
+from app.routers import admin_overview
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Tự tạo các bảng còn thiếu khi server khởi động (bảng đã có thì bỏ qua).
     try:
         Base.metadata.create_all(bind=engine)
+        # Keep existing court records when adding support for saved photos.
+        with engine.begin() as connection:
+            columns = inspect(connection).get_columns("courts")
+            if not any(column["name"] == "image_url" for column in columns):
+                connection.execute(text("ALTER TABLE courts ADD COLUMN image_url VARCHAR(500) NULL"))
         # create_all() tạo bảng còn thiếu nhưng không thêm cột vào bảng đã tồn tại.
         # Bổ sung cột giữ chỗ một lần khi khởi động nếu database cũ chưa có.
         booking_columns = {
@@ -65,6 +73,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 
+@app.get(court_service.COURT_IMAGE_URL + "/{filename}", include_in_schema=False)
+def court_image(filename: str):
+    media_type = court_service.IMAGE_TYPES.get(Path(filename).suffix.lower())
+    image = court_service.UPLOAD_DIR / filename
+    if not media_type or image.name != filename or not image.is_file():
+        raise HTTPException(status_code=404, detail="Không tìm thấy ảnh sân.")
+    return FileResponse(image, media_type=media_type, headers={"X-Content-Type-Options": "nosniff"})
+
+@app.exception_handler(SQLAlchemyError)
+async def database_error(request: Request, exc: SQLAlchemyError):
+    print(f"[DB] {request.method} {request.url.path}: {type(exc).__name__}")
+    return JSONResponse(status_code=500, content={"detail": "Máy chủ không xử lý được dữ liệu. Vui lòng thử lại."})
+
 # Global Exception Handler: in toàn bộ traceback ra terminal và trả về JSON
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -86,6 +107,7 @@ app.add_middleware(
     allow_origins=settings.cors_origin_list,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 
 # Đăng ký các router
@@ -101,10 +123,18 @@ app.include_router(auth.router)
 app.include_router(auth.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
 app.include_router(admin_users.router, prefix="/api")
+app.include_router(admin_overview.router, prefix="/api")
 app.include_router(court_management.router, prefix="/api")
 app.include_router(price_rule_management.router, prefix="/api")
+app.include_router(maintenance_blocks.router, prefix="/api")
 app.include_router(notification.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} đang chạy. Xem tài liệu API tại /docs"}
+
+
+frontend_dir = BASE_DIR.parent / "frontend"
+if frontend_dir.is_dir():
+    app.mount("/web", StaticFiles(directory=frontend_dir, html=True), name="frontend")

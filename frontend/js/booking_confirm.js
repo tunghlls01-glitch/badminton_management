@@ -81,7 +81,10 @@ async function expireCurrentHold() {
 
 async function loadAccountContact() {
   try {
-    const user = await apiRequest("/auth/me");
+    const user = window.RK_CUSTOMER_ACCOUNT
+      ? await window.RK_CUSTOMER_ACCOUNT.load()
+      : await apiRequest("/auth/me");
+    if (!user) return;
     document.getElementById("customerName").value = user.full_name || "";
     document.getElementById("customerPhone").value = user.phone || "";
   } catch (error) {
@@ -189,7 +192,7 @@ async function initConfirmPage() {
       { type: "success", duration: 7000 },
     );
     window.setTimeout(() => {
-      window.location.href = "./court_booking_schedule.html";
+      window.location.href = "./booking.html";
     }, 1800);
     return;
   }
@@ -332,7 +335,7 @@ async function initConfirmPage() {
         { type: "success", duration: 7000 },
       );
       window.setTimeout(() => {
-        window.location.href = "./court_booking_schedule.html";
+        window.location.href = "./booking.html";
       }, 2600);
     } catch (error) {
       if (error.status === 410) {
