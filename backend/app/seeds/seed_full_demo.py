@@ -166,12 +166,14 @@ def seed_all():
         for name, desc, status, img in courts_data:
             existing = db.query(Court).filter(Court.name == name).first()
             if not existing:
-                c = Court(name=name, description=desc, status=status, image_url=img)
+                c = Court(name=name, description=desc, status="Active", image_url=img)
                 db.add(c)
                 db.commit()
                 db.refresh(c)
                 court_map[name] = c
             else:
+                existing.status = CourtStatus.Active
+                db.commit()
                 court_map[name] = existing
 
         # ==========================================
@@ -323,10 +325,58 @@ def seed_all():
                     "note": "Khách giữ chỗ qua mạng",
                     "hold_expires_at": now + timedelta(minutes=10),
                 },
-                # 5. Hôm nay - Sân 1 - Đã hủy (Cancelled)
+                # 5. Hôm nay - Sân 5 (VIP) - Đang chơi (CHECKED_IN)
+                {
+                    "code": f"BK-{today.strftime('%Y%m%d')}-013",
+                    "customer": customers[4] if len(customers) > 4 else customers[0],
+                    "court": court_map.get("Sân số 5 (VIP)") or active_courts[0],
+                    "start": datetime.combine(today, time(15, 0)),
+                    "end": datetime.combine(today, time(17, 0)),
+                    "status": BookingStatus.CHECKED_IN,
+                    "price_per_hour": 150000,
+                    "channel": BookingChannel.Counter,
+                    "note": "Khách nhận sân VIP 5 đánh đơn",
+                },
+                # 6. Hôm nay - Sân 6 - Đang chơi (CHECKED_IN)
+                {
+                    "code": f"BK-{today.strftime('%Y%m%d')}-014",
+                    "customer": customers[1] if len(customers) > 1 else customers[0],
+                    "court": court_map.get("Sân số 6") or active_courts[0],
+                    "start": datetime.combine(today, time(16, 0)),
+                    "end": datetime.combine(today, time(18, 0)),
+                    "status": BookingStatus.CHECKED_IN,
+                    "price_per_hour": 100000,
+                    "channel": BookingChannel.Counter,
+                    "note": "Khách đặt sân 6 tại quầy",
+                },
+                # 7. Hôm nay - Sân 5 (VIP) - Tối nay (Confirmed)
+                {
+                    "code": f"BK-{today.strftime('%Y%m%d')}-015",
+                    "customer": customers[0],
+                    "court": court_map.get("Sân số 5 (VIP)") or active_courts[0],
+                    "start": datetime.combine(today, time(19, 0)),
+                    "end": datetime.combine(today, time(21, 0)),
+                    "status": BookingStatus.Confirmed,
+                    "price_per_hour": 150000,
+                    "channel": BookingChannel.Online,
+                    "note": "Đặt sân VIP 5 tối nay",
+                },
+                # 8. Hôm nay - Sân 6 - Tối nay (Confirmed)
+                {
+                    "code": f"BK-{today.strftime('%Y%m%d')}-016",
+                    "customer": customers[2] if len(customers) > 2 else customers[0],
+                    "court": court_map.get("Sân số 6") or active_courts[0],
+                    "start": datetime.combine(today, time(20, 0)),
+                    "end": datetime.combine(today, time(22, 0)),
+                    "status": BookingStatus.Confirmed,
+                    "price_per_hour": 100000,
+                    "channel": BookingChannel.Online,
+                    "note": "Đặt sân 6 ca tối",
+                },
+                # 9. Hôm nay - Sân 1 - Đã hủy (Cancelled)
                 {
                     "code": f"BK-{today.strftime('%Y%m%d')}-005",
-                    "customer": customers[4] if len(customers) > 4 else customers[0],
+                    "customer": customers[3] if len(customers) > 3 else customers[0],
                     "court": active_courts[0],
                     "start": datetime.combine(today, time(19, 0)),
                     "end": datetime.combine(today, time(21, 0)),

@@ -170,8 +170,12 @@ function renderBookingDropdown() {
         const court = b.court_name || `Sân ${b.court_id || ""}`;
         const code = b.booking_code || `#BK-${b.id}`;
         const name = b.customer_name || b.user_name || "Khách đặt sân";
-        const time = b.time_slot || "";
-        return `<option value="${b.id}">[${court}] ${code} - ${name} (${time})</option>`;
+        const time =
+          b.time_slot ||
+          (b.start_time && b.end_time ? `${b.start_time} - ${b.end_time}` : "") ||
+          (b.slots && b.slots[0] ? `${b.slots[0].start_at.slice(11, 16)} - ${b.slots[0].end_at.slice(11, 16)}` : "");
+        const timeDisplay = time ? ` (${time})` : "";
+        return `<option value="${b.id}">[${court}] ${code} - ${name}${timeDisplay}</option>`;
       })
       .join("");
 }
