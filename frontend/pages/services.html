@@ -574,6 +574,30 @@
     </div>
   </div>
 
+  <!-- Modal Xác nhận Tạm ngừng / Mở bán lại dịch vụ -->
+  <div class="modal-overlay" id="confirm-status-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div class="modal-content" style="max-width:440px; border-radius:10px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.2); background:#fff;">
+      <div class="modal-header" id="status-modal-header" style="border-bottom:1px solid #bbf7d0; background:#f0fdf4; padding:16px 20px;">
+        <h3 class="modal-title" id="status-modal-title" style="color:#15803d; display:flex; align-items:center; gap:8px; font-size:16px; margin:0;">
+          <span id="status-modal-icon">🔄</span> <span id="status-modal-title-text">Xác nhận mở bán lại dịch vụ</span>
+        </h3>
+        <button class="btn-close-modal" id="btn-cancel-status-x" style="cursor:pointer; background:none; border:none; font-size:18px; color:#6b7280;">✕</button>
+      </div>
+      <div style="padding:20px;">
+        <p style="font-size:14px; color:#1f2937; margin:0 0 12px 0; line-height:1.5;">
+          <span id="status-modal-question">Bạn có chắc chắn muốn mở bán lại dịch vụ:</span> <strong id="status-service-name" style="color:#15803d;"></strong>?
+        </p>
+        <div id="status-modal-note-box" style="background:#f0fdf4; border-left:4px solid #22c55e; padding:10px 14px; border-radius:4px; font-size:13px; color:#166534; line-height:1.4;">
+          <strong>Lưu ý:</strong> <span id="status-modal-note-text">Mặt hàng này sẽ được mở bán lại và hiển thị trên toàn bộ menu dịch vụ.</span>
+        </div>
+      </div>
+      <div style="padding:14px 20px; display:flex; justify-content:flex-end; gap:10px; background:#fafafa; border-top:1px solid #f3f4f6;">
+        <button type="button" class="btn-cancel" id="btn-cancel-status" style="padding:8px 16px; border:1px solid #d1d5db; background:#fff; border-radius:6px; cursor:pointer; font-weight:500; font-size:13.5px;">Hủy bỏ</button>
+        <button type="button" class="btn-primary" id="btn-confirm-status" style="padding:8px 18px; background:#16a34a; border-radius:6px; font-weight:600; font-size:13.5px; border:none; color:#fff; cursor:pointer;">Xác nhận mở bán</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts: Thứ tự chuẩn axios -> config -> api -> layout -> services.js -->
   <script src="../js/axios.min.js"></script>
   <script src="../js/config.js"></script>

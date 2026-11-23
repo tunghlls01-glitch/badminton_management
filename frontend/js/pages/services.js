@@ -508,6 +508,33 @@ function setupEventListeners() {
 
   if (btnCancelDel) btnCancelDel.addEventListener("click", closeConfirmDeleteModal);
   if (btnCancelDelX) btnCancelDelX.addEventListener("click", closeConfirmDeleteModal);
+
+  // Modal xác nhận Tạm ngừng / Mở bán lại dịch vụ
+  const btnConfirmStatus = document.getElementById("btn-confirm-status");
+  const btnCancelStatus = document.getElementById("btn-cancel-status");
+  const btnCancelStatusX = document.getElementById("btn-cancel-status-x");
+
+  if (btnConfirmStatus) {
+    btnConfirmStatus.addEventListener("click", async () => {
+      if (!pendingStatusServiceId) return;
+      try {
+        if (pendingStatusIsActive) {
+          await api.patch(`/services/${pendingStatusServiceId}/deactivate`);
+          showToast("Đã tạm ngừng kinh doanh dịch vụ thành công!", "success");
+        } else {
+          await api.patch(`/services/${pendingStatusServiceId}/activate`);
+          showToast("Đã mở bán lại dịch vụ thành công!", "success");
+        }
+        closeConfirmStatusModal();
+        await loadData();
+      } catch (err) {
+        showToast("Không thể thay đổi trạng thái: " + err.message, "error");
+      }
+    });
+  }
+
+  if (btnCancelStatus) btnCancelStatus.addEventListener("click", closeConfirmStatusModal);
+  if (btnCancelStatusX) btnCancelStatusX.addEventListener("click", closeConfirmStatusModal);
 }
 
 function applyFilterAndRender() {
@@ -616,31 +643,73 @@ window.closeConfirmDeleteModal = function() {
   }
 };
 
-window.toggleServiceStatus = async function(id) {
+let pendingStatusServiceId = null;
+let pendingStatusIsActive = false;
+
+window.openConfirmStatusModal = function(id) {
   const service = allServices.find(s => s.id === id);
   if (!service) return;
 
-  const isCurrentlyActive = isServiceActive(service);
-  const promptMsg = isCurrentlyActive
-    ? `Bạn có chắc muốn tạm ngừng kinh doanh dịch vụ '${service.name}'?\n(Mặt hàng sẽ chuyển sang mục Tạm ngừng kinh doanh và có thể mở bán lại bất kỳ lúc nào).`
-    : `Bạn có muốn mở bán lại dịch vụ '${service.name}'?`;
+  pendingStatusServiceId = id;
+  pendingStatusIsActive = isServiceActive(service);
 
-  if (!confirm(promptMsg)) {
-    return;
+  const modal = document.getElementById("confirm-status-modal");
+  const header = document.getElementById("status-modal-header");
+  const title = document.getElementById("status-modal-title");
+  const icon = document.getElementById("status-modal-icon");
+  const titleText = document.getElementById("status-modal-title-text");
+  const question = document.getElementById("status-modal-question");
+  const nameEl = document.getElementById("status-service-name");
+  const noteBox = document.getElementById("status-modal-note-box");
+  const noteText = document.getElementById("status-modal-note-text");
+  const btnConfirm = document.getElementById("btn-confirm-status");
+
+  const serviceName = `${service.name} (SVC-${String(service.id).padStart(3, "0")})`;
+  if (nameEl) nameEl.textContent = serviceName;
+
+  if (pendingStatusIsActive) {
+    // Đang bán -> Muốn Tạm ngừng
+    header.style.background = "#fffbeb";
+    header.style.borderBottom = "1px solid #fde68a";
+    title.style.color = "#b45309";
+    icon.textContent = "⏸";
+    titleText.textContent = "Xác nhận tạm ngừng kinh doanh";
+    question.textContent = "Bạn có chắc chắn muốn tạm ngừng kinh doanh dịch vụ:";
+    nameEl.style.color = "#b45309";
+    noteBox.style.background = "#fffbeb";
+    noteBox.style.borderLeft = "4px solid #f59e0b";
+    noteBox.style.color = "#92400e";
+    noteText.textContent = "Mặt hàng này sẽ tạm ngừng kinh doanh và có thể mở bán lại bất kỳ lúc nào.";
+    btnConfirm.style.background = "#d97706";
+    btnConfirm.textContent = "Xác nhận tạm ngừng";
+  } else {
+    // Đang tạm ngừng -> Muốn Mở bán lại
+    header.style.background = "#f0fdf4";
+    header.style.borderBottom = "1px solid #bbf7d0";
+    title.style.color = "#15803d";
+    icon.textContent = "🔄";
+    titleText.textContent = "Xác nhận mở bán lại dịch vụ";
+    question.textContent = "Bạn có chắc chắn muốn mở bán lại dịch vụ:";
+    nameEl.style.color = "#15803d";
+    noteBox.style.background = "#f0fdf4";
+    noteBox.style.borderLeft = "4px solid #22c55e";
+    noteBox.style.color = "#166534";
+    noteText.textContent = "Mặt hàng này sẽ được mở bán lại và hiển thị trên toàn bộ menu dịch vụ.";
+    btnConfirm.style.background = "#16a34a";
+    btnConfirm.textContent = "Xác nhận mở bán";
   }
 
-  try {
-    if (isCurrentlyActive) {
-      await api.patch(`/services/${id}/deactivate`);
-      showToast(`Đã tạm ngừng kinh doanh '${service.name}' thành công!`, "success");
-    } else {
-      await api.patch(`/services/${id}/activate`);
-      showToast(`Đã mở bán lại '${service.name}' thành công!`, "success");
-    }
-    await loadData();
-  } catch (err) {
-    showToast("Không thể thay đổi trạng thái: " + err.message, "error");
-  }
+  if (modal) modal.style.display = "flex";
+};
+
+window.closeConfirmStatusModal = function() {
+  pendingStatusServiceId = null;
+  const modal = document.getElementById("confirm-status-modal");
+  if (modal) modal.style.display = "none";
+};
+
+window.toggleServiceStatus = function(id) {
+  openConfirmStatusModal(id);
 };
 
 async function handleSaveService(e) {
