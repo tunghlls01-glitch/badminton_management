@@ -234,8 +234,8 @@ def delete_service(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
 ):
-    """Ngừng dịch vụ (chuyển status sang Inactive). Yêu cầu quyền ADMIN hoặc STAFF."""
-    return service_crud.deactivate_service(db, service)
+    """Xóa dịch vụ (Soft Delete sang DELETED để ẩn vĩnh viễn khỏi web). Yêu cầu quyền ADMIN hoặc STAFF."""
+    return service_crud.delete_service(db, service)
 
 
 @router.patch("/{service_id}/deactivate", response_model=ServiceOut)
@@ -244,8 +244,18 @@ def deactivate_service(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
 ):
-    """Ngừng cung cấp dịch vụ. Yêu cầu quyền ADMIN hoặc STAFF."""
+    """Tạm ngừng cung cấp dịch vụ (chuyển sang Inactive). Yêu cầu quyền ADMIN hoặc STAFF."""
     return service_crud.deactivate_service(db, service)
+
+
+@router.patch("/{service_id}/activate", response_model=ServiceOut)
+def activate_service(
+    service=Depends(get_service_or_404),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+):
+    """Mở bán lại dịch vụ (chuyển sang Active). Yêu cầu quyền ADMIN hoặc STAFF."""
+    return service_crud.activate_service(db, service)
 
 
 @router.post("/{service_id}/rent", response_model=ServiceOut)

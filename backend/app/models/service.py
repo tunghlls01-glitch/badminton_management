@@ -18,8 +18,10 @@ class ServiceStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
     OUT_OF_STOCK = "OUT_OF_STOCK"
+    DELETED = "DELETED"
     Active = "Active"
     Inactive = "Inactive"
+    Deleted = "Deleted"
 
 class Service(Base):
     __tablename__ = "services"

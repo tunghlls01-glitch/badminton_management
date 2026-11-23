@@ -1,6 +1,6 @@
 /**
- * RK Badminton Management - Hệ thống Đa Ngôn ngữ Hoàn Thiện (i18n: Tiếng Việt / English)
- * Tự động dịch toàn bộ thông tin trên giao diện tĩnh và động của hệ thống.
+- RK Badminton Management - Hệ thống Đa Ngôn ngữ Hoàn Thiện (i18n: Tiếng Việt / English)
+- Tự động dịch toàn bộ thông tin trên giao diện tĩnh và động của hệ thống.
  */
 (function (global) {
   "use strict";
@@ -640,6 +640,7 @@
   }
 
   function createLanguageSwitcher() {
+    return; // Đã tắt nút chuyển đổi ngôn ngữ theo yêu cầu
     if (document.getElementById("rk-lang-switcher")) return;
 
     // Inject CSS

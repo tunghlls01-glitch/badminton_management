@@ -512,7 +512,12 @@ function renderNextBooking(upcoming = bookings.filter(isUpcoming)) {
 
 function renderCalendar() {
   const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
-  const monday = new Date(2026, 10, 9 + weekOffset * 7, 12);
+  // Lấy thứ 2 của tuần hiện tại thay vì gán cứng ngày cũ
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMonday = (day === 0 ? -6 : 1) - day;
+  const currentMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 12);
+  const monday = new Date(currentMonday.getFullYear(), currentMonday.getMonth(), currentMonday.getDate() + weekOffset * 7, 12);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(d.getDate() + i);
@@ -526,7 +531,12 @@ function renderCalendar() {
     `${String(monday.getDate()).padStart(2, '0')} – ${String(last.getDate()).padStart(2, '0')} tháng ${last.getMonth() + 1}, ${last.getFullYear()}`;
 
   const dayLabels = isEn ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['TH 2', 'TH 3', 'TH 4', 'TH 5', 'TH 6', 'TH 7', 'CN'];
-  $('#calendarHeader').innerHTML = '<div></div>' + days.map((d, i) => `<div class="day ${weekOffset === 0 && i === 1 ? 'today' : ''}"><small>${dayLabels[i]}</small><strong>${String(d.getDate()).padStart(2, '0')}</strong></div>`).join('');
+  const todayStr = localDate(now);
+  $('#calendarHeader').innerHTML = '<div></div>' + days.map((d, i) => {
+    const dStr = localDate(d);
+    const isToday = dStr === todayStr;
+    return `<div class="day ${isToday ? 'today' : ''}"><small>${dayLabels[i]}</small><strong>${String(d.getDate()).padStart(2, '0')}</strong></div>`;
+  }).join('');
 
   // Lọc CHỈ những sân có trong database
   const validCourtIds = new Set(dbCourts.map(c => Number(c.id)));
