@@ -240,6 +240,51 @@ svg {
   width: 16px;
 }
 
+.btn-logout-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-logout-sidebar:hover {
+  background: #fff0f0;
+  border-color: #f5c6cb;
+}
+
+.btn-logout-sidebar svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+#topbarLogoutBtn svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--ink);
+  stroke-width: 2;
+  fill: none;
+  transition: stroke 0.2s;
+}
+
+#topbarLogoutBtn:hover svg {
+  stroke: #c0392b;
+}
+
 .main {
   margin-left: 236px;
 }
@@ -316,6 +361,15 @@ svg {
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+}
+
+.intro-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+  flex-wrap: wrap;
 }
 
 .eyebrow {

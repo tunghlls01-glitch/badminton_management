@@ -26,14 +26,49 @@ function applyUserUI() {
   const u = getLoggedInUser();
   const name = u?.full_name || 'Chưa đăng nhập';
   const initials = getUserInitials(u?.full_name);
-  const role = getRoleLabel(u?.role);
+  const role = u ? getRoleLabel(u?.role) : 'Bấm để đăng nhập';
   const sbName = $('#sidebarName'), sbAvatar = $('#sidebarAvatar'), sbRole = $('#sidebarRole');
   const tbAvatar = $('#topbarAvatar');
   if (sbName) sbName.textContent = name;
   if (sbAvatar) sbAvatar.textContent = initials;
   if (sbRole) sbRole.textContent = role;
   if (tbAvatar) tbAvatar.textContent = initials;
+
+  const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
+  const sbLogout = $('#sidebarLogoutBtn');
+  if (sbLogout) {
+    if (!u) {
+      sbLogout.innerHTML = `<svg style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg><span>${isEn ? 'Log In' : 'Đăng nhập'}</span>`;
+      sbLogout.style.color = 'var(--green)';
+      sbLogout.title = isEn ? 'Log in to system' : 'Đăng nhập vào hệ thống';
+      sbLogout.onclick = () => { window.location.href = 'login.html'; };
+    } else {
+      sbLogout.innerHTML = `<svg style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2"><use href="#i-logout"/></svg><span>${isEn ? 'Log Out' : 'Đăng xuất'}</span>`;
+      sbLogout.style.color = '#c0392b';
+      sbLogout.title = isEn ? 'Log out account' : 'Đăng xuất tài khoản';
+      sbLogout.onclick = handleLogout;
+    }
+  }
+
+  const tbLogout = $('#topbarLogoutBtn');
+  if (tbLogout) {
+    if (!u) {
+      tbLogout.title = isEn ? 'Log In' : 'Đăng nhập';
+      tbLogout.onclick = () => { window.location.href = 'login.html'; };
+    } else {
+      tbLogout.title = isEn ? 'Log Out' : 'Đăng xuất';
+      tbLogout.onclick = handleLogout;
+    }
+  }
 }
+
+window.addEventListener('rk:language-change', () => {
+  applyUserUI();
+  if (typeof renderCourtFilterTabs === 'function') renderCourtFilterTabs();
+  if (typeof renderCalendar === 'function') renderCalendar();
+  if (typeof renderBookings === 'function') renderBookings();
+  if (typeof loadCourtsFromBackend === 'function') loadCourtsFromBackend();
+});
 
 let dbCourts = [];
 let selectedCourtFilter = 'all';
@@ -52,10 +87,18 @@ try {
 }
 
 const getCourtName = b => {
-  if (b.court_name) return b.court_name;
-  const found = dbCourts.find(c => Number(c.id) === Number(b.court_id || b.court));
-  if (found) return found.name || found.court_name || `Sân ${found.id}`;
-  return `Sân ${b.court || b.court_id || 1}`;
+  let name = '';
+  if (b.court_name) name = b.court_name;
+  else {
+    const found = dbCourts.find(c => Number(c.id) === Number(b.court_id || b.court));
+    if (found) name = found.name || found.court_name || `Sân ${found.id}`;
+    else name = `Sân ${b.court || b.court_id || 1}`;
+  }
+  const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
+  if (isEn && window.RK_I18N.t) {
+    return window.RK_I18N.t(name);
+  }
+  return name;
 };
 
 let filter = 'upcoming', weekOffset = 0, toastTimer;
@@ -72,10 +115,17 @@ const endTime = b => {
   const minutes = Number(b.start.slice(0, 2)) * 60 + Number(b.start.slice(3)) + Number(b.duration) * 60;
   return String(Math.floor(minutes / 60)).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0');
 };
-const statusText = status =>
-  status === 'pending' ? 'Chờ xác nhận' :
-  status === 'done' ? 'Đã hoàn thành' :
-  status === 'cancelled' ? 'Đã hủy' : 'Đã xác nhận';
+const statusText = status => {
+  const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
+  if (isEn) {
+    return status === 'pending' ? 'Pending Confirmation' :
+      status === 'done' ? 'Completed' :
+      status === 'cancelled' ? 'Cancelled' : 'Confirmed';
+  }
+  return status === 'pending' ? 'Chờ xác nhận' :
+    status === 'done' ? 'Đã hoàn thành' :
+    status === 'cancelled' ? 'Đã hủy' : 'Đã xác nhận';
+};
 const bookingReference = b => b.booking_code || ('BK-' + String(b.id).padStart(6, '0'));
 
 function toast(message) {
@@ -410,6 +460,7 @@ async function openAdminCancelDialog(b) {
 }
 
 function renderBookings() {
+  const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
   const validCourtIds = new Set(dbCourts.map(c => Number(c.id)));
   const selected = bookings.filter(b => {
     if (validCourtIds.size > 0 && b.court_id && !validCourtIds.has(Number(b.court_id))) return false;
@@ -422,8 +473,8 @@ function renderBookings() {
     const courtTitle = getCourtName(b);
     const status = statusText(b.status);
     const pillClass = b.status === 'pending' ? 'pending' : b.status === 'done' ? 'done' : b.status === 'cancelled' ? 'cancelled' : '';
-    return `<tr><td><div class="venue"><span class="venue-icon"><svg><use href="#i-court"/></svg></span><span><strong>${courtTitle}</strong><small>Cầu lông</small></span></div></td><td>${dateText(b.date)}<span style="color:#b0b7ab;padding:0 8px">·</span>${b.start} – ${endTime(b)}</td><td style="font-weight:600">${money(Number(b.total_price) || 100000)}</td><td><span class="pill ${pillClass}">${status}</span></td><td><button class="table-detail" data-detail="${b.id}" aria-label="Chi tiết ${courtTitle}"><svg><use href="#i-chevron"/></svg></button></td></tr>`;
-  }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">Chưa có lượt đặt trong mục này.</td></tr>';
+    return `<tr><td><div class="venue"><span class="venue-icon"><svg><use href="#i-court"/></svg></span><span><strong>${courtTitle}</strong><small>${isEn ? 'Badminton' : 'Cầu lông'}</small></span></div></td><td>${dateText(b.date)}<span style="color:#b0b7ab;padding:0 8px">·</span>${b.start} – ${endTime(b)}</td><td style="font-weight:600">${money(Number(b.total_price) || 100000)}</td><td><span class="pill ${pillClass}">${status}</span></td><td><button class="table-detail" data-detail="${b.id}" aria-label="${isEn ? 'Details: ' : 'Chi tiết '}${courtTitle}"><svg><use href="#i-chevron"/></svg></button></td></tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">${isEn ? 'No bookings found in this category.' : 'Chưa có lượt đặt trong mục này.'}</td></tr>`;
 
   const upcoming = bookings.filter(b => {
     if (validCourtIds.size > 0 && b.court_id && !validCourtIds.has(Number(b.court_id))) return false;
@@ -433,32 +484,34 @@ function renderBookings() {
   $('#navCount').textContent = upcoming.length;
 
   const hours = upcoming.reduce((sum, b) => sum + Number(b.duration), 0);
-  $('#hoursCount').innerHTML = hours + ' <span style="font-size:18px;font-weight:600">giờ</span>';
+  $('#hoursCount').innerHTML = hours + ` <span style="font-size:18px;font-weight:600">${isEn ? 'hrs' : 'giờ'}</span>`;
   renderNextBooking(upcoming);
 }
 
 function renderNextBooking(upcoming = bookings.filter(isUpcoming)) {
+  const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
   const validCourtIds = new Set(dbCourts.map(c => Number(c.id)));
   const next = upcoming
     .filter(b => validCourtIds.size === 0 || !b.court_id || validCourtIds.has(Number(b.court_id)))
     .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start))[0];
   if (!next) {
-    $('#next-venue').textContent = 'Chưa có lượt đặt';
-    $('#next-address').textContent = 'Hãy đặt sân để thêm lịch chơi mới.';
+    $('#next-venue').textContent = isEn ? 'No upcoming bookings' : 'Chưa có lượt đặt';
+    $('#next-address').textContent = isEn ? 'Book a court to add a new match schedule.' : 'Hãy đặt sân để thêm lịch chơi mới.';
     $('#next-date').textContent = '--/--/----';
     $('#next-time').textContent = '--:-- – --:--';
     return;
   }
 
   const courtTitle = getCourtName(next);
-  $('#next-sport').textContent = 'CẦU LÔNG';
+  $('#next-sport').textContent = isEn ? 'BADMINTON' : 'CẦU LÔNG';
   $('#next-venue').textContent = courtTitle;
-  $('#next-address').textContent = 'Sân thể thao Sân Nhà';
-  $('#next-date').textContent = dateOf(next.date).toLocaleDateString('vi-VN');
+  $('#next-address').textContent = isEn ? 'San Nha Sports Complex' : 'Sân thể thao Sân Nhà';
+  $('#next-date').textContent = dateOf(next.date).toLocaleDateString(isEn ? 'en-US' : 'vi-VN');
   $('#next-time').textContent = next.start + ' – ' + endTime(next);
 }
 
 function renderCalendar() {
+  const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
   const monday = new Date(2026, 10, 9 + weekOffset * 7, 12);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
@@ -466,8 +519,14 @@ function renderCalendar() {
     return d;
   });
   const last = days[6];
-  $('#weekTitle').textContent = `${String(monday.getDate()).padStart(2, '0')} – ${String(last.getDate()).padStart(2, '0')} tháng ${last.getMonth() + 1}, ${last.getFullYear()}`;
-  $('#calendarHeader').innerHTML = '<div></div>' + days.map((d, i) => `<div class="day ${weekOffset === 0 && i === 1 ? 'today' : ''}"><small>${i === 6 ? 'CN' : 'TH ' + (i + 2)}</small><strong>${String(d.getDate()).padStart(2, '0')}</strong></div>`).join('');
+  const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthStr = isEn ? monthNames[last.getMonth() + 1] : `tháng ${last.getMonth() + 1}`;
+  $('#weekTitle').textContent = isEn ?
+    `${String(monday.getDate()).padStart(2, '0')} – ${String(last.getDate()).padStart(2, '0')} ${monthStr}, ${last.getFullYear()}` :
+    `${String(monday.getDate()).padStart(2, '0')} – ${String(last.getDate()).padStart(2, '0')} tháng ${last.getMonth() + 1}, ${last.getFullYear()}`;
+
+  const dayLabels = isEn ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['TH 2', 'TH 3', 'TH 4', 'TH 5', 'TH 6', 'TH 7', 'CN'];
+  $('#calendarHeader').innerHTML = '<div></div>' + days.map((d, i) => `<div class="day ${weekOffset === 0 && i === 1 ? 'today' : ''}"><small>${dayLabels[i]}</small><strong>${String(d.getDate()).padStart(2, '0')}</strong></div>`).join('');
 
   // Lọc CHỈ những sân có trong database
   const validCourtIds = new Set(dbCourts.map(c => Number(c.id)));
@@ -532,7 +591,7 @@ document.addEventListener('click', e => {
   }
   if (e.target.closest('.supportButton')) {
     e.preventDefault();
-    info('Sân Nhà luôn sẵn sàng', '<p>Cần đổi lịch, tìm sân hoặc hỗ trợ đặt sân?</p><div class="detail-row"><span>Hotline</span><a href="tel:1900636888"><strong>1900 636 888</strong></a></div><div class="detail-row"><span>Email</span><a href="mailto:khangtien10032008@gmail.com"><strong>khangtien10032008@gmail.com</strong></a></div><p class="form-note">Thời gian hỗ trợ: 07:00 – 22:00 mỗi ngày.</p>');
+    info('Sân Nhà luôn sẵn sàng', '<p>Cần đổi lịch, tìm sân hoặc hỗ trợ đặt sân?</p><div class="detail-row"><span>Hotline</span><a href="tel:1900636888"><strong>1900 636 888</strong></a></div><div class="detail-row"><span>Email</span><a href="mailto:RKbamintoncaulongso1noithanh@gmail.com"><strong>RKbamintoncaulongso1noithanh@gmail.com</strong></a></div><p class="form-note">Thời gian hỗ trợ: 07:00 – 22:00 mỗi ngày.</p>');
   }
   if (e.target.closest('[data-filter]')) {
     const button = e.target.closest('[data-filter]');
@@ -555,26 +614,118 @@ document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e =
 
 $('#previousWeek').onclick = () => { weekOffset--; renderCalendar(); };
 $('#nextWeek').onclick = () => { weekOffset++; renderCalendar(); };
-$('#scheduleButton').onclick = () => { window.location.href = 'court_booking_schedule.html'; };
-$('#exploreButton').onclick = () => {
-  setDialogError('');
-  initDefaultDateTime();
-  loadCourtsFromBackend();
-  prefillCustomerFields();
-  $('#bookingDialog').showModal();
-  closeMenu();
-};
-$('#view-schedule').onclick = () => { window.location.href = 'court_booking_schedule.html'; };
-$('#offersButton').onclick = () => info('Ưu đãi dành cho bạn', '<div style="padding:20px;background:var(--green-light);border-radius:8px;color:var(--green)"><div class="eyebrow">CHƠI NHIỀU HƠN, VUI NHIỀU HƠN</div><h3 style="font-size:24px;margin:10px 0">Giảm 15% lượt đặt đầu</h3><p>Mã ưu đãi: <strong>Tung Gay</strong></p></div><p class="form-note">Ưu đãi minh họa. Chức năng áp dụng mã và thanh toán chưa được kết nối trong bản demo.</p>');
-$('#profileButton').onclick = e => {
-  e.preventDefault();
+$('#scheduleButton').onclick = () => { window.location.href = 'booking.html'; };
+$('#exploreButton').onclick = () => { window.location.href = 'customer-home.html'; };
+$('#view-schedule').onclick = () => { window.location.href = 'booking.html'; };
+$('#offersButton').onclick = () => info('Ưu đãi dành cho bạn', '<div scolor:var(--green)"><div tyle="padding:20px;background:var(--green-light);border-radius:8px;class="eyebrow">CHƠI NHIỀU HƠN, VUI NHIỀU HƠN</div><h3 style="font-size:24px;margin:10px 0">Giảm 15% lượt đặt đầu</h3><p>Mã ưu đãi sẽ tự động nhập khi bạn đặt sân lần đầu</p></div><p class="form-note">Ưu đãi minh họa. Chức năng áp dụng mã và thanh toán chưa được kết nối trong bản demo.</p>');
+function performLogout() {
+  try {
+    if (window.RK_AUTH && typeof window.RK_AUTH.logout === 'function') {
+      window.RK_AUTH.logout();
+    }
+  } catch (_) {}
+  try {
+    if (window.RK_SESSION && typeof window.RK_SESSION.clear === 'function') {
+      window.RK_SESSION.clear();
+    }
+  } catch (_) {}
+  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('user');
+  sessionStorage.removeItem('access_token');
+  sessionStorage.removeItem('user');
+
+  toast('Đã đăng xuất thành công.');
+  setTimeout(() => {
+    window.location.href = 'login.html';
+  }, 400);
+}
+
+function handleLogout() {
+  const dlg = $('#logoutConfirmDialog');
+  if (dlg && typeof dlg.showModal === 'function') {
+    closeMenu();
+    $('#infoDialog')?.close();
+    dlg.showModal();
+  } else {
+    performLogout();
+  }
+}
+
+function showProfileModal() {
   const u = getLoggedInUser();
+  if (!u) {
+    info(
+      'Tài khoản của tôi',
+      `<p style="margin-bottom:16px;color:var(--muted)">Bạn chưa đăng nhập vào hệ thống.</p>
+       <div style="display:flex;gap:10px;margin-top:16px">
+         <a href="login.html" style="flex:1;text-align:center;padding:10px 14px;background:var(--green);color:#fff;border-radius:8px;font-weight:700;text-decoration:none;font-size:13px">Đăng nhập</a>
+         <a href="register.html" style="flex:1;text-align:center;padding:10px 14px;background:#f3f4f6;color:#333;border-radius:8px;font-weight:600;text-decoration:none;font-size:13px">Đăng ký</a>
+       </div>`
+    );
+    return;
+  }
   const name = u?.full_name || 'Chưa đăng nhập';
   const email = u?.email || '';
   const phone = u?.phone || '';
   const role = getRoleLabel(u?.role);
-  info('Tài khoản của tôi', `<div class="detail-row"><span>Họ tên</span><strong>${name}</strong></div><div class="detail-row"><span>Email</span><strong>${email || '—'}</strong></div><div class="detail-row"><span>Điện thoại</span><strong>${phone || '—'}</strong></div><div class="detail-row"><span>Hạng thành viên</span><strong>${role}</strong></div>`);
-};
+
+  info(
+    'Tài khoản của tôi',
+    `<div class="detail-row"><span>Họ tên</span><strong>${name}</strong></div>
+     <div class="detail-row"><span>Email</span><strong>${email || '—'}</strong></div>
+     <div class="detail-row"><span>Điện thoại</span><strong>${phone || '—'}</strong></div>
+     <div class="detail-row"><span>Hạng thành viên</span><strong>${role}</strong></div>
+     <div style="margin-top:20px;display:flex;gap:10px">
+       <a href="profile.html" style="flex:1;display:flex;align-items:center;justify-content:center;padding:10px;background:#f3f4f6;color:#333;border:1px solid #ddd;border-radius:8px;font-weight:600;text-decoration:none;font-size:13px">
+         Hồ sơ cá nhân
+       </a>
+       <button type="button" id="modalLogoutBtn" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:#fff0f0;color:#c0392b;border:1px solid #f5c6cb;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit">
+         <svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+         Đăng xuất
+       </button>
+     </div>`
+  );
+
+  const modalLogout = $('#modalLogoutBtn');
+  if (modalLogout) {
+    modalLogout.onclick = () => {
+      $('#infoDialog')?.close();
+      handleLogout();
+    };
+  }
+}
+
+const pBtn = $('#profileButton');
+if (pBtn) {
+  pBtn.onclick = e => {
+    e.preventDefault();
+    showProfileModal();
+  };
+}
+
+const topAvatar = $('#topbarAvatar');
+if (topAvatar) {
+  topAvatar.onclick = showProfileModal;
+}
+
+const topLogout = $('#topbarLogoutBtn');
+if (topLogout) {
+  topLogout.onclick = handleLogout;
+}
+
+const sideLogout = $('#sidebarLogoutBtn');
+if (sideLogout) {
+  sideLogout.onclick = handleLogout;
+}
+
+const btnConfirmLogout = $('#btnConfirmLogoutSubmit');
+if (btnConfirmLogout) {
+  btnConfirmLogout.onclick = () => {
+    $('#logoutConfirmDialog')?.close();
+    performLogout();
+  };
+}
 $('#notificationButton').onclick = () => {
   window.location.href = 'booking_notification.html';
 };
@@ -713,13 +864,15 @@ async function loadCourtsFromBackend() {
     if (!Array.isArray(courtsList) || courtsList.length === 0) return;
     dbCourts = courtsList;
 
+    const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
     // 1. Dropdown form đặt sân
     const courtSelect = $("#courtSelect");
     if (courtSelect) {
       courtSelect.innerHTML = dbCourts.map(c => {
-        const courtTitle = c.name || c.court_name || `Sân ${c.id}`;
+        let courtTitle = c.name || c.court_name || `Sân ${c.id}`;
+        if (isEn && window.RK_I18N.t) courtTitle = window.RK_I18N.t(courtTitle);
         const isActive = c.status === "Active" || c.status === "HOẠT ĐỘNG";
-        const statusLabel = isActive ? "" : " (Bảo trì)";
+        const statusLabel = isActive ? "" : (isEn ? " (Maintenance)" : " (Bảo trì)");
         return `<option value="${c.id}" data-id="${c.id}" ${isActive ? "" : "disabled"}>${courtTitle}${statusLabel}</option>`;
       }).join("");
     }
@@ -728,9 +881,10 @@ async function loadCourtsFromBackend() {
     const rcCourtSelect = $("#rcCourtSelect");
     if (rcCourtSelect) {
       rcCourtSelect.innerHTML = dbCourts.map(c => {
-        const courtTitle = c.name || c.court_name || `Sân ${c.id}`;
+        let courtTitle = c.name || c.court_name || `Sân ${c.id}`;
+        if (isEn && window.RK_I18N.t) courtTitle = window.RK_I18N.t(courtTitle);
         const isActive = c.status === "Active" || c.status === "HOẠT ĐỘNG";
-        const statusLabel = isActive ? "" : " (Bảo trì)";
+        const statusLabel = isActive ? "" : (isEn ? " (Maintenance)" : " (Bảo trì)");
         return `<option value="${c.id}" ${isActive ? "" : "disabled"}>${courtTitle}${statusLabel}</option>`;
       }).join("");
     }
@@ -749,11 +903,13 @@ async function loadCourtsFromBackend() {
 function renderCourtFilterTabs() {
   const container = $("#courtFilterBar");
   if (!container) return;
+  const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
 
-  let html = `<button type="button" class="court-filter-btn ${selectedCourtFilter === 'all' ? 'active' : ''}" data-court="all">Tất cả sân (${dbCourts.length})</button>`;
+  let html = `<button type="button" class="court-filter-btn ${selectedCourtFilter === 'all' ? 'active' : ''}" data-court="all">${isEn ? 'All Courts' : 'Tất cả sân'} (${dbCourts.length})</button>`;
   dbCourts.forEach(c => {
     const isAct = selectedCourtFilter === String(c.id);
-    const title = c.name || c.court_name || `Sân ${c.id}`;
+    let title = c.name || c.court_name || `Sân ${c.id}`;
+    if (isEn && window.RK_I18N.t) title = window.RK_I18N.t(title);
     html += `<button type="button" class="court-filter-btn ${isAct ? 'active' : ''}" data-court="${c.id}">${title}</button>`;
   });
   container.innerHTML = html;
@@ -1066,22 +1222,23 @@ $('#rcCheckBtn').onclick = async () => {
 const dayNames = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
 
 function rcRenderStep2(res) {
+  const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
   $('#recurringStep1').style.display = 'none';
   $('#recurringStep2').style.display = '';
   rcSetError2('');
 
   // Summary bar
   $('#rcSummaryBar').innerHTML = `
-    <div class="rc-stat available"><strong>${res.available_weeks_count}</strong>Tuần trống</div>
-    <div class="rc-stat conflict"><strong>${res.conflict_weeks_count}</strong>Tuần bị trùng</div>
-    <div class="rc-stat total"><strong>${res.total_weeks}</strong>Tổng tuần</div>
+    <div class="rc-stat available"><strong>${res.available_weeks_count}</strong>${isEn ? 'Available weeks' : 'Tuần trống'}</div>
+    <div class="rc-stat conflict"><strong>${res.conflict_weeks_count}</strong>${isEn ? 'Conflicted weeks' : 'Tuần bị trùng'}</div>
+    <div class="rc-stat total"><strong>${res.total_weeks}</strong>${isEn ? 'Total weeks' : 'Tổng tuần'}</div>
   `;
 
   // Week list
   const weeks = res.weeks || [];
   $('#rcWeeksList').innerHTML = weeks.map((w, i) => {
     const d = new Date(w.booking_date + 'T12:00:00');
-    const dateStr = d.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+    const dateStr = d.toLocaleDateString(isEn ? 'en-US' : 'vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
     const timeStr = `${w.start_time.slice(0, 5)} – ${w.end_time.slice(0, 5)}`;
 
     if (w.is_available) {
@@ -1092,21 +1249,22 @@ function rcRenderStep2(res) {
             <strong>${dateStr}</strong>
             <small>${timeStr}</small>
           </div>
-          <span class="rc-week-status ok">✓ Trống</span>
+          <span class="rc-week-status ok">✓ ${isEn ? 'Available' : 'Trống'}</span>
           <span class="rc-week-price">${money(w.price)}</span>
           <input type="checkbox" class="rc-week-checkbox" checked data-date="${w.booking_date}" data-available="1">
         </div>`;
     } else {
+      const reason = w.conflict_reason ? (isEn && window.RK_I18N.t ? window.RK_I18N.t(w.conflict_reason) : w.conflict_reason) : (isEn ? 'Already booked' : 'Đã có người đặt');
       return `
         <div class="rc-week-item conflict" data-idx="${i}">
           <span class="rc-week-num">${w.week_number}</span>
           <div class="rc-week-info">
             <strong>${dateStr}</strong>
-            <small>${timeStr} · ${w.conflict_reason || 'Đã có người đặt'}</small>
+            <small>${timeStr} · ${reason}</small>
           </div>
-          <span class="rc-week-status bad">✗ Trùng lịch</span>
+          <span class="rc-week-status bad">✗ ${isEn ? 'Conflicted' : 'Trùng lịch'}</span>
           <span class="rc-week-price" style="color:var(--muted);text-decoration:line-through">${money(w.price)}</span>
-          <input type="checkbox" class="rc-week-checkbox" disabled data-date="${w.booking_date}" data-available="0" title="Tuần bị trùng, sẽ tự động bỏ qua">
+          <input type="checkbox" class="rc-week-checkbox" disabled data-date="${w.booking_date}" data-available="0" title="${isEn ? 'Conflicted week, will be skipped' : 'Tuần bị trùng, sẽ tự động bỏ qua'}">
         </div>`;
     }
   }).join('');
@@ -1120,6 +1278,7 @@ function rcRenderStep2(res) {
 }
 
 function rcUpdateTotal() {
+  const isEn = window.RK_I18N && window.RK_I18N.getLang() === 'en';
   let total = 0;
   let count = 0;
   $('#rcWeeksList').querySelectorAll('.rc-week-checkbox[data-available="1"]:checked').forEach((cb, i) => {
@@ -1133,10 +1292,10 @@ function rcUpdateTotal() {
 
   if (count === 0) {
     $('#rcConfirmBtn').disabled = true;
-    $('#rcConfirmBtn').textContent = 'Chọn ít nhất 1 tuần';
+    $('#rcConfirmBtn').textContent = isEn ? 'Select at least 1 week' : 'Chọn ít nhất 1 tuần';
   } else {
     $('#rcConfirmBtn').disabled = false;
-    $('#rcConfirmBtn').textContent = `Xác nhận đặt ${count} tuần`;
+    $('#rcConfirmBtn').textContent = isEn ? `Confirm booking for ${count} weeks` : `Xác nhận đặt ${count} tuần`;
   }
 }
 

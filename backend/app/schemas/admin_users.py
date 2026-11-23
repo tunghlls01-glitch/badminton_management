@@ -1,5 +1,11 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from app.models.user import UserStatus
+from app.schemas.user import UserResponse
+
+
+class CustomerResponse(UserResponse):
+    # Counter bookings create guest records with internal email placeholders.
+    email: str
 
 
 class StaffUpdate(BaseModel):

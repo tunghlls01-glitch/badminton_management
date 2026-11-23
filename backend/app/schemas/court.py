@@ -7,7 +7,7 @@ class CourtBase(BaseModel):
     name: Optional[str] = Field(None, max_length=50, example="Sân Cầu Lông A1")
     court_name: Optional[str] = Field(None, max_length=50, example="Sân Cầu Lông A1")
     status: Optional[str] = Field("Active", max_length=20, example="Active")
-    description: Optional[str] = Field(None, example="Sân thảm tiêu chuẩn thi đấu")
+    description: Optional[str] = Field(None, max_length=255, example="Sân thảm tiêu chuẩn thi đấu")
 
     def get_name(self) -> str:
         return self.name or self.court_name or "Sân mới"
@@ -21,7 +21,7 @@ class CourtUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=50)
     court_name: Optional[str] = Field(None, max_length=50)
     status: Optional[str] = Field(None, max_length=20)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=255)
 
 # Schema trả về cho API Response (GET)
 class CourtResponse(BaseModel):
@@ -31,6 +31,7 @@ class CourtResponse(BaseModel):
     status: str
     description: Optional[str] = None
     created_at: Optional[datetime] = None
+    image_url: Optional[str] = None
 
     class Config:
         from_attributes = True

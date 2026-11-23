@@ -5,6 +5,9 @@
  */
 (function () {
   "use strict";
+  const entry = new URLSearchParams(window.location.search);
+  const fromOverview = entry.get("source") === "overview";
+  let checkinPending = false;
 
   // --- Initial Mock Bookings matching Figma Design ---
   const INITIAL_BOOKINGS = [
@@ -103,8 +106,8 @@
 
   // Application State
   const state = {
-    bookings: [...INITIAL_BOOKINGS],
-    selectedId: 1,
+    bookings: fromOverview ? [] : [...INITIAL_BOOKINGS],
+    selectedId: fromOverview ? Number(entry.get("booking_id")) : 1,
     activeFilter: "all", // "all", "upcoming", "checkedin"
     searchQuery: "",
     paymentMethod: "CASH", // "CASH" | "BANK_TRANSFER"
@@ -271,10 +274,10 @@
 
         if (b.status === "CHECKED_IN") {
           statusBadge = `<span class="booking-status-tag status-tag-checkedin">Đã nhận sân</span>`;
-          actionBtn = `<button type="button" class="booking-action-btn btn-checkout" data-action="checkout" data-id="${b.id}">Thanh toán</button>`;
+          if (!fromOverview) actionBtn = `<button type="button" class="booking-action-btn btn-checkout" data-action="checkout" data-id="${b.id}">Thanh toán</button>`;
         } else if (b.status === "Completed") {
           statusBadge = `<span class="booking-status-tag status-tag-completed">Đã hoàn thành</span>`;
-          actionBtn = `<button type="button" class="booking-action-btn btn-view-invoice" data-action="preview" data-id="${b.id}">Xem hóa đơn</button>`;
+          if (!fromOverview) actionBtn = `<button type="button" class="booking-action-btn btn-view-invoice" data-action="preview" data-id="${b.id}">Xem hóa đơn</button>`;
         } else {
           statusBadge = `<span class="booking-status-tag status-tag-confirmed">Đã xác nhận</span>`;
           actionBtn = `<button type="button" class="booking-action-btn btn-checkin" data-action="checkin" data-id="${b.id}">Nhận sân</button>`;
@@ -284,15 +287,15 @@
           <div class="booking-item ${isSelected ? "selected" : ""}" data-booking-id="${b.id}">
             <div class="booking-item-header">
               <div class="booking-time-court">
-                <span class="time-pill">${b.time_slot}</span>
-                <span class="court-badge">${b.court_name}</span>
+                <span class="time-pill">${window.RK_UI.escape(b.time_slot)}</span>
+                <span class="court-badge">${window.RK_UI.escape(b.court_name)}</span>
               </div>
               ${statusBadge}
             </div>
             <div class="booking-item-body">
               <div>
-                <div class="booking-customer-name">${b.customer_name}</div>
-                <div class="booking-customer-phone">${b.customer_phone}</div>
+                <div class="booking-customer-name">${window.RK_UI.escape(b.customer_name)}</div>
+                <div class="booking-customer-phone">${window.RK_UI.escape(b.customer_phone)}</div>
               </div>
               <div>
                 ${actionBtn}
@@ -306,6 +309,7 @@
 
   // --- Render Checkout Panel ---
   function renderCheckoutPanel() {
+    if (fromOverview) return;
     const booking = getSelectedBooking();
     if (!booking) return;
 
@@ -551,9 +555,25 @@
   }
 
   // --- Check-in Action ---
-  function handleCheckIn(bookingId) {
+  async function handleCheckIn(bookingId) {
     const booking = state.bookings.find((b) => b.id === bookingId);
     if (!booking) return;
+    if (fromOverview) {
+      if (checkinPending) return;
+      checkinPending = true;
+      try {
+        const { data } = await window.axiosClient.post(`/reception/bookings/${bookingId}/check-in`);
+        booking.status = data.status;
+        state.selectedId = bookingId;
+        renderBookingsList();
+        showToast("Đã nhận sân cho " + booking.customer_name + ".");
+      } catch (error) {
+        showToast(error.response?.data?.detail || "Không thể nhận sân. Vui lòng thử lại.");
+      } finally {
+        checkinPending = false;
+      }
+      return;
+    }
 
     const now = new Date();
     const timeNow = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -751,9 +771,43 @@
   }
 
   // --- Initialization ---
+  async function loadOverviewCheckin() {
+    if (!await window.ProtectedRoute(["admin", "staff"])) return;
+    const day = entry.get("day") || new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short",
+    }).format(new Date());
+    try {
+      const { data } = await window.axiosClient.get("/reception/bookings", { params: { booking_date: day } });
+      state.bookings = data.filter((row) => ["Confirmed", "CHECKED_IN"].includes(row.status)).map((row) => ({
+        id: row.id, booking_code: row.booking_code, status: row.status,
+        customer_name: row.user_name || "Khách vãng lai", customer_phone: row.user_phone || "",
+        court_name: row.court_name || row.slots?.[0]?.court_name || "—",
+        time_slot: (row.start_time || "").slice(0, 5) + "–" + (row.end_time || "").slice(0, 5),
+      }));
+      const selected = state.bookings.find((row) => row.id === state.selectedId);
+      if (selected) {
+        state.searchQuery = selected.booking_code;
+        el.searchInput.value = state.searchQuery;
+      }
+      renderBookingsList();
+      el.bookingsCountLabel.textContent = day.split("-").reverse().join("/") + " · " + state.bookings.length + " lượt đặt sân";
+    } catch (_) {
+      el.bookingsList.textContent = "Không tải được lượt đặt. Tải lại trang để thử lại.";
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     cacheDOMElements();
     initEventListeners();
+    if (fromOverview) {
+      const checkout = el.checkoutStatus.closest("section");
+      checkout.hidden = true;
+      checkout.parentElement.style.gridTemplateColumns = "minmax(0, 1fr)";
+      document.querySelector(".reception-content h1").textContent = "Check-in tại quầy";
+      el.bookingsList.textContent = "Đang tải lượt đặt…";
+      void loadOverviewCheckin();
+      return;
+    }
     renderBookingsList();
     renderCheckoutPanel();
   });
