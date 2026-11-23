@@ -67,12 +67,54 @@ async def lifespan(app: FastAPI):
         if added_courts:
             print(f"[SEED] Đã thêm {added_courts} sân mẫu vào database")
         print(f"[DB] Đã kết nối MySQL {settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
-        # Đảm bảo cột status của bảng services hỗ trợ DELETED cho soft delete
+        # Đảm bảo cấu trúc cột cho các bảng booking_slots, bookings, invoices, payments, services
         with engine.begin() as conn:
+            insp = inspect(conn)
+            # services
             try:
                 conn.execute(text("ALTER TABLE services MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'"))
             except Exception:
                 pass
+            # bookings
+            try:
+                conn.execute(text("ALTER TABLE bookings MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Confirmed'"))
+            except Exception:
+                pass
+            # booking_slots
+            if "booking_slots" in insp.get_table_names():
+                bs_cols = {c["name"] for c in insp.get_columns("booking_slots")}
+                if "start_time" in bs_cols and "start_at" not in bs_cols:
+                    conn.execute(text("ALTER TABLE booking_slots CHANGE COLUMN start_time start_at DATETIME NOT NULL"))
+                if "end_time" in bs_cols and "end_at" not in bs_cols:
+                    conn.execute(text("ALTER TABLE booking_slots CHANGE COLUMN end_time end_at DATETIME NOT NULL"))
+                if "duration_minutes" not in bs_cols:
+                    conn.execute(text("ALTER TABLE booking_slots ADD COLUMN duration_minutes INT NOT NULL DEFAULT 60"))
+                if "price_per_hour" not in bs_cols:
+                    conn.execute(text("ALTER TABLE booking_slots ADD COLUMN price_per_hour DECIMAL(10, 2) NOT NULL DEFAULT 50000"))
+                if "amount" not in bs_cols:
+                    conn.execute(text("ALTER TABLE booking_slots ADD COLUMN amount DECIMAL(10, 2) NOT NULL DEFAULT 50000"))
+                try:
+                    conn.execute(text("ALTER TABLE booking_slots MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'"))
+                except Exception:
+                    pass
+            # invoices
+            if "invoices" in insp.get_table_names():
+                inv_cols = {c["name"] for c in insp.get_columns("invoices")}
+                if "discount_amount" not in inv_cols:
+                    conn.execute(text("ALTER TABLE invoices ADD COLUMN discount_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00"))
+                if "discount_reason" not in inv_cols:
+                    conn.execute(text("ALTER TABLE invoices ADD COLUMN discount_reason VARCHAR(255) NULL"))
+                if "total_court_amount" not in inv_cols:
+                    conn.execute(text("ALTER TABLE invoices ADD COLUMN total_court_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00"))
+                if "total_service_amount" not in inv_cols:
+                    conn.execute(text("ALTER TABLE invoices ADD COLUMN total_service_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00"))
+            # payments
+            if "payments" in insp.get_table_names():
+                pm_cols = {c["name"] for c in insp.get_columns("payments")}
+                if "invoice_id" not in pm_cols:
+                    conn.execute(text("ALTER TABLE payments ADD COLUMN invoice_id INT NULL"))
+                if "service_order_id" not in pm_cols:
+                    conn.execute(text("ALTER TABLE payments ADD COLUMN service_order_id INT NULL"))
     except OperationalError as error:
         print("[DB] KHÔNG kết nối được MySQL! Kiểm tra MySQL đã bật chưa và file .env.")
         if "Unknown database" in str(error.orig):
