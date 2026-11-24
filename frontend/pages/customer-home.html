@@ -61,85 +61,11 @@
                 những trận đấu đẹp và các bài tập.
               </p>
             </div>
-            <span id="rk-court-summary" class="rk-court-summary"
-              >3 sân mẫu</span
-            >
+            <span id="rk-court-summary" class="rk-court-summary" hidden></span>
           </div>
-          <div id="rk-court-grid" class="rk-court-grid" aria-busy="true">
-            <article class="rk-court-card">
-              <div class="rk-court-photo">
-                <img
-                  src="../assets/images/rk-court-hero.png"
-                  alt="Sân 01 - Sân Trung Tâm — ảnh minh họa"
-                  width="600"
-                  height="280"
-                  loading="lazy"
-                /><span class="rk-badge rk-available"
-                  ><span class="rk-dot"></span>Đang trống</span
-                >
-              </div>
-              <div class="rk-court-info">
-                <h3>Sân 01 - Sân Trung Tâm</h3>
-                <p>Thảm tiêu chuẩn BWF · Trần cao 11m</p>
-                <div class="rk-court-bottom">
-                  <strong>160.000đ <small>/ giờ</small></strong
-                  ><a class="rk-book-link" data-require-auth href="booking.html"
-                    >Đặt sân <span aria-hidden="true">→</span></a
-                  >
-                </div>
-              </div>
-            </article>
-            <article class="rk-court-card">
-              <div class="rk-court-photo">
-                <img
-                  src="../assets/images/rk-court-hero.png"
-                  alt="Sân 02 - Sẵn sàng xuất phát — ảnh minh họa"
-                  width="600"
-                  height="280"
-                  loading="lazy"
-                /><span class="rk-badge rk-available"
-                  ><span class="rk-dot"></span>Đang trống</span
-                >
-              </div>
-              <div class="rk-court-info">
-                <h3>Sân 02 - Sẵn sàng xuất phát</h3>
-                <p>Thảm chống trượt · Thoáng mát</p>
-                <div class="rk-court-bottom">
-                  <strong>160.000đ <small>/ giờ</small></strong
-                  ><a class="rk-book-link" data-require-auth href="booking.html"
-                    >Đặt sân <span aria-hidden="true">→</span></a
-                  >
-                </div>
-              </div>
-            </article>
-            <article class="rk-court-card">
-              <div class="rk-court-photo">
-                <img
-                  src="../assets/images/rk-court-indoor.jpg"
-                  alt="Sân 03 - Đấu trường Xanh — ảnh minh họa"
-                  width="600"
-                  height="280"
-                  loading="lazy"
-                /><span class="rk-badge rk-maintenance"
-                  ><span class="rk-dot"></span>Bảo trì</span
-                >
-              </div>
-              <div class="rk-court-info">
-                <h3>Sân 03 - Đấu trường Xanh</h3>
-                <p>Thảm tổng hợp · Đang bảo trì và nâng cấp</p>
-                <div class="rk-court-bottom">
-                  <strong>160.000đ <small>/ giờ</small></strong
-                  ><button type="button" class="rk-muted-link" disabled>
-                    Sắp mở lại
-                  </button>
-                </div>
-              </div>
-            </article>
-          </div>
+          <div id="rk-court-grid" class="rk-court-grid" aria-busy="true"></div>
           <div id="rk-court-state" class="rk-data-note" aria-live="polite">
-            <p role="status">
-              Đang tải dữ liệu sân. Các thẻ hiện tại là mẫu giao diện.
-            </p>
+            <p role="status">Đang tải danh sách sân...</p>
           </div>
         </div>
       </section>
@@ -216,6 +142,7 @@
     <script src="../js/axios.min.js"></script>
     <script src="../js/config.js"></script>
     <script src="../js/t3d2096-config.js"></script>
+    <script src="../js/court-photos.js"></script>
     <script src="../js/authStorage.js"></script>
     <script src="../js/axiosClient.js"></script>
     <script src="../js/auth.js"></script>

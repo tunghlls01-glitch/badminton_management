@@ -119,6 +119,24 @@ def create_order(db: Session, order_in: ServiceOrderCreate) -> ServiceOrder:
         )
         db.add(order_item)
 
+        # T3D2CB1: Nếu đơn gắn vào Booking và dịch vụ là Thuê vợt -> tự động tạo bản ghi theo dõi mượn/trả
+        cat_str = str(service.category.value if hasattr(service.category, "value") else service.category).upper()
+        if order.booking_id and (
+            cat_str in ("THUE_VOT", "RACKET_RENTAL")
+            or "thuê vợt" in service.name.lower()
+            or "vợt" in service.name.lower()
+        ):
+            from app.models.racket_rental import RacketRental, RacketRentalStatus
+            rental_entry = RacketRental(
+                booking_id=order.booking_id,
+                service_id=service.id,
+                service_order_id=order.id,
+                quantity=item.quantity,
+                status=RacketRentalStatus.RENTING.value,
+                note=f"Thuê vợt theo đơn POS #{order.id}",
+            )
+            db.add(rental_entry)
+
     order.total_price = total
     db.commit()
     db.refresh(order)
@@ -187,6 +205,24 @@ def add_item_to_order(db: Session, order_id: int, item_in: ServiceOrderAddItem) 
             amount=add_amount,
         )
         db.add(new_item)
+
+    # T3D2CB1: Nếu đơn gắn vào Booking và thêm món Thuê vợt -> tự động tạo bản ghi theo dõi
+    cat_str = str(service.category.value if hasattr(service.category, "value") else service.category).upper()
+    if order.booking_id and (
+        cat_str in ("THUE_VOT", "RACKET_RENTAL")
+        or "thuê vợt" in service.name.lower()
+        or "vợt" in service.name.lower()
+    ):
+        from app.models.racket_rental import RacketRental, RacketRentalStatus
+        rental_entry = RacketRental(
+            booking_id=order.booking_id,
+            service_id=service.id,
+            service_order_id=order.id,
+            quantity=item_in.quantity,
+            status=RacketRentalStatus.RENTING.value,
+            note=f"Thuê bổ sung theo đơn POS #{order.id}",
+        )
+        db.add(rental_entry)
 
     order.total_price = Decimal(str(order.total_price)) + add_amount
     db.commit()
@@ -317,9 +353,23 @@ def get_booking_service_summary(db: Session, booking_id: int) -> dict:
 
     total_amount = sum(float(o.total_price) for o in orders)
 
+    # T3D2CB1: Kiểm tra cảnh báo vợt chưa trả theo booking
+    from app.models.racket_rental import RacketRental, RacketRentalStatus
+    rentals = (
+        db.query(RacketRental)
+        .filter(
+            RacketRental.booking_id == booking_id,
+            RacketRental.status == RacketRentalStatus.RENTING.value,
+        )
+        .all()
+    )
+    unreturned_count = sum(r.quantity for r in rentals)
+
     return {
         "booking_id": booking_id,
         "total_service_amount": float(total_amount),
         "total_orders": len(orders),
         "orders": orders,
+        "has_unreturned_rackets": unreturned_count > 0,
+        "unreturned_rackets_count": unreturned_count,
     }

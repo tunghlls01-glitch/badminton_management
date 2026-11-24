@@ -29,10 +29,19 @@ const http = axios.create({
 // Tự động gắn token đăng nhập cho mọi request nếu có:
 http.interceptors.request.use((config) => {
   const token =
-    localStorage.getItem("token") ||
     localStorage.getItem("access_token") ||
-    sessionStorage.getItem("access_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("access_token") ||
+    sessionStorage.getItem("token") ||
+    (typeof RK_SESSION !== "undefined" && RK_SESSION.read ? RK_SESSION.read()?.token : null);
+  if (token) {
+    if (config.headers && typeof config.headers.set === "function") {
+      config.headers.set("Authorization", `Bearer ${token}`);
+    } else if (config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+      config.headers["authorization"] = `Bearer ${token}`;
+    }
+  }
   return config;
 });
 
@@ -66,5 +75,6 @@ const api = {
   get: (path, params) => http.get(path, { params }).then((res) => res.data),
   post: (path, body) => http.post(path, body).then((res) => res.data),
   put: (path, body) => http.put(path, body).then((res) => res.data),
+  patch: (path, body) => http.patch(path, body).then((res) => res.data),
   delete: (path) => http.delete(path).then((res) => res.data),
 };

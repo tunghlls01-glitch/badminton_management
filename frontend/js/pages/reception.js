@@ -1,9 +1,13 @@
+/* global axios, axiosClient */
 /**
  * RK BADMINTON · Reception Check-in & Counter Checkout
  * Interactive frontend logic connected directly to Backend Database & User Data.
  */
 (function () {
   "use strict";
+  const entry = new URLSearchParams(window.location.search);
+  const fromOverview = entry.get("source") === "overview";
+  let checkinPending = false;
 
   // --- Initial Fallback Mock Bookings (used only when backend is completely offline) ---
   const FALLBACK_MOCK_BOOKINGS = [
@@ -94,7 +98,7 @@
   // Application State
   const state = {
     bookings: [],
-    selectedId: null,
+    selectedId: fromOverview ? Number(entry.get("booking_id")) : null,
     selectedDate: getLocalDateISO(),
     activeFilter: "all", // "all", "upcoming", "checkedin"
     searchQuery: "",
@@ -133,6 +137,7 @@
     el.servicesTableBody = document.getElementById("servicesTableBody");
     el.servicesSubtotal = document.getElementById("servicesSubtotal");
     el.discountInput = document.getElementById("discountInput");
+    el.racketRentalAlertBox = document.getElementById("racketRentalAlertBox");
     el.grandTotal = document.getElementById("grandTotal");
     el.cashInput = document.getElementById("cashInput");
     el.changeDue = document.getElementById("changeDue");
@@ -457,13 +462,13 @@
 
         if (b.status === "CHECKED_IN") {
           statusBadge = `<span class="booking-status-tag status-tag-checkedin">Đã nhận sân</span>`;
-          actionBtn = `<button type="button" class="booking-action-btn btn-checkout" data-action="checkout" data-id="${b.id}">Thanh toán</button>`;
+          if (!fromOverview) actionBtn = `<button type="button" class="booking-action-btn btn-checkout" data-action="checkout" data-id="${b.id}">Thanh toán</button>`;
         } else if (b.status === "Completed") {
           statusBadge = `<span class="booking-status-tag status-tag-completed">Đã hoàn thành</span>`;
-          actionBtn = `<button type="button" class="booking-action-btn btn-view-invoice" data-action="preview" data-id="${b.id}">Xem hóa đơn</button>`;
+          if (!fromOverview) actionBtn = `<button type="button" class="booking-action-btn btn-view-invoice" data-action="preview" data-id="${b.id}">Xem hóa đơn</button>`;
         } else if (b.status === "NO_SHOW") {
           statusBadge = `<span class="booking-status-tag" style="background:#fee2e2;color:#991b1b;">Vắng mặt</span>`;
-          actionBtn = `<button type="button" class="booking-action-btn" data-action="preview" data-id="${b.id}" style="background:#f1f5f9;color:#64748b;">Chi tiết</button>`;
+          if (!fromOverview) actionBtn = `<button type="button" class="booking-action-btn" data-action="preview" data-id="${b.id}" style="background:#f1f5f9;color:#64748b;">Chi tiết</button>`;
         } else {
           statusBadge = `<span class="booking-status-tag status-tag-confirmed">Đã xác nhận</span>`;
           actionBtn = `<button type="button" class="booking-action-btn btn-checkin" data-action="checkin" data-id="${b.id}">Nhận sân</button>`;
@@ -473,15 +478,15 @@
           <div class="booking-item ${isSelected ? "selected" : ""}" data-booking-id="${b.id}">
             <div class="booking-item-header">
               <div class="booking-time-court">
-                <span class="time-pill">${b.time_slot}</span>
-                <span class="court-badge">${b.court_name}</span>
+                <span class="time-pill">${window.RK_UI.escape(b.time_slot)}</span>
+                <span class="court-badge">${window.RK_UI.escape(b.court_name)}</span>
               </div>
               ${statusBadge}
             </div>
             <div class="booking-item-body">
               <div>
-                <div class="booking-customer-name">${b.customer_name}</div>
-                <div class="booking-customer-phone">${b.customer_phone} · <small style="color:#64748b;">${b.booking_code}</small></div>
+                <div class="booking-customer-name">${window.RK_UI.escape(b.customer_name)}</div>
+                <div class="booking-customer-phone">${window.RK_UI.escape(b.customer_phone)} · <small>${window.RK_UI.escape(b.booking_code)}</small></div>
               </div>
               <div>
                 ${actionBtn}
@@ -495,6 +500,7 @@
 
   // --- 7. Render Checkout Panel ---
   function renderCheckoutPanel() {
+    if (fromOverview) return;
     const booking = getSelectedBooking();
 
     if (!booking) {
@@ -597,11 +603,122 @@
 
     el.grandTotal.textContent = formatMoney(totals.grandTotal);
 
-    // Cash calculator update
+    // T3D2CB1: Kiểm tra và hiển thị cảnh báo vợt thuê chưa hoàn trả
+    updateRacketRentalWarning(booking);
+
+    // Cash received & change due calculation
     renderCashCalculator(totals.grandTotal);
   }
 
-  // --- 8. Render Cash Calculator ---
+  // --- T3D2CB1: Cảnh báo & Thu hồi vợt thuê theo Booking ---
+  async function updateRacketRentalWarning(booking) {
+    if (!el.racketRentalAlertBox) return;
+
+    let hasUnreturned = false;
+    let unreturnedCount = 0;
+    let rentalDetails = [];
+
+    // 1. Thử gọi API Backend
+    try {
+      const http = window.axios || window.axiosClient;
+      if (http) {
+        const token = localStorage.getItem("token") || (window.authStorage && window.authStorage.getToken());
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await http.get(`http://127.0.0.1:8000/api/racket-rentals/warning/${booking.id}`, { headers });
+        if (res && res.data) {
+          hasUnreturned = res.data.has_unreturned_rackets;
+          unreturnedCount = res.data.unreturned_count;
+          rentalDetails = res.data.rentals || [];
+        }
+      }
+    } catch (err) {
+      // 2. Fallback nếu chạy mock hoặc backend chưa có data: quét danh sách services
+      const rentalItem = (booking.services || []).find((s) => {
+        const n = (s.name || "").toLowerCase();
+        return n.includes("thuê vợt") || n.includes("vợt");
+      });
+      if (rentalItem && !booking.rackets_returned) {
+        hasUnreturned = true;
+        unreturnedCount = rentalItem.qty || 1;
+        rentalDetails = [{ service_name: rentalItem.name, quantity: unreturnedCount, status: "RENTING" }];
+      }
+    }
+
+    // Ghi nhận trạng thái vào booking object để phục vụ nút xác nhận thanh toán
+    booking._hasUnreturnedRackets = hasUnreturned;
+    booking._unreturnedCount = unreturnedCount;
+
+    if (hasUnreturned && !booking.rackets_returned) {
+      el.racketRentalAlertBox.style.display = "block";
+      el.racketRentalAlertBox.innerHTML = `
+        <div class="rental-warning-card">
+          <div class="rental-warning-header">
+            <span style="font-size:16px;">⚠️</span>
+            <span>CẢNH BÁO: VỢT THUÊ CHƯA HOÀN TRẢ!</span>
+          </div>
+          <div class="rental-warning-body">
+            Booking này hiện đang mượn <strong>${unreturnedCount} cây vợt</strong> chưa hoàn trả vào kho.
+          </div>
+          <div class="rental-warning-actions">
+            <span style="font-size:11.5px; color:#b45309; font-weight:500;">
+              Vui lòng kiểm tra &amp; thu hồi vợt trước khi thanh toán
+            </span>
+            <button type="button" class="btn-return-racket-quick" id="btnQuickReturnRackets" data-booking-id="${booking.id}">
+              <span>✓</span>
+              <span>Xác nhận đã thu hồi vợt</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Gắn sự kiện cho nút Xác nhận thu hồi vợt
+      const btnReturn = document.getElementById("btnQuickReturnRackets");
+      if (btnReturn) {
+        btnReturn.addEventListener("click", () => executeReturnAllRackets(booking));
+      }
+    } else if (booking.rackets_returned) {
+      el.racketRentalAlertBox.style.display = "block";
+      el.racketRentalAlertBox.innerHTML = `
+        <div class="rental-returned-card">
+          <div class="rental-returned-text">
+            <span>✅</span>
+            <span>Đã thu hồi đủ ${unreturnedCount || 1} cây vợt &amp; hoàn kho thành công.</span>
+          </div>
+          <span style="font-size:11px; color:#047857; font-weight:600; background:#d1fae5; padding:3px 8px; border-radius:12px;">
+            Sẵn sàng thanh toán
+          </span>
+        </div>
+      `;
+    } else {
+      el.racketRentalAlertBox.style.display = "none";
+      el.racketRentalAlertBox.innerHTML = "";
+    }
+  }
+
+  // Thực thi thu hồi toàn bộ vợt của booking
+  async function executeReturnAllRackets(booking) {
+    try {
+      const http = window.axios || window.axiosClient;
+      if (http) {
+        const token = localStorage.getItem("token") || (window.authStorage && window.authStorage.getToken());
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        await http.post(
+          `http://127.0.0.1:8000/api/racket-rentals/return-all/${booking.id}`,
+          { note: "Thu hồi trực tiếp tại quầy thanh toán" },
+          { headers }
+        );
+      }
+    } catch (err) {
+      console.warn("Backend return-all warning:", err);
+    }
+
+    booking.rackets_returned = true;
+    booking._hasUnreturnedRackets = false;
+    showToast(`✓ Đã xác nhận thu hồi vợt cho booking ${booking.booking_code}! Tồn kho đã hoàn lại.`);
+    updateRacketRentalWarning(booking);
+  }
+
+  // --- Render Cash Calculator ---
   function renderCashCalculator(grandTotal) {
     if (state.cashReceived === 0 || state.cashReceived < grandTotal) {
       state.cashReceived = grandTotal;
@@ -996,11 +1113,45 @@
     });
   }
 
-  // --- 13. Initialization ---
+  // --- Initialization ---
+  async function loadOverviewCheckin() {
+    if (!await window.ProtectedRoute(["admin", "staff"])) return;
+    const day = entry.get("day") || new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short",
+    }).format(new Date());
+    try {
+      const { data } = await window.axiosClient.get("/reception/bookings", { params: { booking_date: day } });
+      state.bookings = data.filter((row) => ["Confirmed", "CHECKED_IN"].includes(row.status)).map((row) => ({
+        id: row.id, booking_code: row.booking_code, status: row.status,
+        customer_name: row.user_name || "Khách vãng lai", customer_phone: row.user_phone || "",
+        court_name: row.court_name || row.slots?.[0]?.court_name || "—",
+        time_slot: (row.start_time || "").slice(0, 5) + "–" + (row.end_time || "").slice(0, 5),
+      }));
+      const selected = state.bookings.find((row) => row.id === state.selectedId);
+      if (selected) {
+        state.searchQuery = selected.booking_code;
+        el.searchInput.value = state.searchQuery;
+      }
+      renderBookingsList();
+      el.bookingsCountLabel.textContent = day.split("-").reverse().join("/") + " · " + state.bookings.length + " lượt đặt sân";
+    } catch (_) {
+      el.bookingsList.textContent = "Không tải được lượt đặt. Tải lại trang để thử lại.";
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
     cacheDOMElements();
     renderUserInfo();
     initEventListeners();
+    if (fromOverview) {
+      const checkout = el.checkoutStatus.closest("section");
+      checkout.hidden = true;
+      checkout.parentElement.style.gridTemplateColumns = "minmax(0, 1fr)";
+      document.querySelector(".reception-content h1").textContent = "Check-in tại quầy";
+      el.bookingsList.textContent = "Đang tải lượt đặt…";
+      void loadOverviewCheckin();
+      return;
+    }
     await loadBookingsFromAPI();
   });
 })();

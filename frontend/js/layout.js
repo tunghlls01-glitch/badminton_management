@@ -5,13 +5,20 @@
 //              hoặc  <body data-root="../">  (trang trong thư mục pages/)
 // và hai thẻ rỗng:   <header id="app-header"></header> ... <footer id="app-footer"></footer>
 
-// Thêm trang mới vào menu: thêm 1 dòng vào mảng này (đường dẫn tính từ thư mục frontend/)
+// Danh sách các trang trong toàn bộ dự án
 const MENU = [
-  { href: "index.html", label: "Trang chủ" },
-  { href: "pages/items.html", label: "Items (CRUD mẫu)" },
+  { href: "pages/customer-home.html", label: "Trang chủ KH" },
+  { href: "pages/dashboard.html", label: "Tổng quan" },
+  { href: "pages/courts.html", label: "Quản lý sân" },
+  { href: "pages/booking.html", label: "Quản lý đặt sân" },
+  { href: "pages/court_booking_schedule.html", label: "Lịch đặt sân" },
+  { href: "pages/timeline_grid.html", label: "Lưới đặt sân" },
+  { href: "pages/pricing.html", label: "Bảng giá" },
   { href: "pages/services.html", label: "Dịch vụ & Kho" },
   { href: "pages/pos.html", label: "Bán hàng POS" },
   { href: "pages/reception.html", label: "Nhận sân & Thanh toán" },
+  { href: "pages/admin-users.html", label: "Nhân viên & KH" },
+  { href: "pages/analytics.html", label: "Báo cáo DT" },
 ];
 
 function renderLayout() {

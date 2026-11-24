@@ -36,7 +36,7 @@
             <h1>Quản lý sân cầu lông</h1>
             <p class="courts-subtitle">Quản lý danh sách sân, hình ảnh thực tế và trạng thái hoạt động / bảo trì.</p>
           </div>
-          <button type="button" class="rk-btn rk-primary" id="btnOpenAddDrawer">+ Thêm sân mới</button>
+          <button type="button" class="rk-btn rk-primary" id="btnOpenAddDrawer" disabled>+ Thêm sân mới</button>
         </div>
 
         <section class="courts-card" aria-label="Danh sách sân cầu lông">
@@ -108,19 +108,21 @@
           <select id="courtStatus">
             <option value="Active">Hoạt động</option>
             <option value="Maintenance">Bảo trì</option>
+              <option value="Inactive">Ngưng hoạt động</option>
           </select>
         </div>
 
         <div class="rk-field">
           <label for="courtDescription">Mô tả</label>
-          <textarea id="courtDescription" rows="3" placeholder="Sân tiêu chuẩn, gần khu vực lễ tân. Ánh sáng tốt, thuận tiện di chuyển."></textarea>
+          <textarea id="courtDescription" rows="3" maxlength="255" placeholder="Sân tiêu chuẩn, gần khu vực lễ tân. Ánh sáng tốt, thuận tiện di chuyển."></textarea>
         </div>
 
         <div class="rk-field">
           <label>Hình ảnh sân</label>
           <div class="rk-upload-box">
             <div class="rk-upload-preview-wrap">
-              <img id="previewImg" src="../assets/images/chatNTK.webp" alt="Xem trước ảnh sân" />
+              <img id="previewImg" alt="Xem trước ảnh sân" hidden />
+              <div class="rk-court-photo-placeholder">Chưa có ảnh</div>
               <span>Ảnh xem trước</span>
             </div>
             <div class="rk-upload-info">
@@ -156,6 +158,56 @@
     </div>
   </div>
 
+  <!-- Drawer Khoá sân bảo trì theo thời gian (Task T3D23A6) -->
+  <div class="rk-overlay" id="lockDrawerOverlay">
+    <aside class="rk-drawer" role="dialog" aria-modal="true" aria-labelledby="lockDrawerTitle">
+      <div class="rk-drawer-head">
+        <div>
+          <h2 id="lockDrawerTitle">Khoá sân bảo trì</h2>
+          <p id="lockDrawerSubtitle">Khoá sân theo khoảng thời gian và kiểm tra booking bị ảnh hưởng.</p>
+        </div>
+        <button type="button" class="rk-icon-button" id="btnCloseLockDrawer" aria-label="Đóng">×</button>
+      </div>
+
+      <form id="lockCourtForm" class="rk-drawer-body">
+        <input type="hidden" id="lockCourtId" />
+        <div class="rk-drawer-caption">THIẾT LẬP KHOẢNG THỜI GIAN KHOÁ</div>
+
+        <div class="rk-field">
+          <label for="lockStartAt">Từ thời điểm <span class="req">*</span></label>
+          <input type="datetime-local" id="lockStartAt" required />
+        </div>
+
+        <div class="rk-field">
+          <label for="lockEndAt">Đến thời điểm <span class="req">*</span></label>
+          <input type="datetime-local" id="lockEndAt" required />
+        </div>
+
+        <div class="rk-field">
+          <label for="lockReason">Lý do khoá <span class="req">*</span></label>
+          <input type="text" id="lockReason" required maxlength="255" placeholder="VD: Sửa lưới, tổ chức giải đấu..." />
+        </div>
+
+        <div class="rk-form-error" id="lockFormErrorBox"></div>
+
+        <div id="affectedBookingsBox" class="rk-affected-box" hidden>
+          <div class="rk-affected-title" id="affectedBookingsTitle">Booking bị ảnh hưởng</div>
+          <ul id="affectedBookingsList" class="rk-affected-list"></ul>
+        </div>
+
+        <div class="rk-lock-list-wrap">
+          <div class="rk-drawer-caption" style="margin-top: 8px;">LỊCH KHOÁ ĐANG ÁP DỤNG</div>
+          <div id="courtLocksList" class="rk-lock-list">Đang tải...</div>
+        </div>
+
+        <div class="rk-drawer-foot">
+          <button type="button" class="rk-btn-cancel" id="btnCancelLockDrawer">Đóng</button>
+          <button type="submit" class="rk-btn rk-primary rk-btn-save" id="btnSubmitLockCourt">Xác nhận khoá sân</button>
+        </div>
+      </form>
+    </aside>
+  </div>
+
   <div class="rk-toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
@@ -173,6 +225,7 @@
   <script src="../js/axios.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/t3d2096-config.js"></script>
+  <script src="../js/court-photos.js"></script>
   <script src="../js/authStorage.js"></script>
   <script src="../js/axiosClient.js"></script>
   <script src="../js/auth.js"></script>
@@ -180,5 +233,6 @@
   <script src="../js/t3d2096-ui.js"></script>
   <script src="../js/rk-layout.js"></script>
   <script src="../js/pages/courts.js"></script>
+  <script src="../js/pages/court-lock.js"></script>
 </body>
 </html>

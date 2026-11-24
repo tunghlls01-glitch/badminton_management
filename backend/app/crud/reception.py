@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from app.crud.booking import vietnam_now
 
 from app.models.booking import Booking, BookingStatus
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
@@ -82,7 +83,7 @@ def search_reception_bookings(
 def check_in_booking(db: Session, booking_id: int, now: datetime | None = None) -> Booking:
     """Chuyển booking Confirmed → CHECKED_IN (trong vòng 30 phút trước giờ bắt đầu đến tối đa trễ 15 phút)."""
     booking, start_at = _get_confirmed_booking_with_start(db, booking_id, "check-in")
-    current_time = now or datetime.now()
+    current_time = now or vietnam_now()
 
     earliest_checkin = start_at - timedelta(minutes=CHECKIN_EARLY_MINUTES)
     latest_checkin = start_at + timedelta(minutes=NO_SHOW_GRACE_MINUTES)
@@ -223,16 +224,27 @@ def checkout_booking(
         db.add(invoice)
         db.flush()  # sinh invoice.id
 
-        # 5. Tạo bản ghi Thanh toán (Payment)
-        payment = Payment(
-            booking_id=booking.id,
-            invoice_id=invoice.id,
-            amount=grand_total,
-            payment_method=PaymentMethod(payment_method_str),
-            payment_status=PaymentStatus.SUCCESS,
-            transaction_code=data.transaction_code.strip() if data.transaction_code else None,
+        # Nếu khách đã gửi yêu cầu thanh toán online, cập nhật bản ghi Pending đó
+        # thay vì tạo thêm một Payment trùng cho cùng lần thanh toán.
+        payment = (
+            db.query(Payment)
+            .filter(
+                Payment.booking_id == booking.id,
+                Payment.payment_status == PaymentStatus.PENDING,
+            )
+            .order_by(Payment.id.desc())
+            .with_for_update()
+            .first()
         )
-        db.add(payment)
+        if payment is None:
+            payment = Payment(booking_id=booking.id)
+            db.add(payment)
+        payment.invoice_id = invoice.id
+        payment.amount = grand_total
+        payment.payment_method = PaymentMethod(payment_method_str)
+        payment.payment_status = PaymentStatus.SUCCESS
+        if data.transaction_code and data.transaction_code.strip():
+            payment.transaction_code = data.transaction_code.strip()
 
         # 6. Đổi trạng thái các đơn dịch vụ liên quan -> COMPLETED
         for order in service_orders:

@@ -14,8 +14,19 @@ let currentOrderResult = null;
 
 // Khởi chạy khi DOM sẵn sàng
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!await ProtectedRoute(["admin", "staff"])) {
+    const { error } = RK_AUTH.getState();
+    if (error) document.getElementById("pos-session-state").textContent = error;
+    return;
+  }
+  const { user } = RK_AUTH.getState();
+  RK_LAYOUT.dashboard(user);
+  document.getElementById("user-display-name").textContent = user.full_name;
+  document.getElementById("user-avatar-initial").textContent = user.full_name.trim().charAt(0).toUpperCase();
+  document.getElementById("user-display-role").textContent = user.role === "admin" ? "Quản trị viên CLB" : "Thu ngân / Lễ tân";
+  document.getElementById("pos-session-state").hidden = true;
+  document.querySelector(".pos-main-wrapper").hidden = false;
   initClock();
-  await ensureAuth();
   setupEventListeners();
   await Promise.all([loadServices(), loadBookings()]);
 });
@@ -43,120 +54,9 @@ function initClock() {
   setInterval(tick, 1000);
 }
 
-async function ensureAuth() {
-  let token =
-    localStorage.getItem("token") ||
-    localStorage.getItem("access_token") ||
-    sessionStorage.getItem("access_token");
-
-  // Tự động đồng bộ đăng nhập bằng tài khoản ADMIN của bạn nếu trình duyệt chưa có token
-  if (!token) {
-    try {
-      const baseUrl =
-        typeof CONFIG !== "undefined" && CONFIG.API_BASE_URL
-          ? CONFIG.API_BASE_URL.replace(/\/api$/, "")
-          : "http://127.0.0.1:8000";
-      const loginRes = await axios.post(`${baseUrl}/auth/login`, {
-        account: "quocbaohoang@gmail.com",
-        password: "12345678",
-      });
-      if (loginRes.data && loginRes.data.access_token) {
-        token = loginRes.data.access_token;
-        localStorage.setItem("token", token);
-        localStorage.setItem("access_token", token);
-      }
-    } catch (_) {}
-  }
-
-  const profileBox = document.getElementById("user-profile-box");
-  const guestBox = document.getElementById("guest-profile-box");
-  const nameEl = document.getElementById("user-display-name");
-  const roleEl = document.getElementById("user-display-role");
-  const avatarEl = document.getElementById("user-avatar-initial");
-  const sidebarAuthLink = document.getElementById("sidebar-auth-link");
-  const sidebarAuthText = document.getElementById("sidebar-auth-text");
-  const btnLogoutHeader = document.getElementById("btn-logout-header");
-
-  if (token) {
-    let user = null;
-    const userStr =
-      localStorage.getItem("user") || sessionStorage.getItem("user");
-    if (userStr) {
-      try {
-        user = JSON.parse(userStr);
-      } catch (_) {}
-    }
-
-    // Nếu chưa có user trong storage thì thử gọi /auth/me
-    if (!user) {
-      try {
-        const baseUrl =
-          typeof CONFIG !== "undefined" && CONFIG.API_BASE_URL
-            ? CONFIG.API_BASE_URL.replace(/\/api$/, "")
-            : "http://127.0.0.1:8000";
-        let res;
-        try {
-          res = await axios.get(`${baseUrl}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        } catch (_) {
-          res = await axios.get(`${baseUrl}/api/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        }
-        if (res && res.data) {
-          user = res.data;
-          localStorage.setItem("user", JSON.stringify(user));
-        }
-      } catch (_) {}
-    }
-
-    if (profileBox) profileBox.style.display = "flex";
-    if (guestBox) guestBox.style.display = "none";
-    if (user && user.full_name) {
-      if (nameEl) nameEl.textContent = user.full_name;
-      if (avatarEl)
-        avatarEl.textContent = user.full_name.trim().charAt(0).toUpperCase();
-      const roleStr = String(user.role || "").toLowerCase();
-      const roleName =
-        roleStr === "admin"
-          ? "Quản trị viên CLB"
-          : roleStr === "staff"
-            ? "Thu ngân / Lễ tân"
-            : "Nhân viên";
-      if (roleEl) roleEl.textContent = roleName;
-    }
-
-    if (sidebarAuthText) sidebarAuthText.textContent = "Đăng xuất";
-    if (sidebarAuthLink) {
-      sidebarAuthLink.href = "#";
-      sidebarAuthLink.onclick = (e) => {
-        e.preventDefault();
-        handleLogout();
-      };
-    }
-  } else {
-    if (profileBox) profileBox.style.display = "none";
-    if (guestBox) guestBox.style.display = "flex";
-    if (sidebarAuthText) sidebarAuthText.textContent = "Đăng nhập";
-    if (sidebarAuthLink) {
-      sidebarAuthLink.href = "login.html";
-      sidebarAuthLink.onclick = null;
-    }
-  }
-
-  if (btnLogoutHeader) {
-    btnLogoutHeader.onclick = handleLogout;
-  }
-}
-
-function handleLogout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("user");
-  sessionStorage.removeItem("access_token");
-  sessionStorage.removeItem("user");
-  window.location.href = "login.html";
+function posErrorMessage(error) {
+  const detail = error.response?.data?.detail;
+  return typeof detail === "string" ? detail : RK_UI.message(error);
 }
 
 /* ==========================================================================
@@ -164,7 +64,7 @@ function handleLogout() {
    ========================================================================== */
 async function loadServices() {
   try {
-    const res = await api.get("/services");
+    const { data: res } = await axiosClient.get("/services");
     const rawList = Array.isArray(res) ? res : res.data || [];
     // Chỉ lấy các dịch vụ đang kinh doanh (ACTIVE)
     allServices = rawList.filter((s) => {
@@ -173,7 +73,7 @@ async function loadServices() {
     });
     applyFilterAndRenderGrid();
   } catch (err) {
-    showToast("Không thể tải danh sách dịch vụ: " + err.message, "error");
+    showToast("Không thể tải danh sách dịch vụ: " + posErrorMessage(err), "error");
     document.getElementById("pos-service-grid").innerHTML = `
       <div style="grid-column: 1/-1; text-align:center; padding: 40px; color:#dc2626;">
         ⚠️ Không thể kết nối tới backend. Vui lòng đảm bảo backend đang chạy.
@@ -187,10 +87,10 @@ async function loadBookings() {
   try {
     let list = [];
     try {
-      const res = await api.get("/reception/bookings");
+      const { data: res } = await axiosClient.get("/reception/bookings");
       list = Array.isArray(res) ? res : res.data || [];
     } catch (_) {
-      const res2 = await api.get("/bookings");
+      const { data: res2 } = await axiosClient.get("/bookings");
       list = Array.isArray(res2) ? res2 : res2.data || [];
     }
 
@@ -270,8 +170,12 @@ function renderBookingDropdown() {
         const court = b.court_name || `Sân ${b.court_id || ""}`;
         const code = b.booking_code || `#BK-${b.id}`;
         const name = b.customer_name || b.user_name || "Khách đặt sân";
-        const time = b.time_slot || "";
-        return `<option value="${b.id}">[${court}] ${code} - ${name} (${time})</option>`;
+        const time =
+          b.time_slot ||
+          (b.start_time && b.end_time ? `${b.start_time} - ${b.end_time}` : "") ||
+          (b.slots && b.slots[0] ? `${b.slots[0].start_at.slice(11, 16)} - ${b.slots[0].end_at.slice(11, 16)}` : "");
+        const timeDisplay = time ? ` (${time})` : "";
+        return `<option value="${b.id}">[${court}] ${code} - ${name}${timeDisplay}</option>`;
       })
       .join("");
 }
@@ -296,7 +200,18 @@ function applyFilterAndRenderGrid() {
     // Lọc theo danh mục
     if (currentCategory) {
       const cat = String(s.category || "").toUpperCase();
-      if (!cat.includes(currentCategory)) return false;
+      const target = currentCategory.toUpperCase();
+      if (target === "NUOC" || target === "DO_UONG" || target === "DRINK") {
+        if (!cat.includes("NUOC") && !cat.includes("DO_UONG") && !cat.includes("DRINK")) return false;
+      } else if (target === "ONG_CAU" || target === "SHUTTLECOCK") {
+        if (!cat.includes("ONG_CAU") && !cat.includes("CAU") && !cat.includes("SHUTTLE")) return false;
+      } else if (target === "THUE_VOT" || target === "RACKET_RENTAL") {
+        if (!cat.includes("THUE_VOT") && !cat.includes("VOT") && !cat.includes("RACKET")) return false;
+      } else if (target === "KHAC") {
+        if (!cat.includes("KHAC") && !cat.includes("OTHER") && !cat.includes("ACCESSORY")) return false;
+      } else {
+        if (!cat.includes(target)) return false;
+      }
     }
 
     return true;
@@ -586,7 +501,7 @@ async function submitOrder() {
   btnSubmit.innerHTML = `<span>⏳</span> <span>ĐANG GỬI ORDER...</span>`;
 
   try {
-    const res = await api.post("/service-orders", payload);
+    const { data: res } = await axiosClient.post("/service-orders", payload);
     const orderData = res.data || res;
     currentOrderResult = orderData;
 
@@ -603,7 +518,7 @@ async function submitOrder() {
     // Làm mới danh sách dịch vụ để cập nhật tồn kho vừa trừ
     await loadServices();
   } catch (err) {
-    showToast("Lỗi gửi order: " + err.message, "error");
+    showToast("Lỗi gửi order: " + posErrorMessage(err), "error");
   } finally {
     btnSubmit.disabled = false;
     btnSubmit.innerHTML = `<span>🚀</span> <span>XÁC NHẬN GỬI ORDER</span>`;
@@ -678,7 +593,7 @@ async function openRecentOrdersModal() {
   listContainer.innerHTML = `<div style="text-align:center; padding:30px; color:var(--rk-text-light);">Đang tải danh sách đơn gần đây...</div>`;
 
   try {
-    const res = await api.get("/service-orders?limit=25");
+    const { data: res } = await axiosClient.get("/service-orders?limit=25");
     const orders = Array.isArray(res) ? res : res.data || [];
 
     if (!orders || orders.length === 0) {
@@ -743,7 +658,7 @@ async function openRecentOrdersModal() {
       </div>
     `;
   } catch (err) {
-    listContainer.innerHTML = `<div style="color:#dc2626; padding:20px; text-align:center;">Lỗi tải danh sách: ${err.message}</div>`;
+    listContainer.innerHTML = `<div style="color:#dc2626; padding:20px; text-align:center;">Lỗi tải danh sách: ${RK_UI.escape(posErrorMessage(err))}</div>`;
   }
 }
 
@@ -757,7 +672,7 @@ window.handleCancelOrderFromRecent = async function (orderId) {
   }
 
   try {
-    await api.patch(`/service-orders/${orderId}/cancel`);
+    await axiosClient.patch(`/service-orders/${orderId}/cancel`);
     showToast(
       `Đã hủy đơn #ORD-${orderId} và hoàn kho thành công!`,
       "success",
@@ -765,7 +680,7 @@ window.handleCancelOrderFromRecent = async function (orderId) {
     await openRecentOrdersModal();
     await loadServices(); // cập nhật lại tồn kho
   } catch (err) {
-    showToast("Không thể hủy đơn: " + err.message, "error");
+    showToast("Không thể hủy đơn: " + posErrorMessage(err), "error");
   }
 };
 

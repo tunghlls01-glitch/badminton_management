@@ -530,6 +530,10 @@ $('#createButton').onclick = () => {
 
     if (!name) { notify('Vui lòng nhập tên khách hàng.'); return; }
     if (end <= start) { notify('Giờ kết thúc phải sau giờ bắt đầu.'); return; }
+    if (overviewEntry && (start < '06:00' || end > '23:00' || date + 'T' + start <= overviewTime())) {
+      notify('Chọn giờ trong tương lai, từ 06:00 đến 23:00.');
+      return;
+    }
 
     const submitBtn = $('#btnSubmitCreate');
     submitBtn.disabled = true;
@@ -568,6 +572,10 @@ $('#createButton').onclick = () => {
       await loadBookingsFromBackend();
     } catch (err) {
       console.error('Lỗi khi tạo booking:', err);
+      if (overviewEntry && err.status === 409) {
+        window.location.assign('../dashboard.html?view=dashboard&conflict=1&day=' + encodeURIComponent(date));
+        return;
+      }
       notify(err.message || 'Lỗi khi lưu booking vào cơ sở dữ liệu!');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Tạo booking vào Database';
@@ -603,7 +611,36 @@ $('#notificationButton').onclick = () => {
 };
 
 // ── Khởi động trang ───────────────────────────────────────────────────────
+const overviewParams = new URLSearchParams(window.location.search);
+const overviewEntry = overviewParams.get('source') === 'overview';
+const overviewTime = () => new Intl.DateTimeFormat('sv-SE', {
+  dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh',
+}).format(new Date()).replace(' ', 'T');
 applyUserUI();
-loadCourtsFromBackend().then(() => {
-  loadBookingsFromBackend();
+loadCourtsFromBackend().then(async () => {
+  const day = overviewParams.get('day') || '';
+  $('#dateFilter').value = day;
+  if (overviewParams.get('status') === 'pending') $('#statusFilter').value = 'pending';
+  await loadBookingsFromBackend();
+  const bookingId = Number(overviewParams.get('booking_id'));
+  if (bookingId > 0) {
+    const booking = bookings.find(row => row.dbId === bookingId);
+    if (booking) details(booking.id);
+    else notify('Không tìm thấy lượt đặt.');
+  }
+  if (overviewEntry && overviewParams.get('action') === 'new') {
+    if (!dbCourts.length) {
+      notify('Chưa tải được danh sách sân để đặt.');
+      return;
+    }
+    $('#createButton').click();
+    const from = overviewParams.get('start') || '';
+    const to = overviewParams.get('end') || '';
+    const court = Number(overviewParams.get('court_id'));
+    if (dbCourts.some(row => Number(row.id) === court)) $('#newCourt').value = String(court);
+    if (/^\d{2}:\d{2}$/.test(from)) $('#newStart').value = from;
+    if (/^\d{2}:\d{2}$/.test(to)) $('#newEnd').value = to;
+    $('#newDate').min = overviewTime().slice(0, 10);
+    if ($('#newDate').value < $('#newDate').min) $('#newDate').value = $('#newDate').min;
+  }
 });

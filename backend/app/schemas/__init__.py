@@ -18,6 +18,12 @@ from app.schemas.invoice import (
 )
 from app.schemas.item import ItemCreate, ItemOut, ItemUpdate
 from app.schemas.payment import PaymentCreate, PaymentOut, PaymentUpdate
+from app.schemas.racket_rental import (
+    BookingRentalWarningOut,
+    RacketRentalCreate,
+    RacketRentalOut,
+    RacketRentalReturn,
+)
 from app.schemas.service import (
     ServiceBase,
     ServiceCreate,
@@ -77,4 +83,8 @@ __all__ = [
     "StockAdjustRequest",
     "BookingCheckoutRequest",
     "BookingCheckoutResponse",
+    "RacketRentalCreate",
+    "RacketRentalOut",
+    "RacketRentalReturn",
+    "BookingRentalWarningOut",
 ]

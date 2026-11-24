@@ -38,3 +38,5 @@ class BookingServiceSummary(BaseModel):
     total_service_amount: float
     total_orders: int
     orders: List[ServiceOrderResponse] = []
+    has_unreturned_rackets: bool = False
+    unreturned_rackets_count: int = 0
