@@ -164,6 +164,10 @@ async function restoreHoldSessionFromApi() {
 }
 
 async function initConfirmPage() {
+  document.getElementById("btnReturnToGrid")?.addEventListener("click", () => {
+    redirectToGrid("Phiên giữ chỗ đã hết hạn. Hãy chọn khung giờ lại.");
+  });
+
   const rawSession = sessionStorage.getItem("rk_hold_session");
   if (rawSession) {
     try { holdSession = JSON.parse(rawSession); }
@@ -287,10 +291,6 @@ async function initConfirmPage() {
   document.getElementById("btnBackToGrid").addEventListener("click", () => {
     window.location.href = "./timeline_grid.html";
   });
-  document.getElementById("btnReturnToGrid").addEventListener("click", () => {
-    redirectToGrid("Phiên giữ chỗ đã hết hạn. Hãy chọn khung giờ lại.");
-  });
-
   const submitButton = document.querySelector(".btn-submit-full");
   document.getElementById("confirmBookingForm").addEventListener("submit", async (event) => {
     event.preventDefault();
