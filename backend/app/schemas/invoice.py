@@ -1,5 +1,5 @@
 """Schema cho Invoice (Module 12: Hóa đơn tổng kết & Chốt ca)."""
-from datetime import datetime, date
+from datetime import date as CalendarDate, datetime
 from decimal import Decimal
 from typing import List, Optional, Dict, Any
 
@@ -199,7 +199,7 @@ class ShiftClosingResponse(BaseModel):
 class ShiftCloseRequest(BaseModel):
     """Yêu cầu xác nhận chốt ca đối soát két và ghi chú bàn giao."""
     staff_id: Optional[int] = None
-    date: Optional[date] = None
+    date: Optional[CalendarDate] = None
     shift_type: str = "ALL_DAY"
     start_time: Optional[str] = None
     end_time: Optional[str] = None
