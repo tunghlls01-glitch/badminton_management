@@ -205,6 +205,10 @@ function detail(id) {
     row('Ngày chơi', dateOf(b.date).toLocaleDateString('vi-VN')) +
     row('Khung giờ', b.start + ' – ' + endTime(b)) +
     row('Trạng thái', statusText(b.status)) +
+    (Number(b.discount_amount) > 0
+      ? row('Tiền sân gốc', money(Number(b.subtotal_price || b.total_price) || 0)) +
+        row('Ưu đãi' + (b.discount_code ? ` (${b.discount_code})` : ''), '-' + money(Number(b.discount_amount)))
+      : '') +
     row('Thành tiền', money(Number(b.total_price) || 100000)) +
     (b.customer_name ? row('Khách hàng', b.customer_name + (b.customer_phone ? ` (${b.customer_phone})` : '')) : '') +
     `<p class="form-note">Vui lòng đến trước 15 phút. Đưa mã đặt sân cho nhân viên tại quầy để nhận sân.</p>` +
@@ -818,27 +822,59 @@ async function fetchBookingsFromBackend() {
       const apiBookings = [];
       list.forEach(item => {
         if (item.slots && item.slots.length > 0) {
-          item.slots.forEach(slot => {
-            const startDt = new Date(slot.start_at);
-            const endDt = new Date(slot.end_at);
-            const dateStr = slot.start_at.slice(0, 10);
-            const startStr = slot.start_at.slice(11, 16);
-            let duration = (endDt - startDt) / 3600000;
-            if (isNaN(duration) || duration <= 0) duration = (slot.duration_minutes || 120) / 60;
-            const courtNum = (slot.court_name ? slot.court_name.replace(/\D/g, "") : "") || String(slot.court_id || 1).padStart(2, "0");
+          const sortedSlots = [...item.slots].sort((a, b) =>
+            Number(a.court_id) - Number(b.court_id) || String(a.start_at).localeCompare(String(b.start_at))
+          );
+          const groups = [];
+          for (const slot of sortedSlots) {
+            const startAt = String(slot.start_at || "");
+            const endAt = String(slot.end_at || "");
+            const dateStr = startAt.slice(0, 10);
+            const startStr = startAt.slice(11, 16);
+            const endStr = endAt.slice(11, 16);
+            const startDt = new Date(startAt);
+            const endDt = new Date(endAt);
+            let durationMinutes = Number(slot.duration_minutes) || (endDt - startDt) / 60000;
+            if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) durationMinutes = 30;
+            const previous = groups[groups.length - 1];
 
+            if (
+              previous &&
+              String(previous.court_id) === String(slot.court_id) &&
+              previous.date === dateStr &&
+              previous.end === startStr
+            ) {
+              previous.end = endStr;
+              previous.durationMinutes += durationMinutes;
+              previous.amount += Number(slot.amount) || 0;
+            } else {
+              groups.push({
+                slot_id: slot.id,
+                court_id: slot.court_id,
+                court_name: slot.court_name,
+                date: dateStr,
+                start: startStr,
+                end: endStr,
+                durationMinutes,
+                amount: Number(slot.amount) || 0,
+              });
+            }
+          }
+
+          groups.forEach(group => {
+            const courtNum = (group.court_name ? group.court_name.replace(/\D/g, "") : "") || String(group.court_id || 1).padStart(2, "0");
             apiBookings.push({
               id: item.id,
-              slot_id: slot.id,
+              slot_id: group.slot_id,
               booking_code: item.booking_code,
-              court_id: slot.court_id,
-              court_name: slot.court_name,
+              court_id: group.court_id,
+              court_name: group.court_name,
               court: courtNum.padStart(2, "0"),
-              date: dateStr,
-              start: startStr,
-              duration: duration,
+              date: group.date,
+              start: group.start,
+              duration: group.durationMinutes / 60,
               status: item.status ? item.status.toLowerCase() : 'confirmed',
-              total_price: slot.amount || (item.total_price / item.slots.length),
+              total_price: group.amount || (item.total_price / groups.length),
               customer_name: item.user_name,
               customer_phone: item.user_phone
             });
@@ -863,6 +899,10 @@ async function fetchBookingsFromBackend() {
             start: startStr,
             duration: duration,
             status: item.status ? item.status.toLowerCase() : 'confirmed',
+            subtotal_price: item.subtotal_price,
+            discount_code: item.discount_code,
+            discount_percent: item.discount_percent,
+            discount_amount: item.discount_amount,
             total_price: item.total_price,
             customer_name: item.user_name,
             customer_phone: item.user_phone

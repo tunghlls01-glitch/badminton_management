@@ -46,7 +46,7 @@
         <div class="success-mark" aria-hidden="true"><svg><use href="#check"/></svg></div>
         <div class="eyebrow">HẸN GẶP BẠN TRÊN SÂN</div>
         <h1 id="confirmation-title">Đặt sân thành công!</h1>
-        <p>Lịch chơi của bạn đã được xác nhận.<br>Chuẩn bị vợt và sẵn sàng cho trận đấu tiếp theo nhé.</p>
+        <p id="confirmation-message">Yêu cầu đặt sân đã được gửi.<br>Lễ tân sẽ kiểm tra và xác nhận lịch của bạn.</p>
         <div class="booking-reference">
           <span>Mã đặt sân</span>
           <strong id="reference-code">Đang tải...</strong>
@@ -85,6 +85,7 @@
               </div>
             </div>
           </div>
+          <ul class="confirmation-slot-list" id="confirmation-slot-list" hidden aria-label="Các sân và khung giờ đã chọn"></ul>
 
           <div class="customer"><span>Người đặt</span><strong id="confirmation-customer-name">--</strong></div>
           <div class="customer"><span>Số điện thoại</span><strong id="confirmation-customer-phone">--</strong></div>
@@ -100,8 +101,10 @@
             </svg>
           </div>
           <div class="section-label">CHI PHÍ ĐẶT SÂN</div>
-          <div class="payment-line"><span>Giá sân / giờ</span><span id="confirmation-price-per-hour">--</span></div>
-          <div class="payment-line"><span>Thời lượng</span><span id="confirmation-price-duration">--</span></div>
+          <div class="payment-line"><span>Số khung giờ</span><span id="confirmation-slot-count">--</span></div>
+          <div class="payment-line"><span>Tổng thời lượng sân</span><span id="confirmation-price-duration">--</span></div>
+          <div class="payment-line" id="confirmation-subtotal-row" style="display: none;"><span>Tiền sân tạm tính</span><span id="confirmation-subtotal">--</span></div>
+          <div class="payment-line payment-discount" id="confirmation-discount-row" style="display: none;"><span id="confirmation-discount-label">Ưu đãi</span><span id="confirmation-discount">--</span></div>
           <div class="total">
             <small>Tổng thanh toán</small>
             <strong id="confirmation-total">--</strong>

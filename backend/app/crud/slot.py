@@ -8,7 +8,7 @@ from sqlalchemy import or_, and_
 from app.models.court import Court, CourtStatus
 from app.models.court_block import CourtBlock
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
-from app.models.booking import Booking, BookingStatus
+from app.models.booking import Booking, BookingChannel, BookingStatus
 from app.crud.booking import booking_blocks_slot, generate_booking_code, get_price_per_hour, vietnam_now
 
 from app.schemas.slot import (
@@ -52,7 +52,11 @@ def is_slot_free(db: Session, court_id: int, start_at: datetime, end_at: datetim
     return True
 
 
-def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
+def get_slot_grid_by_date(
+    db: Session,
+    query_date: date,
+    slot_minutes: int = 60,
+) -> List[CourtSlotGrid]:
     """
     Quét ma trận slot theo ngày chuẩn xác theo Model.
     """
@@ -60,9 +64,11 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
     courts = db.query(Court).all()
     result = []
 
-    open_hour = 6
-    close_hour = 23
-    slot_duration = 1
+    if slot_minutes not in (30, 60):
+        raise ValueError("slot_minutes chỉ hỗ trợ 30 hoặc 60 phút")
+
+    open_minutes = 6 * 60
+    close_minutes = 23 * 60
 
     for court in courts:
         slots = []
@@ -70,9 +76,16 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
         # Kiểm tra xem sân có đang ở trạng thái Bảo trì/Ngưng hoạt động không
         is_maintenance = (court.status == CourtStatus.Maintenance or court.status == CourtStatus.Inactive)
 
-        for hour in range(open_hour, close_hour, slot_duration):
-            start_dt = datetime.combine(query_date, time(hour, 0))
-            end_dt = datetime.combine(query_date, time(hour + slot_duration, 0))
+        for minute_of_day in range(open_minutes, close_minutes, slot_minutes):
+            start_time = time(minute_of_day // 60, minute_of_day % 60)
+            end_minute_of_day = minute_of_day + slot_minutes
+            end_time = time(end_minute_of_day // 60, end_minute_of_day % 60)
+            start_dt = datetime.combine(query_date, start_time)
+            end_dt = datetime.combine(query_date, end_time)
+            price_per_hour = get_price_per_hour(db, court.id, query_date, start_time)
+            cell_price = (
+                price_per_hour * Decimal(slot_minutes) / Decimal(60)
+            ).quantize(Decimal("0.01"))
             
             # 1. Trường hợp Sân ngưng hoạt động / bảo trì toàn thời gian
             if is_maintenance:
@@ -82,7 +95,7 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
                     start_at=start_dt,
                     end_at=end_dt,
                     status=SlotDisplayStatus.LOCKED,
-                    price=50000,
+                    price=cell_price,
                     lock_reason="Sân đang bảo trì/ngừng hoạt động"
                 ))
                 continue
@@ -101,7 +114,7 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
                     start_at=start_dt,
                     end_at=end_dt,
                     status=SlotDisplayStatus.LOCKED,
-                    price=50000,
+                    price=cell_price,
                     lock_reason=lock.reason or "Bảo trì khung giờ"
                 ))
                 continue
@@ -132,7 +145,11 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
                     start_at=start_dt,
                     end_at=end_dt,
                     status=status_display,
-                    price=slot_record.amount or 50000,
+                    price=(
+                        (slot_record.price_per_hour * Decimal(slot_minutes) / Decimal(60)).quantize(Decimal("0.01"))
+                        if slot_minutes == 30
+                        else slot_record.amount or cell_price
+                    ),
                     booking_id=booking.id,
                     hold_expires_at=getattr(booking, 'hold_expires_at', None)
                 ))
@@ -144,7 +161,7 @@ def get_slot_grid_by_date(db: Session, query_date: date) -> List[CourtSlotGrid]:
                     start_at=start_dt,
                     end_at=end_dt,
                     status=SlotDisplayStatus.FREE,
-                    price=get_price_per_hour(db, court.id, query_date, start_dt.time())
+                    price=cell_price
                 ))
 
         result.append(CourtSlotGrid(
@@ -172,6 +189,14 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
     hold_expires_at = now + timedelta(minutes=10)
     cancelled_status = _get_cancelled_booking_status()
     user_col = _get_user_column()
+    slots_by_court: dict[int, list] = {}
+    for item in payload.slots:
+        if item.court_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Mỗi khung giờ cần có sân tương ứng.",
+            )
+        slots_by_court.setdefault(item.court_id, []).append(item)
 
     try:
         if any(item.start_at <= now for item in payload.slots):
@@ -180,76 +205,75 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
                 detail="Không thể giữ khung giờ đã bắt đầu hoặc đã qua.",
             )
 
-        court = db.query(Court).filter(Court.id == payload.court_id).first()
-        if not court:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy sân")
+        for court_id, court_slots in slots_by_court.items():
+            court = db.query(Court).filter(Court.id == court_id).first()
+            if not court:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Không tìm thấy sân id={court_id}")
 
-        if court.status in (CourtStatus.Maintenance, CourtStatus.Inactive):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Sân đang bảo trì hoặc ngưng hoạt động",
-            )
-
-        # 1. Khóa kiểm tra lịch bảo trì sân (CourtBlock)
-        block_conditions = [
-            and_(CourtBlock.start_at < item.end_at, CourtBlock.end_at > item.start_at)
-            for item in payload.slots
-        ]
-        has_lock = (
-            db.query(CourtBlock)
-            .filter(CourtBlock.court_id == payload.court_id, or_(*block_conditions))
-            .with_for_update()
-            .first()
-        )
-        if has_lock:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Khung giờ này đang bị khóa bảo trì.",
-            )
-
-        # 2. Khóa các BookingSlot trùng khung giờ trong transaction (2 người đặt cùng lúc chỉ 1 người thành công)
-        overlap_conditions = [
-            and_(BookingSlot.start_at < item.end_at, BookingSlot.end_at > item.start_at)
-            for item in payload.slots
-        ]
-        existing_slots = (
-            db.query(BookingSlot)
-            .join(Booking, BookingSlot.booking_id == Booking.id)
-            .filter(
-                BookingSlot.court_id == payload.court_id,
-                BookingSlot.status == BookingSlotStatus.Active,
-                or_(*overlap_conditions),
-            )
-            .with_for_update()
-            .all()
-        )
-
-        for slot in existing_slots:
-            booking = slot.booking
-            is_booked = booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN) or (
-                booking.status == BookingStatus.Pending and booking.hold_expires_at is None
-            )
-            is_holding = (
-                booking.status == BookingStatus.Pending
-                and getattr(booking, "hold_expires_at", None) is not None
-                and booking.hold_expires_at > now
-            )
-
-            if is_booked or is_holding:
+            if court.status in (CourtStatus.Maintenance, CourtStatus.Inactive):
                 raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Khung giờ {slot.start_at.strftime('%H:%M')} - {slot.end_at.strftime('%H:%M')} đã có người đặt hoặc đang được giữ.",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Sân {court.name} đang bảo trì hoặc ngưng hoạt động.",
                 )
 
-            # Đơn Pending đã hết hạn 10 phút -> tự coi là trống & đánh dấu hủy đơn cũ
-            if booking.status == BookingStatus.Pending:
-                booking.status = cancelled_status
-                slot.status = BookingSlotStatus.Cancelled
+            block_conditions = [
+                and_(CourtBlock.start_at < item.end_at, CourtBlock.end_at > item.start_at)
+                for item in court_slots
+            ]
+            has_lock = (
+                db.query(CourtBlock)
+                .filter(CourtBlock.court_id == court_id, or_(*block_conditions))
+                .with_for_update()
+                .first()
+            )
+            if has_lock:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Có khung giờ tại {court.name} đang bị khóa bảo trì.",
+                )
+
+            overlap_conditions = [
+                and_(BookingSlot.start_at < item.end_at, BookingSlot.end_at > item.start_at)
+                for item in court_slots
+            ]
+            existing_slots = (
+                db.query(BookingSlot)
+                .join(Booking, BookingSlot.booking_id == Booking.id)
+                .filter(
+                    BookingSlot.court_id == court_id,
+                    BookingSlot.status == BookingSlotStatus.Active,
+                    or_(*overlap_conditions),
+                )
+                .with_for_update()
+                .all()
+            )
+
+            for slot in existing_slots:
+                booking = slot.booking
+                is_booked = booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN) or (
+                    booking.status == BookingStatus.Pending and booking.hold_expires_at is None
+                )
+                is_holding = (
+                    booking.status == BookingStatus.Pending
+                    and booking.hold_expires_at is not None
+                    and booking.hold_expires_at > now
+                )
+
+                if is_booked or is_holding:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Khung giờ {slot.start_at.strftime('%H:%M')} - {slot.end_at.strftime('%H:%M')} tại {court.name} đã có người đặt hoặc đang được giữ.",
+                    )
+
+                if booking.status == BookingStatus.Pending:
+                    booking.status = cancelled_status
+                    slot.status = BookingSlotStatus.Cancelled
 
         # 3. Tạo bản ghi Booking ở trạng thái Pending giữ chỗ 10 phút
         booking_kwargs = {
             user_col.key: payload.user_id,
             "booking_code": generate_booking_code(),
+            "booking_channel": BookingChannel.Online,
             "status": BookingStatus.Pending,
             "hold_expires_at": hold_expires_at,
         }
@@ -264,14 +288,14 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
         for item in payload.slots:
             duration = int((item.end_at - item.start_at).total_seconds() // 60)
             price_per_hour = get_price_per_hour(
-                db, payload.court_id, item.start_at.date(), item.start_at.time()
+                db, item.court_id, item.start_at.date(), item.start_at.time()
             )
             amount = (Decimal(duration) / Decimal(60)) * price_per_hour
             total_amount += amount
 
             new_slot = BookingSlot(
                 booking_id=new_booking.id,
-                court_id=payload.court_id,
+                court_id=item.court_id,
                 start_at=item.start_at,
                 end_at=item.end_at,
                 duration_minutes=duration,
@@ -289,7 +313,8 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
         db.commit()
         return SlotHoldResponse(
             booking_id=new_booking.id,
-            court_id=payload.court_id,
+            court_id=next(iter(slots_by_court)),
+            court_ids=list(slots_by_court),
             held_slot_ids=held_slot_ids,
             hold_expires_at=hold_expires_at,
             message="Giữ chỗ thành công trong 10 phút",
@@ -334,11 +359,22 @@ def release_slots(db: Session, payload: SlotReleaseRequest) -> dict:
             return {"released_count": released_count, "message": "Đã nhả toàn bộ slot đang giữ"}
 
         # Bỏ chọn bớt 1 vài slot cụ thể
-        target_ranges = {(s.start_at, s.end_at) for s in payload.slots}
+        target_ranges = {
+            (s.court_id, s.start_at, s.end_at)
+            for s in payload.slots
+            if s.court_id is not None
+        }
+        legacy_ranges = {
+            (s.start_at, s.end_at)
+            for s in payload.slots
+            if s.court_id is None
+        }
         released_count = 0
 
         for slot in list(booking.booking_slots):
-            if (slot.start_at, slot.end_at) in target_ranges:
+            matches_range = (slot.court_id, slot.start_at, slot.end_at) in target_ranges
+            matches_legacy_range = (slot.start_at, slot.end_at) in legacy_ranges
+            if matches_range or matches_legacy_range:
                 db.delete(slot)
                 released_count += 1
 
