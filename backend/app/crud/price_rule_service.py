@@ -28,7 +28,8 @@ def _format_rule_response(rule: PriceRule) -> dict:
     return {
         "id": rule.id,
         "court_id": rule.court_id,
-        "day_of_week": DAY_INT_TO_STR.get(rule.day_of_week, "WEEKDAY"),
+        "day_of_week": "WEEKEND" if rule.day_of_week >= 5 else "WEEKDAY",
+        "weekday_index": rule.day_of_week,
         "start_time": rule.start_time,
         "end_time": rule.end_time,
         "hourly_rate": float(rule.price_per_hour),
@@ -102,7 +103,9 @@ def create_price_rule(db: Session, data: PriceRuleCreate) -> dict:
     if not court:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy sân id={data.court_id}")
 
-    day_int = _normalize_day_to_int(data.day_of_week)
+    day_int = data.weekday_index
+    if day_int is None:
+        day_int = _normalize_day_to_int(data.day_of_week)
     _check_time_overlap(db, data.court_id, day_int, data.start_time, data.end_time)
 
     new_rule = PriceRule(
@@ -128,8 +131,10 @@ def update_price_rule(db: Session, rule_id: int, data: PriceRuleUpdate) -> dict:
         if "day_of_week" in update_dict and update_dict["day_of_week"] is not None
         else rule.day_of_week
     )
-    new_start = update_dict.get("start_time", rule.start_time)
-    new_end = update_dict.get("end_time", rule.end_time)
+    if data.weekday_index is not None:
+        new_day_int = data.weekday_index
+    new_start = update_dict.get("start_time") or rule.start_time
+    new_end = update_dict.get("end_time") or rule.end_time
 
     if new_start >= new_end:
         raise HTTPException(status_code=400, detail="Giờ bắt đầu phải nhỏ hơn giờ kết thúc!")
@@ -167,8 +172,8 @@ def tinh_tien(
     if gio_bat_dau >= gio_ket_thuc:
         raise HTTPException(status_code=400, detail="Giờ bắt đầu phải nhỏ hơn giờ kết thúc!")
 
-    day_int = 1 if ngay.weekday() >= 5 else 0
-    day_label = DAY_INT_TO_STR[day_int]
+    day_int = ngay.weekday()
+    day_label = "WEEKEND" if day_int >= 5 else "WEEKDAY"
 
     rules = (
         db.query(PriceRule)

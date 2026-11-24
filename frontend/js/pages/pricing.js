@@ -1,252 +1,147 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const STORAGE_KEY = "rk_pricing_rules_v1";
-  const DEFAULT_RULES = [
-    { id: 1, name: "Giờ vàng buổi sáng", day_type: "WEEKDAY", start_time: "06:00", end_time: "11:00", price: 120000, status: "Active" },
-    { id: 2, name: "Giờ tiêu chuẩn trưa", day_type: "WEEKDAY", start_time: "11:00", end_time: "17:00", price: 90000, status: "Active" },
-    { id: 3, name: "Giờ cao điểm tối", day_type: "WEEKDAY", start_time: "17:00", end_time: "22:00", price: 180000, status: "Active" },
-    { id: 4, name: "Cuối tuần trọn gói", day_type: "WEEKEND", start_time: "06:00", end_time: "22:00", price: 150000, status: "Active" }
-  ];
+document.addEventListener("DOMContentLoaded", async () => {
+  const $ = (id) => document.getElementById(id);
+  const api = window.axiosClient;
+  const { escape: h, message } = window.RK_UI;
+  const formatPrice = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
+  const days = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
+  const table = $("pricingTableBody");
+  const form = $("pricingForm");
+  const courtSelect = $("pricingCourt");
+  const drawer = $("pricingDrawer");
+  const preview = $("previewModal");
+  const save = $("btnSaveRule");
+  const add = $("btnOpenAddRule");
+  const previewButton = $("btnPreviewPrice");
+  const error = $("formErrorBox");
+  let courts = [];
+  let rules = [];
+  let busy = false;
 
-  let pricingRules = [];
+  function courtName(id) {
+    return courts.find((court) => court.id === id)?.name || "Sân " + id;
+  }
 
-  const tableBody = document.getElementById("pricingTableBody");
-  const overlapAlert = document.getElementById("overlapAlert");
-  const drawerOverlay = document.getElementById("pricingDrawer");
-  const btnOpenAddRule = document.getElementById("btnOpenAddRule");
-  const btnCloseDrawer = document.getElementById("btnCloseDrawer");
-  const btnCancelDrawer = document.getElementById("btnCancelDrawer");
-  const pricingForm = document.getElementById("pricingForm");
-  const drawerTitle = document.getElementById("drawerTitle");
-  const ruleIdInput = document.getElementById("ruleId");
-  const ruleNameInput = document.getElementById("ruleName");
-  const dayTypeSelect = document.getElementById("dayType");
-  const startTimeInput = document.getElementById("startTime");
-  const endTimeInput = document.getElementById("endTime");
-  const priceValueInput = document.getElementById("priceValue");
-  const formErrorBox = document.getElementById("formErrorBox");
+  function timeRange(rule) {
+    return rule.start_time.slice(0, 5) + " – " + rule.end_time.slice(0, 5);
+  }
 
-  // Preview elements
-  const btnPreviewPrice = document.getElementById("btnPreviewPrice");
-  const previewModal = document.getElementById("previewModal");
-  const btnClosePreview = document.getElementById("btnClosePreview");
-  const btnRunPreview = document.getElementById("btnRunPreview");
-  const previewDateInput = document.getElementById("previewDate");
-  const previewResult = document.getElementById("previewResult");
+  function render() {
+    table.innerHTML = rules.length ? rules.map((rule) => `
+      <tr>
+        <td><strong>${h(courtName(rule.court_id))}</strong><div>${h(timeRange(rule))}</div></td>
+        <td><span class="rk-badge rk-secondary">${h(days[rule.weekday_index])}</span></td>
+        <td class="text-right">${h(formatPrice.format(rule.hourly_rate))}</td>
+        <td><span class="rk-badge is-active">Áp dụng</span></td>
+        <td class="text-right">
+          ${canEdit ? `<button type="button" class="btn-pricing-action" data-edit="${rule.id}">Sửa</button>
+          <button type="button" class="btn-pricing-action to-delete" data-delete="${rule.id}">Xóa</button>` : "—"}
+        </td>
+      </tr>`).join("") : '<tr><td colspan="5" class="pricing-state-cell">Chưa có quy tắc giá nào.</td></tr>';
+  }
 
-  function savePricingRules() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(pricingRules));
-    } catch (err) {
-      console.error("Không thể lưu bảng giá vào localStorage:", err);
+  function open(rule) {
+    form.reset();
+    $("drawerTitle").textContent = rule ? "Chỉnh sửa quy tắc giá" : "Thêm quy tắc giá mới";
+    $("ruleId").value = rule?.id ?? "";
+    courtSelect.disabled = Boolean(rule);
+    if (rule) {
+      courtSelect.value = rule.court_id;
+      $("dayType").value = rule.weekday_index;
+      $("startTime").value = rule.start_time.slice(0, 5);
+      $("endTime").value = rule.end_time.slice(0, 5);
+      $("priceValue").value = rule.hourly_rate;
     }
+    error.style.display = "none";
+    drawer.classList.add("open");
   }
 
-  function loadStoredRules() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : null;
-    } catch {
-      return null;
-    }
+  function notifyChange() {
+    try { localStorage.setItem("rk:pricing-updated", String(Date.now())); } catch {}
   }
 
-  function fetchPricingRules() {
-    try {
-      tableBody.innerHTML = `<tr><td colspan="5" class="pricing-state-cell">Đang tải quy tắc giá...</td></tr>`;
-
-      const stored = loadStoredRules();
-      if (stored && stored.length > 0) {
-        pricingRules = stored;
-      } else {
-        pricingRules = DEFAULT_RULES.map((r) => ({ ...r }));
-        savePricingRules();
-      }
-
-      checkTimeOverlaps();
-      renderTable();
-    } catch (err) {
-      console.error("Lỗi tải bảng giá:", err);
-      tableBody.innerHTML = `<tr><td colspan="5" class="pricing-state-cell" style="color: #b91c1c;">Không thể tải dữ liệu bảng giá.</td></tr>`;
-    }
-  }
-
-  function checkTimeOverlaps() {
-    let hasOverlap = false;
-    for (let i = 0; i < pricingRules.length; i++) {
-      for (let j = i + 1; j < pricingRules.length; j++) {
-        const r1 = pricingRules[i];
-        const r2 = pricingRules[j];
-
-        if (r1.day_type === r2.day_type || r1.day_type === "ALL" || r2.day_type === "ALL") {
-          if (r1.start_time < r2.end_time && r2.start_time < r1.end_time) {
-            hasOverlap = true;
-            break;
-          }
-        }
-      }
-      if (hasOverlap) break;
-    }
-
-    if (overlapAlert) {
-      overlapAlert.style.display = hasOverlap ? "flex" : "none";
-    }
-  }
-
-  function renderTable() {
-    if (pricingRules.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="5" class="pricing-state-cell">Chưa có quy tắc giá nào được thiết lập.</td></tr>`;
-      return;
-    }
-
-    tableBody.innerHTML = pricingRules.map(rule => {
-      const dayLabel = rule.day_type === "WEEKDAY" ? "Ngày thường" : rule.day_type === "WEEKEND" ? "Cuối tuần" : "Tất cả các ngày";
-      const formattedPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(rule.price);
-
-      return `
-        <tr>
-          <td>
-            <strong style="color: #111827; font-size: 13.5px;">${rule.name}</strong>
-            <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">Khung giờ: ${rule.start_time} - ${rule.end_time}</div>
-          </td>
-          <td><span class="rk-badge rk-secondary">${dayLabel}</span></td>
-          <td class="text-right" style="font-weight: 700; color: #b91c1c; font-size: 14px;">${formattedPrice}</td>
-          <td>
-            <span class="rk-badge is-active">
-              <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; margin-right: 4px;"></span>Áp dụng
-            </span>
-          </td>
-          <td class="text-right">
-            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-              <button type="button" class="btn-pricing-action" onclick="window.editRule(${rule.id})">Sửa</button>
-              <button type="button" class="btn-pricing-action to-delete" onclick="window.deleteRule(${rule.id})">Xóa</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join("");
-  }
-
-  if (btnOpenAddRule) {
-    btnOpenAddRule.addEventListener("click", () => {
-      drawerTitle.textContent = "Thêm quy tắc giá mới";
-      ruleIdInput.value = "";
-      pricingForm.reset();
-      formErrorBox.style.display = "none";
-      drawerOverlay.classList.add("open");
-    });
-  }
-
-  const closeDrawer = () => drawerOverlay.classList.remove("open");
-  if (btnCloseDrawer) btnCloseDrawer.addEventListener("click", closeDrawer);
-  if (btnCancelDrawer) btnCancelDrawer.addEventListener("click", closeDrawer);
-
-  if (pricingForm) {
-    pricingForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const sTime = startTimeInput.value;
-      const eTime = endTimeInput.value;
-
-      if (sTime >= eTime) {
-        formErrorBox.textContent = "Thời gian kết thúc phải lớn hơn thời gian bắt đầu.";
-        formErrorBox.style.display = "block";
-        return;
-      }
-
-      const existingRule = ruleIdInput.value
-        ? pricingRules.find(r => r.id === Number(ruleIdInput.value))
-        : null;
-
-      const newRule = {
-        id: ruleIdInput.value ? Number(ruleIdInput.value) : Date.now(),
-        name: ruleNameInput.value.trim(),
-        day_type: dayTypeSelect.value,
-        start_time: sTime,
-        end_time: eTime,
-        price: Number(priceValueInput.value),
-        status: existingRule?.status || "Active"
-      };
-
-      if (ruleIdInput.value) {
-        const idx = pricingRules.findIndex(r => r.id === newRule.id);
-        if (idx !== -1) pricingRules[idx] = newRule;
-      } else {
-        pricingRules.push(newRule);
-      }
-
-      savePricingRules();
-      closeDrawer();
-      checkTimeOverlaps();
-      renderTable();
-    });
-  }
-
-  window.editRule = (id) => {
-    const rule = pricingRules.find(r => r.id === id);
+  const close = () => drawer.classList.remove("open");
+  $("btnCloseDrawer").onclick = $("btnCancelDrawer").onclick = close;
+  add.disabled = previewButton.disabled = true;
+  if (!await window.ProtectedRoute(["admin", "staff"])) return;
+  const canEdit = window.RK_AUTH.getState().user.role === "admin";
+  add.hidden = !canEdit;
+  add.onclick = () => open();
+  table.addEventListener("click", async (event) => {
+    const control = event.target.closest("button[data-edit], button[data-delete]");
+    if (!canEdit || !control || busy) return;
+    const rule = rules.find((item) => item.id === Number(control.dataset.edit || control.dataset.delete));
     if (!rule) return;
-
-    drawerTitle.textContent = "Chỉnh sửa quy tắc giá";
-    ruleIdInput.value = rule.id;
-    ruleNameInput.value = rule.name;
-    dayTypeSelect.value = rule.day_type;
-    startTimeInput.value = rule.start_time;
-    endTimeInput.value = rule.end_time;
-    priceValueInput.value = rule.price;
-    formErrorBox.style.display = "none";
-    drawerOverlay.classList.add("open");
-  };
-
-  window.deleteRule = (id) => {
-    if (confirm("Bạn có chắc chắn muốn xóa quy tắc giá này?")) {
-      pricingRules = pricingRules.filter(r => r.id !== id);
-      savePricingRules();
-      checkTimeOverlaps();
-      renderTable();
+    if (control.dataset.edit) { open(rule); return; }
+    if (!confirm("Bạn có chắc muốn xóa quy tắc giá này?")) return;
+    busy = true;
+    control.disabled = true;
+    try {
+      await api.delete("/price-rules/" + rule.id);
+      rules = rules.filter((item) => item.id !== rule.id);
+      notifyChange();
+      render();
+    } catch (err) {
+      alert(message(err));
+    } finally {
+      busy = false;
+      control.disabled = false;
     }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!canEdit || busy) return;
+    const id = $("ruleId").value;
+    const payload = {
+      weekday_index: Number($("dayType").value),
+      start_time: $("startTime").value,
+      end_time: $("endTime").value,
+      hourly_rate: Number($("priceValue").value),
+    };
+    error.style.display = "none";
+    busy = save.disabled = true;
+    try {
+      const { data } = id
+        ? await api.put("/price-rules/" + id, payload)
+        : await api.post("/price-rules", { ...payload, court_id: Number(courtSelect.value) });
+      rules = rules.filter((item) => item.id !== data.id).concat(data);
+      rules.sort((a, b) => a.court_id - b.court_id || a.weekday_index - b.weekday_index || a.start_time.localeCompare(b.start_time));
+      notifyChange();
+      render();
+      close();
+    } catch (err) {
+      error.textContent = message(err);
+      error.style.display = "block";
+    } finally {
+      busy = save.disabled = false;
+    }
+  });
+
+  previewButton.onclick = () => {
+    $("previewDate").value = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+    $("previewResult").textContent = "";
+    preview.classList.add("open");
+  };
+  $("btnClosePreview").onclick = () => preview.classList.remove("open");
+  $("btnRunPreview").onclick = () => {
+    const date = $("previewDate").value;
+    if (!date) return;
+    const day = (new Date(date + "T12:00:00Z").getUTCDay() + 6) % 7;
+    const rows = rules.filter((rule) => rule.weekday_index === day);
+    $("previewResult").innerHTML = rows.length ? '<ul>' + rows.map((rule) =>
+      `<li>${h(courtName(rule.court_id))} · ${h(timeRange(rule))} · ${h(formatPrice.format(rule.hourly_rate))}/giờ</li>`
+    ).join("") + '</ul>' : "Ngày này chưa có quy tắc giá.";
   };
 
-  if (btnPreviewPrice) {
-    btnPreviewPrice.addEventListener("click", () => {
-      previewDateInput.value = new Date().toISOString().split('T')[0];
-      previewResult.textContent = "Nhấn 'Kiểm tra ngay' để mô phỏng bảng giá cho ngày đã chọn.";
-      previewModal.classList.add("open");
-    });
+  try {
+    const [courtResponse, ruleResponse] = await Promise.all([api.get("/courts"), api.get("/price-rules")]);
+    courts = courtResponse.data;
+    rules = ruleResponse.data;
+    courtSelect.replaceChildren(...courts.map((court) => new Option(court.name, court.id)));
+    render();
+    add.disabled = !courts.length;
+    previewButton.disabled = false;
+  } catch (err) {
+    table.innerHTML = `<tr><td colspan="5" class="pricing-state-cell">${h(message(err))}</td></tr>`;
   }
-
-  if (btnClosePreview) {
-    btnClosePreview.addEventListener("click", () => previewModal.classList.remove("open"));
-  }
-
-  if (btnRunPreview) {
-    btnRunPreview.addEventListener("click", () => {
-      const selectedDateStr = previewDateInput.value;
-      if (!selectedDateStr) return;
-
-      const dateObj = new Date(selectedDateStr);
-      const dayOfWeek = dateObj.getDay();
-      const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-
-      const applicableRules = pricingRules.filter(r => {
-        if (r.day_type === "ALL") return true;
-        if (isWeekend && r.day_type === "WEEKEND") return true;
-        if (!isWeekend && r.day_type === "WEEKDAY") return true;
-        return false;
-      });
-
-      if (applicableRules.length === 0) {
-        previewResult.innerHTML = `<strong>Ngày ${selectedDateStr} (${isWeekend ? 'Cuối tuần' : 'Ngày thường'}):</strong> Không có quy tắc giá nào áp dụng.`;
-      } else {
-        let html = `<strong>Ngày ${selectedDateStr} (${isWeekend ? 'Cuối tuần' : 'Ngày thường'}):</strong><ul style="margin: 6px 0 0 16px; padding: 0;">`;
-        applicableRules.forEach(r => {
-          const formattedPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(r.price);
-          html += `<li><b>${r.name}</b> (${r.start_time} - ${r.end_time}): <span style="color:#b91c1c; font-weight:bold;">${formattedPrice}/h</span></li>`;
-        });
-        html += `</ul>`;
-        previewResult.innerHTML = html;
-      }
-    });
-  }
-
-  fetchPricingRules();
 });

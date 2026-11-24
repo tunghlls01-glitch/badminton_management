@@ -50,17 +50,14 @@
         </div>
 
         <!-- Cảnh báo xung đột khung giờ -->
-        <div id="overlapAlert" class="rk-alert-error" style="display: none;" role="alert">
-          <span>⚠️</span> <strong>Cảnh báo xung đột!</strong> Phát hiện khung giờ bị chồng chéo giữa các quy tắc giá. Vui lòng điều chỉnh lại thời gian.
-        </div>
 
         <section class="pricing-card" aria-label="Danh sách quy tắc giá">
           <div class="pricing-table-wrap">
             <table class="pricing-table">
               <thead>
                 <tr>
-                  <th>TÊN QUY TẮC / KHUNG GIỜ</th>
-                  <th>LOẠI NGÀY</th>
+                  <th>SÂN / KHUNG GIỜ</th>
+                  <th>NGÀY ÁP DỤNG</th>
                   <th class="text-right">ĐƠN GIÁ (VNĐ/GIỜ)</th>
                   <th>TRẠNG THÁI</th>
                   <th class="text-right">THAO TÁC</th>
@@ -94,16 +91,20 @@
         <div class="rk-drawer-caption">THÔNG TIN QUY TẮC GIÁ</div>
 
         <div class="rk-field">
-          <label for="ruleName">Tên quy tắc <span class="req">*</span></label>
-          <input type="text" id="ruleName" required placeholder="VD: Giờ cao điểm chiều" />
+          <label for="pricingCourt">Sân <span class="req">*</span></label>
+          <select id="pricingCourt" required></select>
         </div>
 
         <div class="rk-field">
-          <label for="dayType">Loại ngày <span class="req">*</span></label>
+          <label for="dayType">Ngày áp dụng <span class="req">*</span></label>
           <select id="dayType">
-            <option value="WEEKDAY">Ngày thường (Thứ 2 - Thứ 6)</option>
-            <option value="WEEKEND">Cuối tuần (Thứ 7 & Chủ nhật)</option>
-            <option value="ALL">Tất cả các ngày</option>
+            <option value="0">Thứ 2</option>
+            <option value="1">Thứ 3</option>
+            <option value="2">Thứ 4</option>
+            <option value="3">Thứ 5</option>
+            <option value="4">Thứ 6</option>
+            <option value="5">Thứ 7</option>
+            <option value="6">Chủ nhật</option>
           </select>
         </div>
 
@@ -120,7 +121,7 @@
 
         <div class="rk-field">
           <label for="priceValue">Đơn giá (VNĐ/giờ) <span class="req">*</span></label>
-          <input type="number" id="priceValue" min="0" step="1000" required placeholder="VD: 150000" />
+          <input type="number" id="priceValue" min="0.01" step="0.01" required placeholder="VD: 150000" />
         </div>
 
         <div class="rk-form-error" id="formErrorBox"></div>
