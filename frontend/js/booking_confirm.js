@@ -335,8 +335,9 @@ async function initConfirmPage() {
         { type: "success", duration: 7000 },
       );
       window.setTimeout(() => {
-        window.location.href = "./booking.html";
-      }, 2600);
+        const bookingTargetId = result.booking?.id || holdSession.holdId || "";
+        window.location.href = `./booking_notification.html?booking=${encodeURIComponent(bookingTargetId)}`;
+      }, 2000);
     } catch (error) {
       if (error.status === 410) {
         await expireCurrentHold();
