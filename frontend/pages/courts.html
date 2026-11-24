@@ -210,21 +210,31 @@
 
   <div class="rk-toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script>
-    window.RK_TASK_CONFIG = Object.assign({}, window.RK_TASK_CONFIG, {
-      dashboardLinks: Object.assign(
-        {},
-        (window.RK_TASK_CONFIG && window.RK_TASK_CONFIG.dashboardLinks) || {},
-        {
-          "admin.courts": "../pages/courts.html",
-          "staff.courts": "../pages/courts.html"
-        }
-      )
-    });
-  </script>
   <script src="../js/axios.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/t3d2096-config.js"></script>
+  <script>
+    window.RK_CONFIG = window.RK_CONFIG || {};
+    window.RK_CONFIG.dashboardLinks = Object.assign(
+      {
+        "admin.dashboard": "../pages/dashboard.html",
+        "admin.courts": "../pages/courts.html",
+        "admin.bookings": "../pages/booking.html",
+        "admin.pricing": "../pages/pricing.html",
+        "admin.services": "../pages/services.html",
+        "admin.pos": "../pages/pos.html",
+        "admin.users": "../pages/admin-users.html",
+        "admin.revenue": "../pages/analytics.html",
+        "admin.check-in": "../pages/reception.html",
+        "staff.courts": "../pages/courts.html",
+        "staff.bookings": "../pages/booking.html",
+        "staff.pos": "../pages/pos.html",
+        "staff.check-in": "../pages/reception.html",
+        "staff.services": "../pages/services.html"
+      },
+      window.RK_CONFIG.dashboardLinks || {}
+    );
+  </script>
   <script src="../js/court-photos.js"></script>
   <script src="../js/authStorage.js"></script>
   <script src="../js/axiosClient.js"></script>
