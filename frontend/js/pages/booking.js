@@ -1070,10 +1070,6 @@ document.addEventListener('click', e => {
     e.preventDefault();
     openRecurringFromBooking();
   }
-  if (e.target.closest('#rcBtnTypeSingle')) {
-    e.preventDefault();
-    openBookingFromRecurring();
-  }
 });
 
 function openRecurringFromBooking() {
