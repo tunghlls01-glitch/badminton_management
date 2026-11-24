@@ -440,7 +440,7 @@
       const opt = document.createElement("option");
       opt.value = u.id;
       opt.textContent = u.full_name;
-      if (u.id === 1) opt.selected = true;
+      if (String(u.id) === String(state.currentUser.id)) opt.selected = true;
       el.shiftStaffSelect.appendChild(opt);
     });
   }
@@ -954,41 +954,11 @@
     });
   }
 
-  // --- Layout & Navigation Setup ---
-  function getActiveUser() {
-    let user = null;
-    try {
-      if (global.RK_AUTH && typeof global.RK_AUTH.getState === "function") {
-        const authState = global.RK_AUTH.getState();
-        if (authState && authState.user) {
-          user = authState.user;
-        }
-      }
-    } catch {
-      // Ignore auth read errors
-    }
-
-    if (!user) {
-      user = {
-        id: 1,
-        full_name: "Do Hieu",
-        role: "admin",
-        email: "admin@badminton.com",
-      };
-    }
-    return user;
-  }
-
-  function renderLayout() {
-    const user = getActiveUser();
-    if (global.RK_LAYOUT && typeof global.RK_LAYOUT.dashboard === "function") {
-      global.RK_LAYOUT.dashboard(user);
-    }
-  }
-
-  // --- Init ---
   async function init() {
-    renderLayout();
+    if (!await global.ProtectedRoute(["admin", "staff"])) return;
+    state.currentUser = global.RK_AUTH.getState().user;
+    global.RK_LAYOUT.dashboard(state.currentUser);
+    document.getElementById("rk-dashboard").hidden = false;
     cacheElements();
 
     // Set default date text

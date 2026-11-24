@@ -205,6 +205,7 @@
     $("ov-count-title").textContent = "Lượt đặt " + suffix;
     $("ov-grid-title").textContent = "Lịch sân " + suffix;
     $("ov-revenue").textContent = money.format(result.revenue.at(-1).amount);
+    $("ov-booked-value").textContent = money.format(result.booked_court_value);
     $("ov-count").textContent = result.booking_count;
     $("ov-confirmed").textContent = result.confirmed_count + " đã xác nhận";
     $("ov-using").textContent = result.courts_in_use + "/" + result.courts.length;
@@ -218,7 +219,7 @@
     pending.href = manage({ day: result.date, status: "pending", booking_id: result.next_pending_id });
     const checkin = $("ov-checkin-link");
     checkin.hidden = !result.next_checkin_id;
-    checkin.href = link("reception.html", { source: "overview", day: result.date, booking_id: result.next_checkin_id });
+    checkin.href = link("reception.html", { day: result.date, booking_id: result.next_checkin_id });
     grid();
     if (!submittedTerm) bookings(result.recent);
     graph(result.revenue);
@@ -234,7 +235,7 @@
     const day = $("ov-day").value;
     if (!day) return;
     updateActions();
-    for (const id of ["ov-revenue", "ov-count", "ov-confirmed", "ov-using", "ov-free", "ov-tasks", "ov-task-note"]) $(id).textContent = "—";
+    for (const id of ["ov-revenue", "ov-booked-value", "ov-count", "ov-confirmed", "ov-using", "ov-free", "ov-tasks", "ov-task-note"]) $(id).textContent = "—";
     $("ov-pending").textContent = "— đơn chờ xác nhận";
     $("ov-checkin").textContent = "— lượt có thể check-in";
     $("ov-pending-link").hidden = $("ov-checkin-link").hidden = true;

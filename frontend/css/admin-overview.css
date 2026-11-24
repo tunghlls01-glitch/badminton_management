@@ -1,11 +1,7 @@
 .ov-shell { --ov-ink: #101f39; --ov-muted: #536581; --ov-line: #e1e7ef; background: #f4f6fa; color: var(--ov-ink); }
-.ov-shell .rk-dashboard-header { height: 65px; padding: 0 30px; }
 .ov-shell .rk-dashboard-header > div:first-child { font-size: 15px; flex-shrink: 0; }
 .ov-shell .rk-dashboard-header .rk-user { flex-shrink: 0; }
 .ov-shell .rk-dashboard-header .rk-user strong { font-size: 13px; }
-.ov-shell .rk-dashboard-content { padding: 18px 30px 32px; max-width: none; }
-.ov-shell .rk-nav-caption { font-size: 12px; letter-spacing: .04em; }
-.ov-shell .rk-sidebar nav a, .ov-shell .rk-sidebar nav button { font-size: 14px; }
 .ov-header-search { position: relative; width: min(100%, 475px); margin-inline: auto; min-width: 0; }
 .ov-header-search input, .ov-controls input { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f6f8fb; color: inherit; font: inherit; }
 .ov-header-search input { padding-inline-start: 39px; }
@@ -89,27 +85,18 @@
 .ov-chart-labels { grid-column: 2; display: grid; grid-template-columns: repeat(7,1fr); text-align: center; align-items: end; }
 .ov .ov-placeholder, .ov-feedback { padding: 10px 0; }
 .ov-feedback { display: flex; align-items: center; gap: 12px; color: #8e1717; }
-@media (min-width: 901px) {
-  .ov-shell #rk-sidebar { width: 268px; }
-  .ov-shell .rk-dashboard-body { margin-left: 268px; }
-}
 @media (max-width: 1200px) {
-  .ov-shell .rk-dashboard-content { padding-inline: 20px; }
   .ov-metrics .ov-card { gap: 9px; padding: 12px; }
   .ov-middle, .ov-bottom { grid-template-columns: minmax(0,1fr); }
-}
-@media (max-width: 900px) {
-  .ov-shell .rk-dashboard-toggle { display: inline-flex; }
 }
 @media (max-width: 760px) {
   .ov-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .ov-header-status .ov-session { display: none; }
-  .ov-shell .rk-dashboard-header { flex-wrap: wrap; height: auto; gap: 8px; padding: 9px 16px; }
+  .ov-shell .rk-dashboard-header { flex-wrap: wrap; height: auto; gap: 8px; padding: 9px var(--management-gutter); }
   .ov-header-search { order: 5; flex-basis: 100%; }
   .ov-header-status { margin-left: auto; }
 }
 @media (max-width: 420px) {
-  .ov-shell .rk-dashboard-content { padding-inline: 12px; }
   .ov-metrics .ov-tile { display: none; }
   .ov-controls .ov-button, .ov-controls input { min-height: 38px; }
 }

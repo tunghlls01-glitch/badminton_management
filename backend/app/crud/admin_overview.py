@@ -171,6 +171,11 @@ def get_overview(db: Session, day: date, now: datetime):
         "date": day,
         "today": now.date(),
         "revenue": read_revenue(db, day),
+        "booked_court_value": sum(
+            (slot.amount for rows in scheduled if rows[0].booking.status in BOOKED
+             for slot in rows if slot.status == BookingSlotStatus.Active),
+            Decimal(0),
+        ),
         "booking_count": len(scheduled),
         "confirmed_count": sum(rows[0].booking.status in BOOKED for rows in scheduled),
         "courts_in_use": using,

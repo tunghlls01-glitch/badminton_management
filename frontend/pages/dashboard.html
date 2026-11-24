@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="../css/admin-sidebar.css">
     <link rel="stylesheet" href="../css/admin-overview.css">
 </head>
-  <body class="rk-app" data-root="../" data-page="dashboard">
+  <body data-management-layout class="rk-app" data-root="../" data-page="dashboard">
     <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
     <div
       id="rk-dashboard-state"
@@ -64,7 +64,7 @@
               <button type="button" class="ov-button ov-outline" id="ov-retry" hidden>Thử lại</button>
             </div>
             <div class="ov-metrics">
-              <article class="ov-card"><span class="ov-tile" data-ov-icon="card"></span><div><h2 id="ov-revenue-title">Doanh thu hôm nay</h2><strong id="ov-revenue">—</strong><p>Đã thanh toán</p></div></article>
+              <article class="ov-card"><span class="ov-tile" data-ov-icon="card"></span><div><h2 id="ov-revenue-title">Doanh thu hôm nay</h2><strong id="ov-revenue">—</strong><p>Đã thanh toán</p><p>Giá trị sân đã đặt: <span id="ov-booked-value">—</span></p></div></article>
               <article class="ov-card"><span class="ov-tile" data-ov-icon="calendar"></span><div><h2 id="ov-count-title">Lượt đặt hôm nay</h2><strong id="ov-count">—</strong><p id="ov-confirmed">—</p></div></article>
               <article class="ov-card"><span class="ov-tile" data-ov-icon="grid"></span><div><h2>Sân đang sử dụng</h2><strong id="ov-using">—</strong><p id="ov-free">Hiện tại</p></div></article>
               <article class="ov-card"><span class="ov-tile" data-ov-icon="warning"></span><div><h2>Cần xử lý</h2><strong id="ov-tasks">—</strong><p id="ov-task-note">—</p></div></article>
@@ -86,7 +86,7 @@
                   <a id="ov-quick-create" href="admin/manage_booking.html?action=new"><span data-ov-icon="calendar"></span>Đặt sân</a>
                   <a href="admin-users.html?view=customers"><span data-ov-icon="users"></span>Khách hàng</a>
                   <a href="pos.html"><span data-ov-icon="cart"></span>Bán hàng</a>
-                  <a href="reception.html?source=overview"><span data-ov-icon="grid"></span>Check-in</a>
+                  <a href="reception.html"><span data-ov-icon="grid"></span>Check-in</a>
                 </nav>
               </section>
             </div>
