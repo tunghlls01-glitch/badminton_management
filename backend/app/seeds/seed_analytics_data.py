@@ -29,10 +29,10 @@ def seed_analytics():
     db = SessionLocal()
 
     try:
-        # Kiểm tra xem đã có booking nào chưa
-        existing_count = db.query(Booking).count()
-        if existing_count > 10:
-            print(f"Database đã có {existing_count} bookings. Bỏ qua seed.")
+        # Kiểm tra xem đã seed analytics chưa (dựa trên mã hóa đơn INV- hoặc số lượng booking lớn)
+        existing_analytics = db.query(Booking).filter(Booking.booking_code.like("BK26%")).count()
+        if existing_analytics > 10:
+            print(f"Database đã có {existing_analytics} bookings analytics. Bỏ qua seed.")
             return
 
         # 1. Đảm bảo có users và courts

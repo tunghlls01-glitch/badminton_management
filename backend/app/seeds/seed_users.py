@@ -2,9 +2,19 @@ import sys
 import os
 import bcrypt
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# Thêm thư mục backend vào sys.path để Python nhận diện gói 'app'
+current_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.abspath(os.path.join(current_dir, "../../"))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
-from app.db.session import SessionLocal, engine, Base
+# Kiểm tra lại xem dự án của bạn dùng app.database hay app.db.session
+# (Nếu project của bạn dùng app.database thì đổi dòng dưới thành: from app.database import SessionLocal, engine, Base)
+try:
+    from backend.app.database import SessionLocal, engine, Base
+except ImportError:
+    from app.db.session import SessionLocal, engine, Base
+
 from app.models.user import User, UserRole, UserStatus
 
 def hash_password(password: str) -> str:
@@ -23,6 +33,7 @@ def seed():
 
         users_to_create = []
 
+        # 1. Admin
         users_to_create.append(
             User(
                 full_name="Quản Trị Viên Hệ Thống",
@@ -34,10 +45,11 @@ def seed():
             )
         )
 
+        # 2. Staff
         staff_data = [
             ("Lễ Tân Nguyễn Văn A", "staff1@badminton.com", "0902000001"),
             ("Thu Ngân Trần Thị B", "staff2@badminton.com", "0902000002")
-]
+        ]
         for name, email, phone in staff_data:
             users_to_create.append(
                 User(
@@ -50,7 +62,12 @@ def seed():
                 )
             )
 
-        customer_names = ["Lê Hoàng Long", "Phạm Minh Tuấn", "Vũ Quốc Bảo", "Đỗ Trung Hiếu","Nguyễn Tiến Khang", "Trịnh Hoàng Anh", "Đặng Thùy Dung", "Bùi Gia Hưng","Mai Phương Thảo", "Trần Đình Trọng"]
+        # 3. Customers
+        customer_names = [
+            "Lê Hoàng Long", "Phạm Minh Tuấn", "Vũ Quốc Bảo", "Đỗ Trung Hiếu",
+            "Nguyễn Tiến Khang", "Trịnh Hoàng Anh", "Đặng Thùy Dung", "Bùi Gia Hưng",
+            "Mai Phương Thảo", "Trần Đình Trọng"
+        ]
         for i, name in enumerate(customer_names, start=1):
             users_to_create.append(
                 User(

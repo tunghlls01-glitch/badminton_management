@@ -189,7 +189,7 @@ async function initConfirmPage() {
       { type: "success", duration: 7000 },
     );
     window.setTimeout(() => {
-      window.location.href = "./court_booking_schedule.html";
+      window.location.href = "./booking.html";
     }, 1800);
     return;
   }
@@ -332,7 +332,7 @@ async function initConfirmPage() {
         { type: "success", duration: 7000 },
       );
       window.setTimeout(() => {
-        window.location.href = "./court_booking_schedule.html";
+        window.location.href = "./booking.html";
       }, 2600);
     } catch (error) {
       if (error.status === 410) {

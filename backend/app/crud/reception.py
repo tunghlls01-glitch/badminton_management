@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from app.crud.booking import vietnam_now
 
 from app.models.booking import Booking, BookingStatus
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
@@ -82,7 +83,7 @@ def search_reception_bookings(
 def check_in_booking(db: Session, booking_id: int, now: datetime | None = None) -> Booking:
     """Chuyển booking Confirmed → CHECKED_IN (trong vòng 30 phút trước giờ bắt đầu đến tối đa trễ 15 phút)."""
     booking, start_at = _get_confirmed_booking_with_start(db, booking_id, "check-in")
-    current_time = now or datetime.now()
+    current_time = now or vietnam_now()
 
     earliest_checkin = start_at - timedelta(minutes=CHECKIN_EARLY_MINUTES)
     latest_checkin = start_at + timedelta(minutes=NO_SHOW_GRACE_MINUTES)

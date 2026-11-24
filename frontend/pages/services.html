@@ -64,7 +64,11 @@
           <h1 class="page-title" id="page-title-text">Quản lý dịch vụ</h1>
           <p class="page-subtitle" id="page-subtitle-text">Quản lý dịch vụ, giá cả và tồn kho tại một nơi.</p>
         </div>
-        <div id="page-header-actions">
+        <div id="page-header-actions" style="display:flex; gap:10px; align-items:center;">
+          <button class="btn-outline-export" id="btn-export-inventory-csv" title="Xuất toàn bộ danh sách tồn kho dịch vụ ra file CSV (Mã hóa UTF-8 BOM chuẩn tiếng Việt)">
+            <span>📥</span>
+            <span>Xuất CSV tồn kho</span>
+          </button>
           <button class="btn-primary-red" id="btn-open-create">
             <span>+</span>
             <span>Thêm dịch vụ mới</span>
@@ -146,8 +150,8 @@
 
               <select class="select-filter" id="filter-status">
                 <option value="ACTIVE" selected>Đang kinh doanh</option>
-                <option value="INACTIVE">Đã xóa / Ngừng kinh doanh</option>
-                <option value="">Tất cả trạng thái</option>
+                <option value="INACTIVE">Tạm ngừng kinh doanh</option>
+                <option value="">Tất cả (Đang bán & Tạm ngừng)</option>
               </select>
             </div>
 
@@ -343,26 +347,38 @@
 
         <!-- Section Lịch sử biến động kho -->
         <div class="card-box">
-          <div class="filter-bar">
+          <div class="filter-bar" style="flex-wrap: wrap; gap: 12px;">
             <div>
               <h2 style="font-size: 17px; font-weight: 700;">Lịch sử kho</h2>
-              <p style="font-size: 12px; color: var(--text-muted); margin-top:2px;">Lưu đầy đủ lịch sử thay đổi tồn kho.</p>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top:2px;">Lưu đầy đủ lịch sử thay đổi tồn kho theo thời gian.</p>
             </div>
 
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-secondary); background:#f9fafb; padding:4px 10px; border-radius:6px; border:1px solid #e5e7eb;">
+                <span>Từ:</span>
+                <input type="date" class="form-input" id="history-filter-from-date" style="padding:3px 6px; width:auto; font-size:12px; border:1px solid #d1d5db; border-radius:4px; background:#fff;">
+                <span>Đến:</span>
+                <input type="date" class="form-input" id="history-filter-to-date" style="padding:3px 6px; width:auto; font-size:12px; border:1px solid #d1d5db; border-radius:4px; background:#fff;">
+              </div>
+
               <select class="select-filter" id="history-filter-service">
                 <option value="">Tất cả dịch vụ</option>
               </select>
 
               <select class="select-filter" id="history-filter-type">
                 <option value="">Tất cả loại giao dịch</option>
-                <option value="Nhập hàng">Nhập hàng</option>
-                <option value="Bán lẻ">Bán lẻ (POS)</option>
-                <option value="Điều chỉnh">Điều chỉnh</option>
+                <option value="IMPORT">Nhập hàng</option>
+                <option value="SALE">Bán lẻ (POS)</option>
+                <option value="ADJUSTMENT">Điều chỉnh kiểm kê</option>
                 <option value="EXPORT">Xuất kho</option>
               </select>
 
               <button class="btn-page" id="btn-clear-history-filter" title="Xóa bộ lọc">✕</button>
+
+              <button class="btn-primary-red" id="btn-export-history-csv" style="height:36px; padding:0 14px; font-size:13px; gap:6px; background:#059669;" title="Xuất lịch sử nhập/xuất theo khoảng thời gian ra file CSV">
+                <span>📊</span>
+                <span>Xuất CSV lịch sử</span>
+              </button>
             </div>
           </div>
 
@@ -534,8 +550,56 @@
     </div>
   </div>
 
+  <!-- Modal Xác nhận xóa 2 bước chống bấm nhầm -->
+  <div class="modal-overlay" id="confirm-delete-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div class="modal-content" style="max-width:440px; border-radius:10px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.2); background:#fff;">
+      <div class="modal-header" style="border-bottom:1px solid #fee2e2; background:#fff5f5; padding:16px 20px;">
+        <h3 class="modal-title" style="color:#b91c1c; display:flex; align-items:center; gap:8px; font-size:16px; margin:0;">
+          <span>⚠️</span> Xác nhận xóa dịch vụ
+        </h3>
+        <button class="btn-close-modal" id="btn-cancel-delete-x" style="cursor:pointer; background:none; border:none; font-size:18px; color:#6b7280;">✕</button>
+      </div>
+      <div style="padding:20px;">
+        <p style="font-size:14px; color:#1f2937; margin:0 0 12px 0; line-height:1.5;">
+          Bạn có chắc chắn muốn xóa dịch vụ: <strong id="delete-service-name" style="color:#b91c1c;"></strong>?
+        </p>
+        <div style="background:#fef2f2; border-left:4px solid #ef4444; padding:10px 14px; border-radius:4px; font-size:13px; color:#991b1b; line-height:1.4;">
+          <strong>Lưu ý:</strong> Mặt hàng này sẽ bị xóa hoàn toàn khỏi dịch vụ.
+        </div>
+      </div>
+      <div style="padding:14px 20px; display:flex; justify-content:flex-end; gap:10px; background:#fafafa; border-top:1px solid #f3f4f6;">
+        <button type="button" class="btn-cancel" id="btn-cancel-delete" style="padding:8px 16px; border:1px solid #d1d5db; background:#fff; border-radius:6px; cursor:pointer; font-weight:500; font-size:13.5px;">Hủy bỏ</button>
+        <button type="button" class="btn-primary-red" id="btn-confirm-delete" style="padding:8px 18px; background:#dc2626; border-radius:6px; font-weight:600; font-size:13.5px; border:none; color:#fff; cursor:pointer;">Xác nhận xóa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Xác nhận Tạm ngừng / Mở bán lại dịch vụ -->
+  <div class="modal-overlay" id="confirm-status-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div class="modal-content" style="max-width:440px; border-radius:10px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.2); background:#fff;">
+      <div class="modal-header" id="status-modal-header" style="border-bottom:1px solid #bbf7d0; background:#f0fdf4; padding:16px 20px;">
+        <h3 class="modal-title" id="status-modal-title" style="color:#15803d; display:flex; align-items:center; gap:8px; font-size:16px; margin:0;">
+          <span id="status-modal-icon">🔄</span> <span id="status-modal-title-text">Xác nhận mở bán lại dịch vụ</span>
+        </h3>
+        <button class="btn-close-modal" id="btn-cancel-status-x" style="cursor:pointer; background:none; border:none; font-size:18px; color:#6b7280;">✕</button>
+      </div>
+      <div style="padding:20px;">
+        <p style="font-size:14px; color:#1f2937; margin:0 0 12px 0; line-height:1.5;">
+          <span id="status-modal-question">Bạn có chắc chắn muốn mở bán lại dịch vụ:</span> <strong id="status-service-name" style="color:#15803d;"></strong>?
+        </p>
+        <div id="status-modal-note-box" style="background:#f0fdf4; border-left:4px solid #22c55e; padding:10px 14px; border-radius:4px; font-size:13px; color:#166534; line-height:1.4;">
+          <strong>Lưu ý:</strong> <span id="status-modal-note-text">Mặt hàng này sẽ được mở bán lại và hiển thị trên toàn bộ menu dịch vụ.</span>
+        </div>
+      </div>
+      <div style="padding:14px 20px; display:flex; justify-content:flex-end; gap:10px; background:#fafafa; border-top:1px solid #f3f4f6;">
+        <button type="button" class="btn-cancel" id="btn-cancel-status" style="padding:8px 16px; border:1px solid #d1d5db; background:#fff; border-radius:6px; cursor:pointer; font-weight:500; font-size:13.5px;">Hủy bỏ</button>
+        <button type="button" class="btn-primary" id="btn-confirm-status" style="padding:8px 18px; background:#16a34a; border-radius:6px; font-weight:600; font-size:13.5px; border:none; color:#fff; cursor:pointer;">Xác nhận mở bán</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts: Thứ tự chuẩn axios -> config -> api -> layout -> services.js -->
-  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <script src="../js/axios.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
