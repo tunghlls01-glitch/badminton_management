@@ -44,6 +44,7 @@ class AdminOverview(BaseModel):
     date: date
     today: date
     revenue: list[OverviewRevenue]
+    booked_court_value: Decimal
     booking_count: int
     confirmed_count: int
     courts_in_use: int
