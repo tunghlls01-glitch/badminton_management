@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS services (
     unit           VARCHAR(30) NOT NULL,
     price          DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     stock_quantity INT NOT NULL DEFAULT 0,
-    status         ENUM('Active', 'Inactive') NOT NULL DEFAULT 'Active',
+    status         VARCHAR(50) NOT NULL DEFAULT 'Active',
     created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_services_category (category),

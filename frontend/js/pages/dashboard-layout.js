@@ -38,6 +38,10 @@
       return;
     }
     global.RK_LAYOUT.dashboard(session.user);
+    const isOverview =
+      session.user.role === "admin" &&
+      [null, "dashboard"].includes(new URLSearchParams(global.location.search).get("view"));
+    if (isOverview) global.RK_ADMIN_OVERVIEW.mount();
     box.hidden = true;
     shell.hidden = false;
   }

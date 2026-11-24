@@ -1,4 +1,4 @@
--- Tạo database app_db + bảng items, users, payments, invoices + dữ liệu mẫu.
+-- Tạo database app_db + bảng items + dữ liệu mẫu.
 -- Cách chạy bằng MySQL Workbench:
 --   File > Open SQL Script... > chọn file này > bấm nút tia sét (Execute) > Refresh ô SCHEMAS.
 -- Chạy lại nhiều lần không lỗi (đã có thì bỏ qua), chỉ là dữ liệu mẫu sẽ bị thêm lặp.
@@ -9,7 +9,6 @@ CREATE DATABASE IF NOT EXISTS app_db
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE app_db;
 
--- 1. Bảng mẫu items
 CREATE TABLE IF NOT EXISTS items (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   name        VARCHAR(255) NOT NULL,
@@ -76,7 +75,7 @@ CREATE TABLE IF NOT EXISTS services (
   unit           VARCHAR(30) NOT NULL,
   price          DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
   stock_quantity INT NOT NULL DEFAULT 0,
-  status         ENUM('Active', 'Inactive') NOT NULL DEFAULT 'Active',
+  status         VARCHAR(50) NOT NULL DEFAULT 'Active',
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_services_category (category),

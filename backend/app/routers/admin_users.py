@@ -9,7 +9,7 @@ from app.models.user import User, UserRole, UserStatus
 from app.models.booking import Booking, BookingStatus
 from app.models.booking_slot import BookingSlot
 from app.schemas.user import UserResponse
-from app.schemas.admin_users import StaffCreate, StaffUpdate, StatusUpdate
+from app.schemas.admin_users import CustomerResponse, StaffCreate, StaffUpdate, StatusUpdate
 
 router = APIRouter(prefix="/admin", tags=["Admin users"],
                    dependencies=[Depends(require_roles(UserRole.ADMIN))])
@@ -97,7 +97,7 @@ def customer_rows(db, users):
         stats = {user_id: (count, last) for user_id, count, last in db.query(
             Booking.user_id, func.count(Booking.id), func.max(Booking.created_at)
         ).filter(Booking.user_id.in_(ids)).group_by(Booking.user_id).all()}
-    return [dict(**UserResponse.model_validate(user).model_dump(),
+    return [dict(**CustomerResponse.model_validate(user).model_dump(),
                  total_bookings=stats.get(user.id, (0, None))[0],
                  last_booking_at=stats.get(user.id, (0, None))[1]) for user in users]
 

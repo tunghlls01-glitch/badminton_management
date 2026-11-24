@@ -2,14 +2,14 @@
   "use strict";
 
   const PAGE_SIZE = 6;
-  const FALLBACK_IMG = "../assets/images/chatNTK.webp";
+  const photos = global.RK_COURT_PHOTOS;
 
   let allCourts = [];
   let currentFilter = "ALL";
   let searchKeyword = "";
   let currentPage = 1;
   let pendingAction = null;
-  let currentUserRole = "admin";
+  let currentUserRole = "";
   let booted = false;
 
   const courtsTableBody = document.getElementById("courtsTableBody");
@@ -30,6 +30,8 @@
   const courtDescriptionInput = document.getElementById("courtDescription");
   const courtImageInput = document.getElementById("courtImageInput");
   const previewImg = document.getElementById("previewImg");
+  courtsTableBody.addEventListener("error", photos.recover, true);
+  previewImg.addEventListener("error", photos.recover);
   const fileNameLabel = document.getElementById("fileNameLabel");
   const fileMetaLabel = document.getElementById("fileMetaLabel");
   const formErrorBox = document.getElementById("formErrorBox");
@@ -56,26 +58,15 @@
     }[m]));
   }
 
-  function getApiOrigin() {
-    try {
-      return new URL(global.RK_CONFIG.apiURL, document.baseURI).origin;
-    } catch {
-      return "http://localhost:8000";
-    }
-  }
-
-  function resolveImgUrl(url) {
-    if (!url) return FALLBACK_IMG;
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    return `${getApiOrigin()}${url.startsWith("/") ? "" : "/"}${url}`;
-  }
-
   function extractErrorMsg(err) {
     const detail = err?.response?.data?.detail;
     if (Array.isArray(detail)) {
       return detail.map((d) => `${d.loc?.slice(-1)[0] || "Lỗi"}: ${d.msg}`).join("; ");
     }
     if (typeof detail === "string") return detail;
+    if (err?.request && !err.response) {
+      return "Không nhận được phản hồi từ API quản lý sân. Kiểm tra backend đã chạy rồi thử lại.";
+    }
     return err?.message || "Không thể kết nối máy chủ.";
   }
 
@@ -142,10 +133,10 @@
         const isMaint = st !== "Active";
         const name = esc(court.name || court.court_name || `Sân #${court.id}`);
         const desc = esc(court.description || "Sân tiêu chuẩn, hệ thống đèn LED chống chói.");
-        const imgUrl = resolveImgUrl(court.image_url);
+        const imgUrl = esc(photos.resolve(court.image_url));
 
         const badgeHtml = isMaint
-          ? `<span class="court-badge is-maint">Bảo trì</span>`
+          ? `<span class="court-badge is-maint">${st === "Inactive" ? "Ngưng hoạt động" : "Bảo trì"}</span>`
           : `<span class="court-badge is-active">Hoạt động</span>`;
 
         const actionsHtml = isAdmin
@@ -159,7 +150,10 @@
         return `<tr>
           <td>
             <div class="court-cell">
-              <img class="court-thumb" src="${imgUrl}" alt="${name}" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+              <div class="court-thumb-frame">
+                <img class="court-thumb" alt="${name}" ${imgUrl ? `src="${imgUrl}"` : "hidden"}>
+                <div class="rk-court-photo-placeholder" ${imgUrl ? "hidden" : ""}>Chưa có ảnh</div>
+              </div>
               <div>
                 <span class="court-name">${name}</span>
                 <span class="court-sub">Mã sân #${court.id}</span>
@@ -189,12 +183,19 @@
   }
 
   async function loadCourts() {
+    btnOpenAddDrawer.disabled = true;
     try {
       const res = await global.axiosClient.get("/courts");
-      allCourts = Array.isArray(res.data) ? res.data : res.data?.items || [];
+      if (!Array.isArray(res.data)) throw new Error("API trả về danh sách sân không hợp lệ.");
+      if (res.data.some(court => !Object.hasOwn(court, "image_url"))) {
+        throw new Error("Backend đang chạy bản chưa hỗ trợ ảnh sân. Mở trang qua backend đã cập nhật.");
+      }
+      allCourts = res.data;
       updateCounts();
       renderTable();
+      btnOpenAddDrawer.disabled = currentUserRole !== "admin";
     } catch (err) {
+      allCourts = [];
       courtsTableBody.innerHTML = `<tr><td colspan="4" class="courts-state-cell" style="color:#b91c1c">${esc(extractErrorMsg(err))}</td></tr>`;
     }
   }
@@ -205,7 +206,7 @@
     courtIdInput.value = "";
     courtForm.reset();
     courtStatusInput.value = "Active";
-    previewImg.src = FALLBACK_IMG;
+    photos.show(previewImg, "");
     fileNameLabel.textContent = "Chưa chọn ảnh mới";
     fileMetaLabel.textContent = "PNG, JPG hoặc WEBP (Tối đa 5MB)";
     formErrorBox.style.display = "none";
@@ -220,10 +221,10 @@
     drawerSubtitle.textContent = "Cập nhật thông tin và hình ảnh của sân.";
     courtIdInput.value = court.id;
     courtNameInput.value = court.name || court.court_name || "";
-    courtStatusInput.value = normalizeStatus(court.status) === "Active" ? "Active" : "Maintenance";
+    courtStatusInput.value = normalizeStatus(court.status);
     courtDescriptionInput.value = court.description || "";
     courtImageInput.value = "";
-    previewImg.src = resolveImgUrl(court.image_url);
+    photos.show(previewImg, photos.resolve(court.image_url));
     fileNameLabel.textContent = court.image_url ? court.image_url.split("/").pop() : "Ảnh sân hiện tại";
     fileMetaLabel.textContent = "Chọn ảnh mới nếu muốn thay đổi";
     formErrorBox.style.display = "none";
@@ -241,7 +242,7 @@
     fileMetaLabel.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      previewImg.src = ev.target.result;
+      if (courtImageInput.files?.[0] === file) photos.show(previewImg, ev.target.result);
     };
     reader.readAsDataURL(file);
   });
@@ -249,9 +250,10 @@
   async function uploadCourtImage(courtId, file) {
     const formData = new FormData();
     formData.append("file", file);
-    await global.axiosClient.post(`/courts/${courtId}/upload-image`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await global.axiosClient.post(`/courts/${courtId}/upload-image`, formData);
+    if (!photos.resolve(data?.image_url)) {
+      throw new Error("API chưa xác nhận đường dẫn ảnh đã lưu.");
+    }
   }
 
   courtForm.addEventListener("submit", async (e) => {
@@ -274,8 +276,14 @@
 
       const targetId = res.data?.id || id;
       const file = courtImageInput.files?.[0];
+      if (!targetId) throw new Error("API chưa trả về mã sân đã lưu.");
+      courtIdInput.value = targetId;
       if (file && targetId) {
-        await uploadCourtImage(targetId, file);
+        try {
+          await uploadCourtImage(targetId, file);
+        } catch (err) {
+          throw new Error(`Thông tin sân đã lưu, nhưng ảnh chưa tải lên: ${extractErrorMsg(err)}`);
+        }
       }
 
       closeDrawer();
@@ -404,22 +412,14 @@
     const stateEl = document.getElementById("rk-dashboard-state");
     const dashEl = document.getElementById("rk-dashboard");
 
-    // Lấy thông tin session đang có sẵn ngay lập tức (không độ trễ, chống nháy)
-    const saved = global.RK_SESSION ? global.RK_SESSION.read() : {};
-    let user = saved?.user;
-
-    if (!user && global.RK_AUTH && typeof global.RK_AUTH.restore === "function") {
-      const authState = await global.RK_AUTH.restore();
-      if (!authState?.redirected) {
-        user = authState?.user;
-      }
+    if (!await global.ProtectedRoute(["admin", "staff"])) {
+      const { error } = global.RK_AUTH.getState();
+      if (error) stateEl.textContent = error;
+      return;
     }
 
-    if (!user) {
-      user = { full_name: "Trịnh Hoàng Anh", role: "admin" };
-    }
-
-    currentUserRole = user.role || "admin";
+    const { user } = global.RK_AUTH.getState();
+    currentUserRole = user.role;
     if (currentUserRole !== "admin" && btnOpenAddDrawer) {
       btnOpenAddDrawer.hidden = true;
     }

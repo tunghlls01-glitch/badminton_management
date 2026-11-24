@@ -86,6 +86,24 @@ class AdminUsersTest(test_profile.ProfileAPITest):
         self.assertEqual(self.request("GET", "/api/admin/customers/2/bookings")[1]["items"], [])
         self.assertEqual(self.request("GET", "/api/admin/customers/2")[1]["total_bookings"], 0)
 
+    def test_last_customer_page_includes_counter_guest(self):
+        from app.crud.booking import get_or_create_user
+
+        with self.sessions() as db:
+            guest = get_or_create_user(db, name="Walk-in guest", phone="0901234568")
+            guest_id = guest.id
+            guest_email = guest.email
+            db.commit()
+
+        status, data = self.request("GET", "/api/admin/customers?page=2&limit=1")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["total"], 2)
+        self.assertEqual([item["id"] for item in data["items"]], [guest_id])
+        self.assertEqual(data["items"][0]["email"], guest_email)
+        status, customer = self.request("GET", f"/api/admin/customers/{guest_id}")
+        self.assertEqual(status, 200)
+        self.assertEqual(customer["email"], guest_email)
+
     def test_public_registration_cannot_grant_admin(self):
         status, data = self.request("POST", "/auth/register", {
             "full_name": "Public", "email": "public@example.com", "phone": "0901234569",

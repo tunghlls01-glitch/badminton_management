@@ -36,7 +36,7 @@ class SlotGridResponse(BaseModel):
     operating_hours: dict = Field(
         default={
             "open": "06:00",
-            "close": "22:00",
+            "close": "23:00",
             "slot_duration_minutes": 60
         }
     )

@@ -36,7 +36,7 @@
             <h1>Quản lý sân cầu lông</h1>
             <p class="courts-subtitle">Quản lý danh sách sân, hình ảnh thực tế và trạng thái hoạt động / bảo trì.</p>
           </div>
-          <button type="button" class="rk-btn rk-primary" id="btnOpenAddDrawer">+ Thêm sân mới</button>
+          <button type="button" class="rk-btn rk-primary" id="btnOpenAddDrawer" disabled>+ Thêm sân mới</button>
         </div>
 
         <section class="courts-card" aria-label="Danh sách sân cầu lông">
@@ -108,19 +108,21 @@
           <select id="courtStatus">
             <option value="Active">Hoạt động</option>
             <option value="Maintenance">Bảo trì</option>
+              <option value="Inactive">Ngưng hoạt động</option>
           </select>
         </div>
 
         <div class="rk-field">
           <label for="courtDescription">Mô tả</label>
-          <textarea id="courtDescription" rows="3" placeholder="Sân tiêu chuẩn, gần khu vực lễ tân. Ánh sáng tốt, thuận tiện di chuyển."></textarea>
+          <textarea id="courtDescription" rows="3" maxlength="255" placeholder="Sân tiêu chuẩn, gần khu vực lễ tân. Ánh sáng tốt, thuận tiện di chuyển."></textarea>
         </div>
 
         <div class="rk-field">
           <label>Hình ảnh sân</label>
           <div class="rk-upload-box">
             <div class="rk-upload-preview-wrap">
-              <img id="previewImg" src="../assets/images/chatNTK.webp" alt="Xem trước ảnh sân" />
+              <img id="previewImg" alt="Xem trước ảnh sân" hidden />
+              <div class="rk-court-photo-placeholder">Chưa có ảnh</div>
               <span>Ảnh xem trước</span>
             </div>
             <div class="rk-upload-info">
@@ -233,6 +235,7 @@
       window.RK_CONFIG.dashboardLinks || {}
     );
   </script>
+  <script src="../js/court-photos.js"></script>
   <script src="../js/authStorage.js"></script>
   <script src="../js/axiosClient.js"></script>
   <script src="../js/auth.js"></script>

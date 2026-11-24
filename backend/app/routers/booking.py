@@ -2,26 +2,32 @@
 Đường dẫn đầy đủ: /api/bookings
     POST   /api/bookings                       → Tạo booking (chống trùng slot)
     POST   /api/bookings/{id}/confirm          → Khách xác nhận đặt
+    POST   /api/bookings/{id}/confirm-with-payment → Xác nhận booking và lưu yêu cầu thanh toán
+    GET    /api/bookings/{id}/payment-receipt   → Xem ảnh chuyển khoản (có kiểm tra quyền)
     POST   /api/bookings/{id}/admin-cancel     → Admin hủy (bắt buộc lý do, gửi thông báo)
     GET    /api/bookings                       → Danh sách booking
     GET    /api/bookings/{id}                  → Chi tiết
     PATCH  /api/bookings/{id}/status           → Đổi trạng thái
     DELETE /api/bookings/{id}                  → Xoá
 """
-from datetime import date
+from datetime import date, datetime
+from pathlib import Path
 from typing import Optional
+from uuid import uuid4
 
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 
 from app.crud import booking as booking_crud
 from app.crud.booking import ConflictError
+from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.booking import BookingStatus
-from app.models.user import UserRole
-from app.core.security import get_current_user
+from app.models.payment import Payment, PaymentMethod
+from app.models.user import User, UserRole
 from app.schemas.booking import (
     BookingCreate,
     BookingOut,
@@ -38,6 +44,14 @@ from app.schemas.notification import AdminCancelBookingRequest, AdminCancelBooki
 
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
+
+RECEIPT_DIR = Path(__file__).resolve().parents[2] / "static" / "uploads" / "payment_receipts"
+MAX_RECEIPT_BYTES = 5 * 1024 * 1024
+RECEIPT_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
 
 
 def _to_booking_out(booking) -> dict:
@@ -173,8 +187,19 @@ def create_recurring(data: RecurringBookingCreate, db: Session = Depends(get_db)
 
 
 @router.post("/{booking_id}/confirm", response_model=BookingOut)
-def confirm_booking(booking_id: int, db: Session = Depends(get_db)):
+def confirm_booking(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Khách xác nhận đặt (Pending → Confirmed). Tính lại tiền theo bảng giá hiện tại."""
+    booking = booking_crud.get_booking(db, booking_id)
+    if booking is None:
+        raise HTTPException(status_code=404, detail=f"Booking id={booking_id} không tồn tại")
+    if booking.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền xác nhận booking này")
+    if booking.hold_expires_at and booking.hold_expires_at <= datetime.now():
+        raise HTTPException(status_code=410, detail="Phiên giữ chỗ đã hết hạn")
     try:
         booking = booking_crud.confirm_booking(db, booking_id)
     except ConflictError as e:
@@ -182,6 +207,144 @@ def confirm_booking(booking_id: int, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return _to_booking_out(booking)
+
+
+@router.post("/{booking_id}/confirm-with-payment")
+async def confirm_booking_with_payment(
+    booking_id: int,
+    payment_method: str = Form(...),
+    customer_name: str = Form(...),
+    customer_phone: str = Form(...),
+    note: str = Form(""),
+    receipt: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Xác nhận booking và lưu yêu cầu thanh toán (biên lai chuyển khoản ở trạng thái chờ)."""
+    booking = booking_crud.get_booking(db, booking_id)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy booking.")
+    if booking.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền xác nhận booking này.")
+    if booking.hold_expires_at and booking.hold_expires_at <= datetime.now():
+        raise HTTPException(status_code=410, detail="Phiên giữ chỗ đã hết hạn.")
+    if payment_method not in {"BANK_TRANSFER", "CASH"}:
+        raise HTTPException(status_code=422, detail="Phương thức thanh toán không hợp lệ.")
+
+    customer_name = customer_name.strip()
+    customer_phone = customer_phone.strip()
+    note = note.strip()
+    if not customer_name or len(customer_name) > 100:
+        raise HTTPException(status_code=422, detail="Họ tên phải có từ 1 đến 100 ký tự.")
+    if not customer_phone or len(customer_phone) > 15:
+        raise HTTPException(status_code=422, detail="Số điện thoại phải có từ 1 đến 15 ký tự.")
+    if len(note) > 255:
+        raise HTTPException(status_code=422, detail="Ghi chú không được vượt quá 255 ký tự.")
+
+    duplicate_phone = (
+        db.query(User)
+        .filter(User.phone == customer_phone, User.id != current_user.id)
+        .first()
+    )
+    if duplicate_phone:
+        raise HTTPException(status_code=409, detail="Số điện thoại này đã thuộc một tài khoản khác.")
+
+    if payment_method == "BANK_TRANSFER" and receipt is None:
+        raise HTTPException(status_code=422, detail="Vui lòng tải ảnh minh chứng chuyển khoản.")
+
+    saved_receipt: Path | None = None
+    receipt_filename: str | None = None
+    if receipt is not None:
+        extension = RECEIPT_TYPES.get(receipt.content_type or "")
+        if not extension:
+            raise HTTPException(status_code=415, detail="Ảnh minh chứng phải là JPG, PNG hoặc WEBP.")
+        content = await receipt.read(MAX_RECEIPT_BYTES + 1)
+        if not content:
+            raise HTTPException(status_code=400, detail="Ảnh minh chứng đang trống.")
+        if len(content) > MAX_RECEIPT_BYTES:
+            raise HTTPException(status_code=413, detail="Ảnh minh chứng không được vượt quá 5 MB.")
+        RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
+        receipt_filename = f"{uuid4().hex}{extension}"
+        saved_receipt = RECEIPT_DIR / receipt_filename
+        saved_receipt.write_bytes(content)
+
+    try:
+        current_user.full_name = customer_name
+        current_user.phone = customer_phone
+        booking = booking_crud.confirm_booking(
+            db,
+            booking_id,
+            payment_method=(
+                PaymentMethod.BANK_TRANSFER
+                if payment_method == "BANK_TRANSFER"
+                else PaymentMethod.CASH
+            ),
+            receipt_path=receipt_filename,
+            note=note,
+        )
+    except ConflictError as error:
+        db.rollback()
+        if saved_receipt:
+            saved_receipt.unlink(missing_ok=True)
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ValueError as error:
+        db.rollback()
+        if saved_receipt:
+            saved_receipt.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except Exception:
+        db.rollback()
+        if saved_receipt:
+            saved_receipt.unlink(missing_ok=True)
+        raise
+
+    return {
+        "booking": _to_booking_out(booking),
+        "payment_status": "PENDING",
+        "receipt_url": (
+            f"/api/bookings/{booking.id}/payment-receipt" if receipt_filename else None
+        ),
+        "message": (
+            "Đã xác nhận booking và lưu ảnh chuyển khoản. Thanh toán đang chờ quầy xác nhận."
+            if receipt_filename
+            else "Đã xác nhận booking. Thanh toán sẽ được ghi nhận tại quầy."
+        ),
+    }
+
+
+@router.get("/{booking_id}/payment-receipt")
+def get_booking_payment_receipt(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    booking = booking_crud.get_booking(db, booking_id)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy booking.")
+    if current_user.id != booking.user_id and current_user.role not in {
+        UserRole.ADMIN,
+        UserRole.STAFF,
+    }:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền xem ảnh minh chứng này.")
+
+    payment = (
+        db.query(Payment)
+        .filter(Payment.booking_id == booking_id, Payment.receipt_path.isnot(None))
+        .order_by(Payment.id.desc())
+        .first()
+    )
+    if not payment or not payment.receipt_path:
+        raise HTTPException(status_code=404, detail="Booking này chưa có ảnh minh chứng.")
+    filename = Path(payment.receipt_path).name
+    receipt_path = RECEIPT_DIR / filename
+    if not receipt_path.is_file():
+        raise HTTPException(status_code=404, detail="Không tìm thấy file ảnh minh chứng.")
+    media_type = next(
+        (content_type for content_type, extension in RECEIPT_TYPES.items()
+         if extension == receipt_path.suffix.lower()),
+        "application/octet-stream",
+    )
+    return FileResponse(receipt_path, media_type=media_type, filename=filename)
 
 
 
