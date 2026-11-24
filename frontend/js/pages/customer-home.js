@@ -9,29 +9,18 @@
   const summary = document.getElementById("rk-court-summary");
   const sessionBox = document.getElementById("rk-session-state");
   const pricingBody = document.querySelector("#pricing .rk-pricing-table tbody");
-  const pricingCourt = document.getElementById("rk-pricing-court");
-  const days = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
+  const dayLabels = { WEEKDAY: "Ngày thường (T2 – T6)", WEEKEND: "Cuối tuần (T7 – CN)", ALL: "Tất cả các ngày" };
   const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
   const controller = new AbortController();
   let pending = false;
   let pricingPending = false;
   let pricingNeedsRefresh = false;
-  let priceRules = null;
 
-  function renderPricing() {
-    if (!priceRules) return;
-    const groups = new Map();
-    for (const rule of priceRules) {
-      if (rule.court_id !== Number(pricingCourt.value)) continue;
+  function renderPricing(rules) {
+    pricingBody.innerHTML = rules.length ? rules.map((rule) => {
       const range = rule.start_time.slice(0, 5) + " – " + rule.end_time.slice(0, 5);
-      const key = range + "|" + rule.hourly_rate;
-      if (!groups.has(key)) groups.set(key, { range, price: rule.hourly_rate, days: [] });
-      groups.get(key).days.push(days[rule.weekday_index]);
-    }
-    const rows = [...groups.values()].sort((a, b) => a.range.localeCompare(b.range));
-    pricingBody.innerHTML = rows.length ? rows.map((row) =>
-      `<tr><th scope="row">${h(row.range)}</th><td>${h(row.days.join(", "))}</td><td>${h(currency.format(row.price))} <small>/ giờ</small></td></tr>`
-    ).join("") : '<tr><td colspan="3">Chưa có bảng giá cho sân này.</td></tr>';
+      return `<tr><th scope="row"><span>${h(rule.name)}</span><small>${h(range)}</small></th><td>${h(dayLabels[rule.day_type])}</td><td>${h(currency.format(rule.price))} <small>/ giờ</small></td></tr>`;
+    }).join("") : '<tr><td colspan="3">Chưa có bảng giá.</td></tr>';
   }
 
   async function loadPricing() {
@@ -42,14 +31,12 @@
     }
     pricingPending = true;
     try {
-      const { data } = await global.axiosClient.get("/price-rules", {
+      const { data } = await global.axiosClient.get("/price-rules/public-table", {
         skipAuth: true, signal: controller.signal,
       });
-      priceRules = data;
-      renderPricing();
+      if (!controller.signal.aborted) renderPricing(data.rules);
     } catch {
       if (controller.signal.aborted) return;
-      priceRules = null;
       pricingBody.innerHTML = '<tr><td colspan="3">Không tải được bảng giá. <button type="button" class="rk-link">Thử lại</button></td></tr>';
       pricingBody.querySelector("button").addEventListener("click", loadPricing);
     } finally {
@@ -77,11 +64,6 @@
       if (data.some(court => !Object.hasOwn(court, "image_url"))) {
         throw new Error("Backend đang chạy bản chưa hỗ trợ ảnh sân. Mở trang qua backend đã cập nhật.");
       }
-      const selectedCourt = pricingCourt.value;
-      pricingCourt.replaceChildren(...data.map((court) => new Option(court.name, court.id)));
-      if (data.some((court) => String(court.id) === selectedCourt)) pricingCourt.value = selectedCourt;
-      pricingCourt.disabled = !data.length;
-      renderPricing();
       let count = 0;
       grid.innerHTML = data
         .map((court) => {
@@ -120,7 +102,6 @@
   });
   global.RK_LAYOUT.guest(global.RK_AUTH.getState());
   void global.RK_AUTH.restore();
-  pricingCourt.addEventListener("change", renderPricing);
   void loadPricing();
   void load();
   document.addEventListener("visibilitychange", () => {

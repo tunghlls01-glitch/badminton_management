@@ -20,21 +20,7 @@
 
     <!-- NỘI DUNG CHÍNH -->
     <div class="rk-dashboard-body" style="flex: 1; display: flex; flex-direction: column; background: #f9fafb; overflow-y: auto;">
-      <!-- HEADER TRÊN PHẢI -->
-      <header class="rk-dashboard-header" style="background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center;">
-        <div class="rk-header-left">
-          <span style="font-size: 13.5px; color: #6b7280; font-weight: 500;">Quản lý tài chính / Cấu hình bảng giá</span>
-        </div>
-        <div class="rk-header-right">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="text-align: right;">
-              <div style="font-weight: 700; font-size: 13.5px; color: #111827;">Trịnh Hoàng Anh</div>
-              <div style="font-size: 11px; color: #6b7280;">Quản trị viên</div>
-            </div>
-            <div style="width: 36px; height: 36px; background: #fef2f2; color: #b91c1c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 1px solid #fecaca;">T</div>
-          </div>
-        </div>
-      </header>
+      <header id="rk-dashboard-header" class="rk-dashboard-header"></header>
 
       <main id="main-content" class="rk-dashboard-content" style="padding: 28px 32px; flex: 1;">
         <div class="pricing-header">
@@ -50,14 +36,17 @@
         </div>
 
         <!-- Cảnh báo xung đột khung giờ -->
+        <div id="overlapAlert" class="rk-alert-error" style="display: none;" role="alert">
+          <span>⚠️</span> <strong>Cảnh báo xung đột!</strong> Phát hiện khung giờ bị chồng chéo giữa các quy tắc giá. Vui lòng điều chỉnh lại thời gian.
+        </div>
 
         <section class="pricing-card" aria-label="Danh sách quy tắc giá">
           <div class="pricing-table-wrap">
             <table class="pricing-table">
               <thead>
                 <tr>
-                  <th>SÂN / KHUNG GIỜ</th>
-                  <th>NGÀY ÁP DỤNG</th>
+                  <th>TÊN QUY TẮC / KHUNG GIỜ</th>
+                  <th>LOẠI NGÀY</th>
                   <th class="text-right">ĐƠN GIÁ (VNĐ/GIỜ)</th>
                   <th>TRẠNG THÁI</th>
                   <th class="text-right">THAO TÁC</th>
@@ -91,20 +80,16 @@
         <div class="rk-drawer-caption">THÔNG TIN QUY TẮC GIÁ</div>
 
         <div class="rk-field">
-          <label for="pricingCourt">Sân <span class="req">*</span></label>
-          <select id="pricingCourt" required></select>
+          <label for="ruleName">Tên quy tắc <span class="req">*</span></label>
+          <input type="text" id="ruleName" required placeholder="VD: Giờ cao điểm chiều" />
         </div>
 
         <div class="rk-field">
-          <label for="dayType">Ngày áp dụng <span class="req">*</span></label>
+          <label for="dayType">Loại ngày <span class="req">*</span></label>
           <select id="dayType">
-            <option value="0">Thứ 2</option>
-            <option value="1">Thứ 3</option>
-            <option value="2">Thứ 4</option>
-            <option value="3">Thứ 5</option>
-            <option value="4">Thứ 6</option>
-            <option value="5">Thứ 7</option>
-            <option value="6">Chủ nhật</option>
+            <option value="WEEKDAY">Ngày thường (Thứ 2 - Thứ 6)</option>
+            <option value="WEEKEND">Cuối tuần (Thứ 7 & Chủ nhật)</option>
+            <option value="ALL">Tất cả các ngày</option>
           </select>
         </div>
 
@@ -121,7 +106,7 @@
 
         <div class="rk-field">
           <label for="priceValue">Đơn giá (VNĐ/giờ) <span class="req">*</span></label>
-          <input type="number" id="priceValue" min="0.01" step="0.01" required placeholder="VD: 150000" />
+          <input type="number" id="priceValue" min="0" step="1000" required placeholder="VD: 150000" />
         </div>
 
         <div class="rk-form-error" id="formErrorBox"></div>
@@ -162,10 +147,9 @@
   <script src="../js/authStorage.js"></script>
   <script src="../js/axiosClient.js"></script>
   <script src="../js/auth.js"></script>
-  <script src="../js/pages/pricing.js"></script>
   <script src="../js/ProtectedRoute.js"></script>
   <script src="../js/t3d2096-ui.js"></script>
   <script src="../js/rk-layout.js"></script>
-  <script src="../js/pages/admin-sidebar.js"></script>
+  <script src="../js/pages/pricing.js"></script>
 </body>
 </html>

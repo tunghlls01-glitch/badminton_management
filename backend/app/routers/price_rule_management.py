@@ -4,14 +4,12 @@ from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.core.security import require_roles
 from app.crud import price_rule_service
-from app.models.user import UserRole
 from app.db.session import get_db
+from app.routers.public_pricing import get_public_pricing, save_public_pricing
 from app.schemas.price_rule import PriceRuleCreate, PriceRuleResponse, PriceRuleUpdate
 
 router = APIRouter(prefix="/price-rules", tags=["Price Rules"])
-admin_required = Depends(require_roles(UserRole.ADMIN))
 
 
 class TinhTienRequest(BaseModel):
@@ -31,25 +29,29 @@ def get_all_price_rules(
     return price_rule_service.list_price_rules(db, court_id=court_id, day_of_week=day_of_week)
 
 
+router.add_api_route("/public-table", get_public_pricing, methods=["GET"])
+router.add_api_route("/public-table", save_public_pricing, methods=["PUT"])
+
+
 @router.get("/{rule_id}", response_model=PriceRuleResponse)
 def get_price_rule_detail(rule_id: int, db: Session = Depends(get_db)):
     """Chi tiết 1 quy tắc giá"""
     return price_rule_service.get_price_rule(db, rule_id)
 
 
-@router.post("", response_model=PriceRuleResponse, status_code=status.HTTP_201_CREATED, dependencies=[admin_required])
+@router.post("", response_model=PriceRuleResponse, status_code=status.HTTP_201_CREATED)
 def create_price_rule(data: PriceRuleCreate, db: Session = Depends(get_db)):
     """Thêm quy tắc giá mới (Tự động chặn trùng khung giờ)"""
     return price_rule_service.create_price_rule(db, data)
 
 
-@router.put("/{rule_id}", response_model=PriceRuleResponse, dependencies=[admin_required])
+@router.put("/{rule_id}", response_model=PriceRuleResponse)
 def update_price_rule(rule_id: int, data: PriceRuleUpdate, db: Session = Depends(get_db)):
     """Sửa quy tắc giá (Tự động chặn trùng khung giờ)"""
     return price_rule_service.update_price_rule(db, rule_id, data)
 
 
-@router.delete("/{rule_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[admin_required])
+@router.delete("/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_price_rule(rule_id: int, db: Session = Depends(get_db)):
     """Xóa quy tắc giá"""
     price_rule_service.delete_price_rule(db, rule_id)

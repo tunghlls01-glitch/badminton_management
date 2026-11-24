@@ -10,10 +10,9 @@ class PriceRuleBase(BaseModel):
     hourly_rate: float = Field(..., gt=0, example=80000.0)
 
 class PriceRuleCreate(PriceRuleBase):
-    weekday_index: Optional[int] = Field(None, ge=0, le=6)
+    pass
 
 class PriceRuleUpdate(BaseModel):
-    weekday_index: Optional[int] = Field(None, ge=0, le=6)
     day_of_week: Optional[str] = None
     start_time: Optional[time] = None
     end_time: Optional[time] = None
@@ -21,7 +20,6 @@ class PriceRuleUpdate(BaseModel):
 
 class PriceRuleResponse(PriceRuleBase):
     id: int
-    weekday_index: int
 
     class Config:
         from_attributes = True
