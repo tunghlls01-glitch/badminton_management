@@ -1,11 +1,9 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const STORAGE_KEY = "rk_pricing_rules_v1";
-  const DEFAULT_RULES = [
-    { id: 1, name: "Giờ vàng buổi sáng", day_type: "WEEKDAY", start_time: "06:00", end_time: "11:00", price: 120000, status: "Active" },
-    { id: 2, name: "Giờ tiêu chuẩn trưa", day_type: "WEEKDAY", start_time: "11:00", end_time: "17:00", price: 90000, status: "Active" },
-    { id: 3, name: "Giờ cao điểm tối", day_type: "WEEKDAY", start_time: "17:00", end_time: "22:00", price: 180000, status: "Active" },
-    { id: 4, name: "Cuối tuần trọn gói", day_type: "WEEKEND", start_time: "06:00", end_time: "22:00", price: 150000, status: "Active" }
-  ];
+document.addEventListener("DOMContentLoaded", async () => {
+  const api = window.axiosClient;
+  const { escape: h, message } = window.RK_UI;
+  const saveButton = document.getElementById("btnSaveRule");
+  let revision = 0;
+  let saving = false;
 
   let pricingRules = [];
 
@@ -33,42 +31,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const previewDateInput = document.getElementById("previewDate");
   const previewResult = document.getElementById("previewResult");
 
-  function savePricingRules() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(pricingRules));
-    } catch (err) {
-      console.error("Không thể lưu bảng giá vào localStorage:", err);
-    }
+  function loadTable(data) {
+    revision = data.revision;
+    pricingRules = data.rules.map((rule) => ({
+      ...rule, start_time: rule.start_time.slice(0, 5), end_time: rule.end_time.slice(0, 5),
+    }));
+    checkTimeOverlaps();
+    renderTable();
   }
 
-  function loadStoredRules() {
+  async function savePricingRules(rules) {
+    if (saving) return false;
+    saving = saveButton.disabled = true;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : null;
-    } catch {
-      return null;
-    }
-  }
-
-  function fetchPricingRules() {
-    try {
-      tableBody.innerHTML = `<tr><td colspan="5" class="pricing-state-cell">Đang tải quy tắc giá...</td></tr>`;
-
-      const stored = loadStoredRules();
-      if (stored && stored.length > 0) {
-        pricingRules = stored;
-      } else {
-        pricingRules = DEFAULT_RULES.map((r) => ({ ...r }));
-        savePricingRules();
-      }
-
-      checkTimeOverlaps();
-      renderTable();
-    } catch (err) {
-      console.error("Lỗi tải bảng giá:", err);
-      tableBody.innerHTML = `<tr><td colspan="5" class="pricing-state-cell" style="color: #b91c1c;">Không thể tải dữ liệu bảng giá.</td></tr>`;
+      const { data } = await api.put("/price-rules/public-table", { revision, rules });
+      loadTable(data);
+      try { localStorage.setItem("rk:pricing-updated", String(Date.now())); } catch {}
+      return true;
+    } finally {
+      saving = saveButton.disabled = false;
     }
   }
 
@@ -95,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderTable() {
+    const canEdit = window.RK_AUTH.getState().user.role === "admin";
     if (pricingRules.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="5" class="pricing-state-cell">Chưa có quy tắc giá nào được thiết lập.</td></tr>`;
       return;
@@ -107,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <tr>
           <td>
-            <strong style="color: #111827; font-size: 13.5px;">${rule.name}</strong>
+            <strong style="color: #111827; font-size: 13.5px;">${h(rule.name)}</strong>
             <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">Khung giờ: ${rule.start_time} - ${rule.end_time}</div>
           </td>
           <td><span class="rk-badge rk-secondary">${dayLabel}</span></td>
@@ -119,8 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
           </td>
           <td class="text-right">
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-              <button type="button" class="btn-pricing-action" onclick="window.editRule(${rule.id})">Sửa</button>
-              <button type="button" class="btn-pricing-action to-delete" onclick="window.deleteRule(${rule.id})">Xóa</button>
+              ${canEdit ? `<button type="button" class="btn-pricing-action" onclick="window.editRule(${rule.id})">Sửa</button>
+              <button type="button" class="btn-pricing-action to-delete" onclick="window.deleteRule(${rule.id})">Xóa</button>` : "—"}
             </div>
           </td>
         </tr>
@@ -143,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnCancelDrawer) btnCancelDrawer.addEventListener("click", closeDrawer);
 
   if (pricingForm) {
-    pricingForm.addEventListener("submit", (e) => {
+    pricingForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const sTime = startTimeInput.value;
       const eTime = endTimeInput.value;
@@ -154,31 +136,25 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const existingRule = ruleIdInput.value
-        ? pricingRules.find(r => r.id === Number(ruleIdInput.value))
-        : null;
-
+      const id = Number(ruleIdInput.value);
       const newRule = {
-        id: ruleIdInput.value ? Number(ruleIdInput.value) : Date.now(),
+        id: id || Math.max(0, ...pricingRules.map((rule) => rule.id)) + 1,
         name: ruleNameInput.value.trim(),
         day_type: dayTypeSelect.value,
         start_time: sTime,
         end_time: eTime,
         price: Number(priceValueInput.value),
-        status: existingRule?.status || "Active"
       };
-
-      if (ruleIdInput.value) {
-        const idx = pricingRules.findIndex(r => r.id === newRule.id);
-        if (idx !== -1) pricingRules[idx] = newRule;
-      } else {
-        pricingRules.push(newRule);
+      const rules = id
+        ? pricingRules.map((rule) => rule.id === id ? newRule : rule)
+        : [...pricingRules, newRule];
+      formErrorBox.style.display = "none";
+      try {
+        if (await savePricingRules(rules)) closeDrawer();
+      } catch (err) {
+        formErrorBox.textContent = message(err);
+        formErrorBox.style.display = "block";
       }
-
-      savePricingRules();
-      closeDrawer();
-      checkTimeOverlaps();
-      renderTable();
     });
   }
 
@@ -197,12 +173,12 @@ document.addEventListener("DOMContentLoaded", () => {
     drawerOverlay.classList.add("open");
   };
 
-  window.deleteRule = (id) => {
-    if (confirm("Bạn có chắc chắn muốn xóa quy tắc giá này?")) {
-      pricingRules = pricingRules.filter(r => r.id !== id);
-      savePricingRules();
-      checkTimeOverlaps();
-      renderTable();
+  window.deleteRule = async (id) => {
+    if (saving || !confirm("Bạn có chắc chắn muốn xóa quy tắc giá này?")) return;
+    try {
+      await savePricingRules(pricingRules.filter((rule) => rule.id !== id));
+    } catch (err) {
+      alert(message(err));
     }
   };
 
@@ -223,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const selectedDateStr = previewDateInput.value;
       if (!selectedDateStr) return;
 
-      const dateObj = new Date(selectedDateStr);
+      const dateObj = new Date(selectedDateStr + "T12:00:00");
       const dayOfWeek = dateObj.getDay();
       const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
 
@@ -240,7 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let html = `<strong>Ngày ${selectedDateStr} (${isWeekend ? 'Cuối tuần' : 'Ngày thường'}):</strong><ul style="margin: 6px 0 0 16px; padding: 0;">`;
         applicableRules.forEach(r => {
           const formattedPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(r.price);
-          html += `<li><b>${r.name}</b> (${r.start_time} - ${r.end_time}): <span style="color:#b91c1c; font-weight:bold;">${formattedPrice}/h</span></li>`;
+          html += `<li><b>${h(r.name)}</b> (${r.start_time} - ${r.end_time}): <span style="color:#b91c1c; font-weight:bold;">${formattedPrice}/h</span></li>`;
         });
         html += `</ul>`;
         previewResult.innerHTML = html;
@@ -248,5 +224,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  fetchPricingRules();
+  btnOpenAddRule.disabled = btnPreviewPrice.disabled = true;
+  if (!await window.ProtectedRoute(["admin", "staff"])) return;
+  const { user } = window.RK_AUTH.getState();
+  window.RK_LAYOUT.dashboard(user);
+  btnOpenAddRule.hidden = user.role !== "admin";
+  try {
+    const { data } = await api.get("/price-rules/public-table");
+    loadTable(data);
+    btnOpenAddRule.disabled = btnPreviewPrice.disabled = false;
+  } catch (err) {
+    tableBody.innerHTML = `<tr><td colspan="5" class="pricing-state-cell">${h(message(err))}</td></tr>`;
+  }
 });

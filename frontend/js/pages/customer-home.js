@@ -9,90 +9,43 @@
   const summary = document.getElementById("rk-court-summary");
   const sessionBox = document.getElementById("rk-session-state");
   const pricingBody = document.querySelector("#pricing .rk-pricing-table tbody");
-  const PRICING_STORAGE_KEY = "rk_pricing_rules_v1";
-  const PRICING_SLOTS = [
-    {
-      label: "Buổi sáng",
-      range: "06:00 - 12:00",
-      start: "06:00",
-      end: "12:00",
-      fallbackWeekday: 180000,
-      fallbackWeekend: 200000,
-    },
-    {
-      label: "Buổi chiều",
-      range: "12:00 - 17:00",
-      start: "12:00",
-      end: "17:00",
-      fallbackWeekday: 180000,
-      fallbackWeekend: 220000,
-    },
-    {
-      label: "Buổi tối - Giờ cao điểm",
-      range: "17:00 - 23:00",
-      start: "17:00",
-      end: "23:00",
-      fallbackWeekday: 240000,
-      fallbackWeekend: 280000,
-    },
-  ];
+  const dayLabels = { WEEKDAY: "Ngày thường (T2 – T6)", WEEKEND: "Cuối tuần (T7 – CN)", ALL: "Tất cả các ngày" };
+  const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
   const controller = new AbortController();
   let pending = false;
+  let pricingPending = false;
+  let pricingNeedsRefresh = false;
 
-  function toMinutes(hhmm) {
-    const [hours, minutes] = String(hhmm || "00:00").split(":").map(Number);
-    return (hours || 0) * 60 + (minutes || 0);
+  function renderPricing(rules) {
+    pricingBody.innerHTML = rules.length ? rules.map((rule) => {
+      const range = rule.start_time.slice(0, 5) + " – " + rule.end_time.slice(0, 5);
+      return `<tr><th scope="row"><span>${h(rule.name)}</span><small>${h(range)}</small></th><td>${h(dayLabels[rule.day_type])}</td><td>${h(currency.format(rule.price))} <small>/ giờ</small></td></tr>`;
+    }).join("") : '<tr><td colspan="3">Chưa có bảng giá.</td></tr>';
   }
 
-  function formatHourlyPrice(amount) {
-    return `${h(Number(amount || 0).toLocaleString("vi-VN"))}đ <small>/ giờ</small>`;
-  }
-
-  function pickRuleForSlot(rules, dayType, startStr, endStr) {
-    const slotStart = toMinutes(startStr);
-    const slotEnd = toMinutes(endStr);
-    const matches = rules.filter((rule) => {
-      const sameDayType = rule.day_type === dayType || rule.day_type === "ALL";
-      if (!sameDayType) return false;
-      const ruleStart = toMinutes(rule.start_time);
-      const ruleEnd = toMinutes(rule.end_time);
-      return ruleStart < slotEnd && ruleEnd > slotStart;
-    });
-
-    if (!matches.length) return null;
-
-    matches.sort((a, b) => {
-      const exactDiff = (b.day_type === dayType ? 1 : 0) - (a.day_type === dayType ? 1 : 0);
-      if (exactDiff !== 0) return exactDiff;
-      return Number(b.price || 0) - Number(a.price || 0);
-    });
-
-    return matches[0];
-  }
-
-  function renderReferencePricing() {
-    if (!pricingBody) return;
-    let rules = [];
-    try {
-      const raw = global.localStorage.getItem(PRICING_STORAGE_KEY);
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        rules = parsed.filter((rule) => (rule.status || "Active") === "Active");
-      }
-    } catch {
-      rules = [];
+  async function loadPricing() {
+    if (controller.signal.aborted) return;
+    if (pricingPending) {
+      pricingNeedsRefresh = true;
+      return;
     }
-
-    if (!rules.length) return;
-
-    pricingBody.innerHTML = PRICING_SLOTS.map((slot) => {
-      const weekdayRule = pickRuleForSlot(rules, "WEEKDAY", slot.start, slot.end);
-      const weekendRule = pickRuleForSlot(rules, "WEEKEND", slot.start, slot.end);
-      const weekdayPrice = weekdayRule ? weekdayRule.price : slot.fallbackWeekday;
-      const weekendPrice = weekendRule ? weekendRule.price : slot.fallbackWeekend;
-
-      return `<tr><th scope="row"><span>${h(slot.label)}</span><small>${h(slot.range)}</small></th><td>${formatHourlyPrice(weekdayPrice)}</td><td>${formatHourlyPrice(weekendPrice)}</td></tr>`;
-    }).join("");
+    pricingPending = true;
+    try {
+      const { data } = await global.axiosClient.get("/price-rules/public-table", {
+        skipAuth: true, signal: controller.signal,
+      });
+      if (!controller.signal.aborted) renderPricing(data.rules);
+    } catch {
+      if (controller.signal.aborted) return;
+      pricingBody.innerHTML = '<tr><td colspan="3">Không tải được bảng giá. <button type="button" class="rk-link">Thử lại</button></td></tr>';
+      pricingBody.querySelector("button").addEventListener("click", loadPricing);
+    } finally {
+      pricingPending = false;
+      if (pricingNeedsRefresh) {
+        pricingNeedsRefresh = false;
+        void loadPricing();
+      }
+    }
   }
 
   async function load() {
@@ -149,25 +102,31 @@
   });
   global.RK_LAYOUT.guest(global.RK_AUTH.getState());
   void global.RK_AUTH.restore();
-  renderReferencePricing();
+  void loadPricing();
   void load();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-      renderReferencePricing();
+      void loadPricing();
       void load();
     }
   }, { signal: controller.signal });
   global.addEventListener("pageshow", (event) => {
-    renderReferencePricing();
-    if (event.persisted) void load();
+    if (event.persisted) {
+      void loadPricing();
+      void load();
+    }
   }, { signal: controller.signal });
   global.addEventListener("storage", (event) => {
-    if (event.key === PRICING_STORAGE_KEY) renderReferencePricing();
+    if (event.key === "rk:pricing-updated") void loadPricing();
   }, { signal: controller.signal });
+  const pricingRefresh = global.setInterval(() => {
+    if (document.visibilityState === "visible") void loadPricing();
+  }, 30000);
   global.addEventListener(
     "pagehide",
     (event) => {
       if (event.persisted) return;
+      global.clearInterval(pricingRefresh);
       controller.abort();
       unsubscribe();
     },

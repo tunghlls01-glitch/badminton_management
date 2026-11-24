@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.crud import price_rule_service
 from app.db.session import get_db
+from app.routers.public_pricing import get_public_pricing, save_public_pricing
 from app.schemas.price_rule import PriceRuleCreate, PriceRuleResponse, PriceRuleUpdate
 
 router = APIRouter(prefix="/price-rules", tags=["Price Rules"])
@@ -26,6 +27,10 @@ def get_all_price_rules(
 ):
     """Danh sách quy tắc giá theo khung giờ và ngày thường/cuối tuần"""
     return price_rule_service.list_price_rules(db, court_id=court_id, day_of_week=day_of_week)
+
+
+router.add_api_route("/public-table", get_public_pricing, methods=["GET"])
+router.add_api_route("/public-table", save_public_pricing, methods=["PUT"])
 
 
 @router.get("/{rule_id}", response_model=PriceRuleResponse)
