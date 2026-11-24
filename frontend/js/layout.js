@@ -11,7 +11,6 @@ const MENU = [
   { href: "pages/dashboard.html", label: "Tổng quan" },
   { href: "pages/courts.html", label: "Quản lý sân" },
   { href: "pages/booking.html", label: "Quản lý đặt sân" },
-  { href: "pages/court_booking_schedule.html", label: "Lịch đặt sân" },
   { href: "pages/timeline_grid.html", label: "Lưới đặt sân" },
   { href: "pages/pricing.html", label: "Bảng giá" },
   { href: "pages/services.html", label: "Dịch vụ & Kho" },

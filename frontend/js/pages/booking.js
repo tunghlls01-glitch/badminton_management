@@ -24,6 +24,11 @@ function getRoleLabel(role) {
 }
 function applyUserUI() {
   const u = getLoggedInUser();
+  const managementHome = window.RK_NAV.managementHome(u?.role);
+  const managementButton = $('#managementHomeButton');
+  managementButton.hidden = !managementHome;
+  managementButton.onclick = managementHome ? () => window.RK_NAV.go(managementHome) : null;
+
   const name = u?.full_name || 'Chưa đăng nhập';
   const initials = getUserInitials(u?.full_name);
   const role = u ? getRoleLabel(u?.role) : 'Bấm để đăng nhập';
@@ -483,8 +488,6 @@ function renderBookings() {
   $('#upcomingCount').textContent = String(upcoming.length).padStart(2, '0');
   $('#navCount').textContent = upcoming.length;
 
-  const hours = upcoming.reduce((sum, b) => sum + Number(b.duration), 0);
-  $('#hoursCount').innerHTML = hours + ` <span style="font-size:18px;font-weight:600">${isEn ? 'hrs' : 'giờ'}</span>`;
   renderNextBooking(upcoming);
 }
 
@@ -524,11 +527,22 @@ function renderCalendar() {
     return d;
   });
   const last = days[6];
-  const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const monthStr = isEn ? monthNames[last.getMonth() + 1] : `tháng ${last.getMonth() + 1}`;
-  $('#weekTitle').textContent = isEn ?
-    `${String(monday.getDate()).padStart(2, '0')} – ${String(last.getDate()).padStart(2, '0')} ${monthStr}, ${last.getFullYear()}` :
-    `${String(monday.getDate()).padStart(2, '0')} – ${String(last.getDate()).padStart(2, '0')} tháng ${last.getMonth() + 1}, ${last.getFullYear()}`;
+  const locale = isEn ? 'en-GB' : 'vi-VN';
+  const weekRange = new Intl.DateTimeFormat(locale, {
+    day: '2-digit', month: 'long', year: 'numeric'
+  }).formatRange(monday, last);
+  $('#weekTitle').textContent = weekRange;
+  const weekLabel = weekOffset === 0
+    ? (isEn ? 'THIS WEEK' : 'TUẦN NÀY')
+    : (isEn ? 'SELECTED WEEK' : 'TUẦN ĐANG XEM');
+  $('#weekOverview').textContent = `${weekLabel} · ${weekRange}`;
+
+  const firstDate = localDate(monday);
+  const lastDate = localDate(last);
+  const hours = bookings
+    .filter(b => b.date >= firstDate && b.date <= lastDate && b.status !== 'cancelled')
+    .reduce((total, b) => total + (Number(b.duration) || 0), 0);
+  $('#hoursCount').innerHTML = `${new Intl.NumberFormat(locale).format(hours)} <span style="font-size:18px;font-weight:600">${isEn ? 'hrs' : 'giờ'}</span>`;
 
   const dayLabels = isEn ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['TH 2', 'TH 3', 'TH 4', 'TH 5', 'TH 6', 'TH 7', 'CN'];
   const todayStr = localDate(now);
@@ -541,8 +555,8 @@ function renderCalendar() {
   // Lọc CHỈ những sân có trong database
   const validCourtIds = new Set(dbCourts.map(c => Number(c.id)));
 
-  $('#calendarBody').innerHTML = '<div class="time-column">' + ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'].map(t => `<span>${t}</span>`).join('') + '</div>' + days.map((d, i) => {
-    const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  $('#calendarBody').innerHTML = '<div class="time-column">' + ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'].map(t => `<span>${t}</span>`).join('') + '</div>' + days.map(d => {
+    const iso = localDate(d);
 
     // Lọc theo ngày, trạng thái, và sân trong database
     const dayBookings = bookings.filter(b => {
@@ -555,7 +569,7 @@ function renderCalendar() {
       return true;
     });
 
-    return `<div class="day-column ${weekOffset === 0 && i === 1 ? 'today' : ''}">` + dayBookings.map(b => {
+    return `<div class="day-column ${iso === todayStr ? 'today' : ''}">` + dayBookings.map(b => {
       const startMin = Number(b.start.slice(0, 2)) * 60 + Number(b.start.slice(3, 5) || 0);
       const top = Math.max(0, Math.min(95, (startMin - 360) / 960 * 100));
       const height = Math.min(100 - top, Math.max(14, (Number(b.duration) * 60) / 960 * 100));
@@ -934,7 +948,17 @@ function renderCourtFilterTabs() {
 }
 
 loadCourtsFromBackend();
-fetchBookingsFromBackend();
+fetchBookingsFromBackend().then(() => {
+  const requestedId = new URLSearchParams(location.search).get('booking');
+  const requested = bookings.find(b => String(b.id) === requestedId);
+  if (!requested) return;
+
+  const now = new Date();
+  const [year, month, day] = requested.date.split('-').map(Number);
+  const currentMonday = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
+  weekOffset = Math.floor((Date.UTC(year, month - 1, day) - currentMonday) / 604800000);
+  renderCalendar();
+});
 applyUserUI();
 
 $('#bookingForm').onsubmit = async e => {

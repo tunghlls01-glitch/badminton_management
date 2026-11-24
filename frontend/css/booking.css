@@ -137,6 +137,10 @@ svg {
   position: relative;
 }
 
+.nav button[hidden] {
+  display: none;
+}
+
 .nav button:hover {
   background: var(--paper);
   color: var(--green);

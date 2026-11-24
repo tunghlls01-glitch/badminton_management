@@ -37,6 +37,7 @@
 
     <div class="nav-label">ĐIỀU HƯỚNG</div>
     <nav class="nav">
+      <button type="button" id="managementHomeButton" hidden><svg><use href="#i-arrow"/></svg>Về trang quản lý</button>
       <button type="button" id="exploreButton"><svg><use href="#i-compass"/></svg>Trang Chủ</button>
       <button type="button" class="active" id="scheduleButton" aria-current="page"><svg><use href="#i-calendar"/></svg>Lịch đặt của tôi<span class="count" id="navCount">3</span></button>
       <button type="button" id="offersButton"><svg><use href="#i-gift"/></svg>Ưu đãi</button>
@@ -83,13 +84,13 @@
       <section class="overview reveal" aria-label="Tổng quan lịch chơi">
         <div class="stat"><div class="stat-top"><strong id="upcomingCount">03</strong><svg><use href="#i-calendar"/></svg></div><small>Sắp diễn ra</small></div>
         <div class="stat"><div class="stat-top"><strong>01</strong><svg><use href="#i-check"/></svg></div><small>Đã hoàn thành</small></div>
-        <div class="stat"><div class="stat-top"><strong id="hoursCount">6 <span style="font-size:18px;font-weight:600">giờ</span></strong><svg><use href="#i-clock"/></svg></div><small>Thời lượng tuần này</small></div>
-        <div class="week-label" id="weekOverview">TUẦN NÀY · 09–15 TH11</div>
+        <div class="stat"><div class="stat-top"><strong id="hoursCount">0 <span style="font-size:18px;font-weight:600">giờ</span></strong><svg><use href="#i-clock"/></svg></div><small>Thời lượng tuần đang xem</small></div>
+        <div class="week-label" id="weekOverview"></div>
       </section>
 
       <div class="workspace reveal">
         <section aria-label="Lịch đặt sân theo tuần">
-          <div class="section-head"><h2>Lịch đặt sân theo tuần</h2><div class="calendar-controls"><span id="weekTitle">09 – 15 tháng 11, 2026</span><button id="previousWeek" aria-label="Tuần trước"><svg style="transform:rotate(180deg)"><use href="#i-chevron"/></svg></button><button id="nextWeek" aria-label="Tuần sau"><svg><use href="#i-chevron"/></svg></button></div></div>
+          <div class="section-head"><h2>Lịch đặt sân theo tuần</h2><div class="calendar-controls"><span id="weekTitle"></span><button id="previousWeek" aria-label="Tuần trước"><svg style="transform:rotate(180deg)"><use href="#i-chevron"/></svg></button><button id="nextWeek" aria-label="Tuần sau"><svg><use href="#i-chevron"/></svg></button></div></div>
           <div class="court-filter-bar" id="courtFilterBar"></div>
           <div class="calendar">
             <div class="calendar-header" id="calendarHeader"></div>
@@ -365,6 +366,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
   <script src="../js/config.js"></script>
+  <script src="../js/t3d2096-config.js"></script>
   <script src="../js/i18n.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/pages/booking.js" defer></script>

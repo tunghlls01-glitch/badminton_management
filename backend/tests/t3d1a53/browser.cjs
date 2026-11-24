@@ -237,9 +237,10 @@ async function main() {
         await page.waitForURL("**/403.html");
       });
     await test("UI-RB-03", "Phân quyền", "Đăng nhập STAFF, kiểm tra trang mặc định, rồi mở URL quản trị.",
-      "STAFF đến dashboard?view=bookings; URL quản trị chuyển 403.", async (page) => {
+      "STAFF đến dashboard?view=dashboard; URL quản trị chuyển 403.", async (page) => {
         await login(page, "staff53@example.com");
-        await page.waitForURL("**/dashboard.html?view=bookings");
+        await page.waitForURL("**/dashboard.html?view=dashboard");
+        await page.locator("#staff-overview-title").waitFor({ state: "visible" });
         await page.goto(pageURL("admin-users.html"));
         await page.waitForURL("**/403.html");
       });
