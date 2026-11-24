@@ -51,6 +51,8 @@ def seed_analytics():
             print("Chưa có dịch vụ. Vui lòng kiểm tra bảng services!")
             return
 
+        staff_members = db.query(User).filter(User.role.in_([UserRole.STAFF, UserRole.ADMIN])).all()
+
         print(f"Bắt đầu seed dữ liệu với {len(customers)} khách hàng, {len(courts)} sân và {len(services)} dịch vụ...")
 
         # Danh sách lý do hủy mẫu
@@ -212,10 +214,12 @@ def seed_analytics():
                         disc_reason = "Ưu đãi khách hàng thân thiết"
 
                     grand_total = max(Decimal("0.00"), slot_amount + total_svc_amt - discount_val)
+                    assigned_staff = random.choice(staff_members) if staff_members else None
                     invoice = Invoice(
                         invoice_code=f"INV-{current_date.strftime('%Y%m%d')}-{invoice_counter:04d}",
                         booking_id=booking.id,
                         customer_id=customer.id,
+                        staff_id=assigned_staff.id if assigned_staff else None,
                         total_court_amount=slot_amount,
                         total_service_amount=total_svc_amt,
                         discount_amount=discount_val,

@@ -42,15 +42,25 @@
       <nav class="nav-menu" aria-label="Menu chính">
         <a href="./timeline_grid.html" class="nav-link active">Khám phá sân</a>
         <a href="./booking.html" class="nav-link">Lịch đặt của tôi</a>
-        <a href="./services.html" class="nav-link">Ưu đãi</a>
-        <a href="./booking_notification.html" class="nav-link">Hỗ trợ</a>
+        <a href="./services.html" class="nav-link" data-nav-panel="offers">Ưu đãi</a>
+        <a href="./booking_notification.html" class="nav-link" data-nav-panel="support">Hỗ trợ</a>
       </nav>
 
-
-      <a id="accountLink" href="./profile.html" class="btn-account" style="text-decoration: none;"
-        aria-label="Mở hồ sơ tài khoản">
-        <span id="accountLabel">Đang kiểm tra đăng nhập...</span><span>›</span>
-      </a>
+      <div class="customer-account-shell">
+        <a id="accountLoginLink" href="./login.html" class="btn-account customer-account-login">
+          Đăng nhập <span aria-hidden="true">›</span>
+        </a>
+        <div id="customerAccount" class="customer-account" hidden>
+          <a id="customerAccountProfile" href="./profile.html" class="customer-account-profile">
+            <span id="customerAccountAvatar" class="customer-account-avatar" aria-hidden="true">?</span>
+            <span id="customerAccountName" class="customer-account-name"></span>
+          </a>
+          <button id="customerAccountLogout" class="customer-account-logout" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5M16 17l5-5-5-5M21 12H9" /></svg>
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -207,7 +217,8 @@
     </div>
   </div>
 
-  <div id="slotSuggestionModal" class="modal-backdrop suggestion-backdrop" role="dialog" aria-modal="true" aria-labelledby="slotSuggestionTitle">
+  <div id="slotSuggestionModal" class="modal-backdrop suggestion-backdrop" role="dialog" aria-modal="true"
+    aria-labelledby="slotSuggestionTitle">
     <div class="modal-card slot-suggestion-modal">
       <div class="modal-header">
         <h2 id="slotSuggestionTitle" class="modal-title">Khung giờ vừa hết chỗ</h2>
@@ -220,49 +231,49 @@
     </div>
   </div>
 
-   <!--======================================================================MODAL CẢNH BÁO HẾT
+  <!--======================================================================MODAL CẢNH BÁO HẾT
     THỜI GIAN GIỮ CHỖ (00:00)======================================================================-->
-    <div id="holdExpiredModal" class="modal-backdrop" role="dialog" aria-modal="true"
-      aria-labelledby="expiredModalTitle">
-      <div class="modal-card expired-modal-card">
-        <div class="modal-body expired-modal-body">
-          <div class="expired-icon-circle">⏳</div>
-          <h2 id="expiredModalTitle" class="expired-modal-title">Hết thời gian giữ chỗ</h2>
-          <p class="expired-modal-desc">
-            Thời gian giữ chỗ 10 phút đã kết thúc. Hệ thống sẽ tải lại trạng thái lưới sân mới nhất để bạn chọn lại.
-          </p>
-          <button type="button" id="btnReloadGrid" class="btn-proceed btn-reload-full">
-            Tải lại lưới sân
+  <div id="holdExpiredModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="expiredModalTitle">
+    <div class="modal-card expired-modal-card">
+      <div class="modal-body expired-modal-body">
+        <div class="expired-icon-circle">⏳</div>
+        <h2 id="expiredModalTitle" class="expired-modal-title">Hết thời gian giữ chỗ</h2>
+        <p class="expired-modal-desc">
+          Thời gian giữ chỗ 10 phút đã kết thúc. Hệ thống sẽ tải lại trạng thái lưới sân mới nhất để bạn chọn lại.
+        </p>
+        <button type="button" id="btnReloadGrid" class="btn-proceed btn-reload-full">
+          Tải lại lưới sân
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- ======================================================================
+       MODAL XÁC NHẬN HỦY GIỮ CHỖ
+       ====================================================================== -->
+  <div id="cancelHoldModal" class="modal-backdrop" role="dialog" aria-modal="true"
+    aria-labelledby="cancelHoldModalTitle">
+    <div class="modal-card expired-modal-card">
+      <div class="modal-body expired-modal-body">
+        <div class="expired-icon-circle">⚠️</div>
+        <h2 id="cancelHoldModalTitle" class="expired-modal-title">Xác nhận hủy giữ chỗ?</h2>
+        <p class="expired-modal-desc">
+          Các khung giờ bạn đang giữ sẽ được mở lại ngay cho người chơi khác. Bạn có chắc chắn muốn hủy không?
+        </p>
+        <div class="cancel-hold-actions">
+          <button type="button" id="btnKeepHold" class="btn-clear-all btn-half">
+            Tiếp tục giữ
+          </button>
+          <button type="button" id="btnConfirmCancelHold" class="btn-proceed btn-half">
+            Xác nhận hủy giữ
           </button>
         </div>
       </div>
     </div>
-    <!-- ======================================================================
-       MODAL XÁC NHẬN HỦY GIỮ CHỖ
-       ====================================================================== -->
-    <div id="cancelHoldModal" class="modal-backdrop" role="dialog" aria-modal="true"
-      aria-labelledby="cancelHoldModalTitle">
-      <div class="modal-card expired-modal-card">
-        <div class="modal-body expired-modal-body">
-          <div class="expired-icon-circle">⚠️</div>
-          <h2 id="cancelHoldModalTitle" class="expired-modal-title">Xác nhận hủy giữ chỗ?</h2>
-          <p class="expired-modal-desc">
-            Các khung giờ bạn đang giữ sẽ được mở lại ngay cho người chơi khác. Bạn có chắc chắn muốn hủy không?
-          </p>
-          <div class="cancel-hold-actions">
-            <button type="button" id="btnKeepHold" class="btn-clear-all btn-half">
-              Tiếp tục giữ
-            </button>
-            <button type="button" id="btnConfirmCancelHold" class="btn-proceed btn-half">
-              Xác nhận hủy giữ
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+  </div>
   <script src="../js/config.js"></script>
-  <script src="../js/i18n.js"></script>
   <script src="../js/ui-notice.js"></script>
+  <script src="../js/customer-nav-modals.js"></script>
+  <script src="../js/customer-account.js"></script>
   <script src="../js/timeline_grid.js"></script>
 </body>
 

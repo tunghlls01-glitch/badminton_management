@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#b91c1c">
+  <title>Lưới sân lễ tân | RK BADMINTON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/t3d2096.css">
+  <link rel="stylesheet" href="../css/admin-sidebar.css">
+  <link rel="stylesheet" href="../css/reception_slot_grid.css">
+</head>
+<body class="rk-app" data-admin-sidebar="true" data-root="../" data-page="reception-slot-grid">
+  <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
+
+  <div id="rk-dashboard-state" class="rk-container rk-session-state" role="status" aria-live="polite">
+    Đang kiểm tra quyền truy cập...
+  </div>
+
+  <div id="rk-dashboard" class="rk-dashboard" hidden>
+    <button type="button" class="au-sidebar-toggle" data-rk-action="sidebar" aria-controls="rk-sidebar" aria-expanded="false">Menu quản lý</button>
+    <button type="button" id="rk-backdrop" class="rk-backdrop" data-rk-action="sidebar-close" aria-label="Đóng menu" hidden></button>
+    <aside id="rk-sidebar" class="rk-sidebar" aria-label="Thanh bên quản lý"></aside>
+
+    <div class="rk-dashboard-body slot-dashboard-body">
+      <header id="rk-dashboard-header" class="rk-dashboard-header"></header>
+      <main id="main-content" class="rk-dashboard-content slot-grid-content">
+        <section class="slot-page-heading" aria-labelledby="pageTitle">
+          <div>
+            <span class="slot-eyebrow">VẬN HÀNH SÂN</span>
+            <h1 id="pageTitle">Lưới sân lễ tân</h1>
+            <p>Xem tình trạng từng sân theo khung 30 phút; bấm ô đã đặt để xem khách hoặc ô trống để tạo lượt đặt hộ.</p>
+          </div>
+          <a class="slot-back-link" href="./reception.html">Quay lại nhận sân &amp; thanh toán</a>
+        </section>
+
+        <div class="slot-demo-notice" role="note">
+          <span class="slot-demo-dot" aria-hidden="true"></span>
+          <span><strong>Bản dựng giao diện.</strong> Dữ liệu và thao tác đặt hộ đang chạy ở chế độ minh họa, chưa lưu booking vào backend.</span>
+        </div>
+
+        <section class="slot-summary" aria-label="Tổng quan lịch sân">
+          <article class="slot-summary-card">
+            <span>Ngày đang xem</span>
+            <strong id="summaryDate">—</strong>
+          </article>
+          <article class="slot-summary-card">
+            <span>Số sân</span>
+            <strong id="summaryCourts">—</strong>
+          </article>
+          <article class="slot-summary-card">
+            <span>Ô còn trống</span>
+            <strong id="summaryAvailable">—</strong>
+          </article>
+          <article class="slot-summary-card">
+            <span>Ô đã đặt / giữ</span>
+            <strong id="summaryBusy">—</strong>
+          </article>
+        </section>
+
+        <section class="slot-grid-panel" aria-labelledby="gridTitle">
+          <div class="slot-grid-toolbar">
+            <div>
+              <h2 id="gridTitle">Lịch sân trong ngày</h2>
+              <p>Giờ mở cửa 06:00–23:00 · mỗi ô là 30 phút</p>
+            </div>
+            <div class="slot-grid-controls">
+              <label class="slot-date-control" for="scheduleDate">
+                <span>Ngày</span>
+                <input id="scheduleDate" type="date">
+              </label>
+              <button id="refreshGrid" class="slot-refresh-button" type="button">
+                <span aria-hidden="true">↻</span> Tải lại
+              </button>
+            </div>
+          </div>
+
+          <div class="slot-legend" aria-label="Chú giải trạng thái">
+            <span><i class="legend-swatch is-available" aria-hidden="true"></i> Trống</span>
+            <span><i class="legend-swatch is-booked" aria-hidden="true"></i> Đã đặt</span>
+            <span><i class="legend-swatch is-held" aria-hidden="true"></i> Đang giữ</span>
+            <span><i class="legend-swatch is-locked" aria-hidden="true"></i> Khóa / đã qua</span>
+          </div>
+
+          <div id="gridLoading" class="slot-state-panel" role="status" aria-live="polite">
+            <span class="slot-spinner" aria-hidden="true"></span>
+            <span>Đang tải lưới sân…</span>
+          </div>
+          <div id="gridError" class="slot-state-panel slot-error-panel" role="alert" hidden>
+            <strong>Chưa tải được lưới sân</strong>
+            <span id="gridErrorMessage">Đã có lỗi khi dựng dữ liệu.</span>
+            <button id="retryGrid" class="slot-refresh-button" type="button">Thử lại</button>
+          </div>
+
+          <div id="gridContainer" class="slot-grid-scroll" hidden>
+            <table id="scheduleGrid" class="slot-schedule-table" aria-label="Lịch trạng thái sân theo khung giờ"></table>
+          </div>
+          <p class="slot-grid-footnote">Dữ liệu mẫu để xem bố cục và thao tác. Trạng thái thực tế sẽ lấy từ API khi nối backend.</p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="bookingInfoDialog" class="slot-dialog" aria-labelledby="bookingInfoTitle">
+    <div class="slot-dialog-header">
+      <div>
+        <span class="slot-dialog-eyebrow" id="bookingInfoStatus">THÔNG TIN LƯỢT ĐẶT</span>
+        <h2 id="bookingInfoTitle">Thông tin đặt sân</h2>
+      </div>
+      <button class="slot-dialog-close" type="button" data-close-dialog="bookingInfoDialog" aria-label="Đóng">×</button>
+    </div>
+    <div id="bookingInfoContent" class="slot-dialog-content"></div>
+    <div class="slot-dialog-actions">
+      <button class="slot-secondary-button" type="button" data-close-dialog="bookingInfoDialog">Đóng</button>
+    </div>
+  </dialog>
+
+  <dialog id="walkInDialog" class="slot-dialog" aria-labelledby="walkInTitle">
+    <form id="walkInForm">
+      <div class="slot-dialog-header">
+        <div>
+          <span class="slot-dialog-eyebrow">ĐẶT HỘ TẠI QUẦY</span>
+          <h2 id="walkInTitle">Thông tin khách hàng</h2>
+        </div>
+        <button class="slot-dialog-close" type="button" data-close-dialog="walkInDialog" aria-label="Đóng">×</button>
+      </div>
+      <div id="selectedSlotSummary" class="selected-slot-summary"></div>
+      <div class="slot-form-grid">
+        <label class="slot-form-field slot-form-wide">
+          <span>Tên khách hàng <i>*</i></span>
+          <input name="customerName" autocomplete="name" maxlength="100" required placeholder="Nhập tên khách hàng">
+        </label>
+        <label class="slot-form-field">
+          <span>Số điện thoại <i>*</i></span>
+          <input name="customerPhone" type="tel" autocomplete="tel" minlength="9" maxlength="16" required placeholder="Nhập số điện thoại">
+        </label>
+        <label class="slot-form-field slot-form-wide">
+          <span>Ghi chú</span>
+          <textarea name="note" rows="3" maxlength="255" placeholder="Thông tin thêm (nếu có)"></textarea>
+        </label>
+      </div>
+      <p class="slot-form-demo-note">Nút xác nhận chỉ cập nhật lưới minh họa trên trang này.</p>
+      <div class="slot-dialog-actions">
+        <button class="slot-secondary-button" type="button" data-close-dialog="walkInDialog">Hủy</button>
+        <button class="slot-primary-button" type="submit">Tạo lượt đặt mẫu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="slotToast" class="slot-toast" role="status" aria-live="polite"></div>
+
+  <script src="../js/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/t3d2096-config.js"></script>
+  <script src="../js/authStorage.js"></script>
+  <script src="../js/axiosClient.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/ProtectedRoute.js"></script>
+  <script src="../js/t3d2096-ui.js"></script>
+  <script src="../js/rk-layout.js"></script>
+  <script src="../js/pages/reception_slot_grid.js"></script>
+</body>
+</html>

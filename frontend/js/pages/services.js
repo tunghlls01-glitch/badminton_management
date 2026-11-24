@@ -1236,6 +1236,7 @@ async function getOrEnsureAuthToken() {
     try {
       const baseUrl = CONFIG.API_BASE_URL.replace(/\/api$/, "");
       const res = await axios.post(`${baseUrl}/auth/login`, {
+        email: "admin@badminton.vn",
         account: "admin@badminton.vn",
         password: "admin",
       });

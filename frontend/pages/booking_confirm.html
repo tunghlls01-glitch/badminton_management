@@ -24,13 +24,25 @@
       <nav class="nav-menu" aria-label="Menu chính">
         <a href="./timeline_grid.html" class="nav-link active">Khám phá sân</a>
         <a href="./booking.html" class="nav-link">Lịch đặt của tôi</a>
-        <a href="./services.html" class="nav-link">Ưu đãi</a>
-        <a href="./booking_notification.html" class="nav-link">Hỗ trợ</a>
+        <a href="./services.html" class="nav-link" data-nav-panel="offers">Ưu đãi</a>
+        <a href="./booking_notification.html" class="nav-link" data-nav-panel="support">Hỗ trợ</a>
       </nav>
 
-      <a href="./profile.html" class="btn-account" style="text-decoration: none;">
-        Tài khoản của tôi <span>›</span>
-      </a>
+      <div class="customer-account-shell">
+        <a id="accountLoginLink" href="./login.html" class="btn-account customer-account-login">
+          Đăng nhập <span aria-hidden="true">›</span>
+        </a>
+        <div id="customerAccount" class="customer-account" hidden>
+          <a id="customerAccountProfile" href="./profile.html" class="customer-account-profile">
+            <span id="customerAccountAvatar" class="customer-account-avatar" aria-hidden="true">?</span>
+            <span id="customerAccountName" class="customer-account-name"></span>
+          </a>
+          <button id="customerAccountLogout" class="customer-account-logout" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5M16 17l5-5-5-5M21 12H9" /></svg>
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -65,17 +77,20 @@
             <div class="form-row-2col">
               <div class="form-group">
                 <label for="customerName">Họ và tên *</label>
-                <input type="text" id="customerName" class="form-control" placeholder="VD: Trần Giang Long" maxlength="100" required />
+                <input type="text" id="customerName" class="form-control" placeholder="VD: Trần Giang Long"
+                  maxlength="100" required />
               </div>
               <div class="form-group">
                 <label for="customerPhone">Số điện thoại liên hệ *</label>
-                <input type="tel" id="customerPhone" class="form-control" placeholder="VD: 0912 345 678" maxlength="15" required />
+                <input type="tel" id="customerPhone" class="form-control" placeholder="VD: 0912 345 678" maxlength="15"
+                  required />
               </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
               <label for="bookingNote">Ghi chú cho sân (tùy chọn)</label>
-              <input type="text" id="bookingNote" class="form-control" maxlength="255" placeholder="VD: Thuê thêm 2 vợt, 1 ống cầu..." />
+              <input type="text" id="bookingNote" class="form-control" maxlength="255"
+                placeholder="VD: Thuê thêm 2 vợt, 1 ống cầu..." />
             </div>
           </section>
 
@@ -130,7 +145,8 @@
                 </label>
 
                 <label for="receiptImageInput" id="uploadDropzone" class="upload-dropzone">
-                  <input type="file" id="receiptImageInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="hidden-file-input" />
+                  <input type="file" id="receiptImageInput"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="hidden-file-input" />
 
                   <div id="uploadPlaceholder" class="upload-placeholder">
                     <div class="upload-icon-circle">
@@ -194,7 +210,8 @@
   </main>
 
   <!-- Modal hết thời gian giữ chỗ -->
-  <div id="confirmExpiredModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmExpiredTitle">
+  <div id="confirmExpiredModal" class="modal-backdrop" role="dialog" aria-modal="true"
+    aria-labelledby="confirmExpiredTitle">
     <div class="modal-card expired-modal-card">
       <div class="modal-body expired-modal-body">
         <div class="expired-icon-circle cancel-icon-ring">
@@ -213,10 +230,14 @@
 
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
-    lucide.createIcons();
+    if (window.lucide && typeof window.lucide.createIcons === "function") {
+      window.lucide.createIcons();
+    }
   </script>
   <script src="../js/config.js"></script>
   <script src="../js/ui-notice.js"></script>
+  <script src="../js/customer-nav-modals.js"></script>
+  <script src="../js/customer-account.js"></script>
   <script src="../js/booking_confirm.js"></script>
 </body>
 

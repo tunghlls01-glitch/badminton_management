@@ -45,6 +45,8 @@
       "staff.pos": page("pos.html"),
       "staff.check-in": page("reception.html"),
       "admin.check-in": page("reception.html"),
+      "admin.invoices": page("invoices.html"),
+      "staff.invoices": page("invoices.html"),
       "admin.revenue": page("analytics.html"),
       ...custom.dashboardLinks,
     },

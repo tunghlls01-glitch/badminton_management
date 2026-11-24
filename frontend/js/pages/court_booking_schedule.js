@@ -297,15 +297,8 @@ function showDetail(id) {
 document.addEventListener("click", event => {
   if (event.target.closest("[data-book]")) {
     event.preventDefault();
-    // Pre-fill customer info from logged-in user
-    const _u = getLoggedInUser();
-    if (_u) {
-      const nameEl = document.getElementById('bookingCustomerName') || document.querySelector('#booking-modal [name="customer_name"]');
-      const phoneEl = document.getElementById('bookingCustomerPhone') || document.querySelector('#booking-modal [name="customer_phone"]');
-      if (nameEl && !nameEl.value) nameEl.value = _u.full_name || '';
-      if (phoneEl && !phoneEl.value) phoneEl.value = _u.phone || '';
-    }
-    $("#booking-modal").showModal();
+    window.location.href = "./timeline_grid.html";
+    return;
   }
 
   const detail = event.target.closest("[data-detail]");

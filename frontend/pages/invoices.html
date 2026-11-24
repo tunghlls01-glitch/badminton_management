@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#BA0000" />
+    <title>Hóa đơn &amp; Chốt ca lễ tân | RK BADMINTON</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/t3d2096.css" />
+    <link rel="stylesheet" href="../css/admin-sidebar.css" />
+    <link rel="stylesheet" href="../css/invoices.css" />
+  </head>
+  <body class="rk-app" data-root="../" data-page="invoices" data-admin-sidebar>
+    <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
+
+    <!-- Khung chính Dashboard -->
+    <div id="rk-dashboard" class="rk-dashboard">
+      <button
+        type="button"
+        id="rk-backdrop"
+        class="rk-backdrop"
+        data-rk-action="sidebar-close"
+        aria-label="Đóng menu"
+        hidden
+      ></button>
+
+      <!-- Sidebar Navigation -->
+      <aside
+        id="rk-sidebar"
+        class="rk-sidebar"
+        aria-label="Thanh bên quản lý"
+      ></aside>
+
+      <!-- Dashboard Body -->
+      <div class="rk-dashboard-body">
+        <!-- Top bar rendered by layout -->
+        <header id="rk-dashboard-header" class="rk-dashboard-header"></header>
+
+        <main id="main-content" class="rk-dashboard-content">
+          <div class="inv-page-container">
+
+            <!-- Tiêu đề quản lý hóa đơn (Figma Frame 27:3) -->
+            <div class="inv-header-section">
+              <div class="inv-header-titles">
+                <h1 class="inv-page-title">Hóa đơn &amp; Chốt ca lễ tân</h1>
+                <p class="inv-page-subtitle">
+                  Tra cứu hóa đơn, đối soát thu ngân và bàn giao ca làm việc.
+                </p>
+              </div>
+              <div class="inv-header-meta">
+                <div id="invCurrentDateText" class="inv-meta-date">Chủ nhật, 22/11/2026</div>
+                <div class="inv-meta-status"><span class="status-dot-green">●</span> Ca đang mở</div>
+              </div>
+            </div>
+
+            <!-- Main 2-Column Dashboard Grid (Figma Frame 27:2) -->
+            <div class="inv-main-grid">
+
+              <!-- ==========================================================
+                   CỘT TRÁI: BỘ LỌC VÀ DANH SÁCH HÓA ĐƠN (Figma Frame 27:4 & 27:5)
+                   ========================================================== -->
+              <div class="inv-left-column">
+
+                <!-- 1. Bộ lọc hóa đơn (Figma Frame 27:4) -->
+                <div class="inv-filter-card">
+                  <div class="inv-filter-top-row">
+                    <!-- Thời gian -->
+                    <div class="inv-filter-field-group">
+                      <span class="inv-filter-field-label">THỜI GIAN</span>
+                      <div class="inv-date-picker-box">
+                        <span class="inv-calendar-icon">📅</span>
+                        <input type="date" id="filterDateInput" class="inv-date-input-field" />
+                        <span class="inv-chevron-icon">⌄</span>
+                      </div>
+                    </div>
+
+                    <!-- Lễ tân / Thu ngân -->
+                    <div class="inv-filter-field-group" style="flex: 1.2;">
+                      <span class="inv-filter-field-label">LỄ TÂN / THU NGÂN</span>
+                      <div class="inv-select-box">
+                        <select id="filterStaffSelect" class="inv-select-field">
+                          <option value="">Tất cả lễ tân</option>
+                        </select>
+                        <span class="inv-chevron-icon">⌄</span>
+                      </div>
+                    </div>
+
+                    <!-- Trạng thái cố định -->
+                    <div class="inv-filter-status-tag">
+                      <span class="status-dot-green">●</span> Đã thanh toán
+                    </div>
+                  </div>
+
+                  <div class="inv-filter-bottom-row">
+                    <!-- Hình thức thanh toán: Segmented Control (Tất cả, Tiền mặt, Chuyển khoản) -->
+                    <div class="inv-segmented-controls" id="filterPaymentSegment">
+                      <button type="button" class="inv-seg-btn active" data-method="">Tất cả</button>
+                      <button type="button" class="inv-seg-btn" data-method="CASH">Tiền mặt</button>
+                      <button type="button" class="inv-seg-btn" data-method="BANK_TRANSFER">Chuyển khoản</button>
+                    </div>
+
+                    <!-- Tìm mã hóa đơn / mã đặt sân -->
+                    <div class="inv-search-box">
+                      <span class="inv-search-icon">⌕</span>
+                      <input
+                        type="text"
+                        id="filterSearchInput"
+                        class="inv-search-input-field"
+                        placeholder="Tìm mã hóa đơn / mã đặt sân..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Danh sách hóa đơn (Figma Frame 27:5) -->
+                <div class="inv-table-card">
+                  <div class="inv-table-card-header">
+                    <div class="inv-table-title-group">
+                      <h2 class="inv-table-title">Danh sách hóa đơn</h2>
+                      <span id="badgeTotalInvoices" class="inv-count-badge">26 hóa đơn</span>
+                    </div>
+                    <div class="inv-table-status-label">
+                      <span class="status-dot-green">●</span> Đã thu tiền
+                    </div>
+                  </div>
+
+                  <div class="inv-table-responsive">
+                    <table class="inv-figma-table">
+                      <thead>
+                        <tr>
+                          <th>Mã hóa đơn</th>
+                          <th>Thời gian<br />tạo</th>
+                          <th>Sân /<br />Mã đặt sân</th>
+                          <th>Khách hàng</th>
+                          <th>Lễ tân<br />thu ngân</th>
+                          <th>Thanh toán</th>
+                          <th style="text-align: right;">Tổng tiền</th>
+                          <th style="text-align: center;">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody id="invoicesTableBody">
+                        <tr>
+                          <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
+                            Đang tải danh sách hóa đơn...
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Phân trang (Figma Frame 27:242 .. 27:302) -->
+                  <div class="inv-pagination-bar">
+                    <span id="pageInfoText" class="inv-page-stat-text">Hiển thị 1–8 / 26 hóa đơn</span>
+                    <div class="inv-pagination-pages" id="paginationPagesWrap">
+                      <button type="button" class="inv-page-btn" id="btnPagePrev" disabled>‹</button>
+                      <button type="button" class="inv-page-btn active">1</button>
+                      <button type="button" class="inv-page-btn" id="btnPageNext">›</button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- ==========================================================
+                   CỘT PHẢI: CHỐT CA VÀ BÀN GIAO (Figma Frame 27:6)
+                   ========================================================== -->
+              <div class="inv-right-column">
+                <div class="inv-shift-card">
+                  <!-- Viền đỏ đầu thẻ (Figma Frame 27:253) -->
+                  <div class="inv-shift-red-bar"></div>
+
+                  <div class="inv-shift-card-header">
+                    <div>
+                      <h2 class="inv-shift-title">Chốt ca &amp; Bàn giao</h2>
+                      <p id="shiftSubtitle" class="inv-shift-subtitle">Ca Chiều: 14:00 – 22:00</p>
+                    </div>
+                    <span class="inv-shift-open-badge"><span class="status-dot-green">●</span> Đang mở</span>
+                  </div>
+
+                  <!-- Chọn lễ tân trong ca (Figma Frame 27:258) -->
+                  <div class="inv-shift-staff-group">
+                    <select id="shiftStaffSelect" class="inv-shift-staff-select">
+                      <!-- Dynamic receptionists -->
+                    </select>
+                    <span class="inv-chevron-icon">⌄</span>
+                  </div>
+
+                  <!-- Số hóa đơn trong ca (Figma Frame 27:261) -->
+                  <div class="inv-shift-metric-box">
+                    <span class="inv-metric-label">Hóa đơn đã xuất trong ca</span>
+                    <span id="shiftCountVal" class="inv-metric-val">18</span>
+                  </div>
+
+                  <!-- Tổng tiền mặt thu được (Figma Frame 27:264) -->
+                  <div class="inv-shift-stat-box">
+                    <div class="inv-stat-icon-wrapper icon-cash-box">
+                      <span class="inv-currency-symbol">₫</span>
+                    </div>
+                    <div class="inv-stat-text-group">
+                      <span class="inv-stat-label">Tổng tiền mặt thu được</span>
+                      <span id="shiftCashVal" class="inv-stat-amount">4.320.000đ</span>
+                    </div>
+                  </div>
+
+                  <!-- Tổng tiền chuyển khoản (Figma Frame 27:269) -->
+                  <div class="inv-shift-stat-box">
+                    <div class="inv-stat-icon-wrapper icon-bank-box">
+                      <span class="inv-qr-symbol">▦</span>
+                    </div>
+                    <div class="inv-stat-text-group">
+                      <span class="inv-stat-label">Tổng tiền chuyển khoản</span>
+                      <span id="shiftBankVal" class="inv-stat-amount">4.320.000đ</span>
+                    </div>
+                  </div>
+
+                  <!-- TỔNG DOANH THU TRONG CA (Figma Frame 27:274) -->
+                  <div class="inv-shift-grand-box">
+                    <span class="inv-grand-label">TỔNG DOANH THU TRONG CA</span>
+                    <span id="shiftTotalRevVal" class="inv-grand-amount">8.640.000đ</span>
+                  </div>
+
+                  <!-- Đối soát két tiền mặt (Figma Frame 27:277 .. 27:284) -->
+                  <div class="inv-audit-block">
+                    <h3 class="inv-audit-heading">Đối soát két tiền mặt</h3>
+                    <label for="actualCashInput" class="inv-audit-sublabel">Tiền mặt thực tế trong két</label>
+                    <div class="inv-cash-input-wrap">
+                      <input
+                        type="text"
+                        id="actualCashInput"
+                        class="inv-cash-amount-input"
+                        value="4.320.000"
+                        placeholder="Nhập số tiền két..."
+                      />
+                      <span class="inv-currency-tag">VND</span>
+                    </div>
+
+                    <!-- Khớp / Chênh lệch -->
+                    <div id="cashDiffBanner" class="inv-diff-banner banner-matched">
+                      <span class="diff-title-text">Chênh lệch</span>
+                      <span id="diffAmountText" class="diff-val-text">✓ 0đ · Khớp</span>
+                    </div>
+                  </div>
+
+                  <!-- Ghi chú bàn giao ca (Figma Frame 27:285 .. 27:287) -->
+                  <div class="inv-notes-block">
+                    <label for="shiftNotesInput" class="inv-notes-heading">Ghi chú bàn giao ca</label>
+                    <textarea
+                      id="shiftNotesInput"
+                      class="inv-notes-input"
+                      rows="2"
+                    >Đã kiểm đếm đủ tiền mặt.&#10;Bàn giao quỹ và chứng từ cho ca sau.</textarea>
+                  </div>
+
+                  <!-- Nút hành động Chốt ca & In phiếu (Figma Frame 27:288 & 27:290) -->
+                  <div class="inv-shift-buttons-group">
+                    <button type="button" id="btnConfirmCloseShift" class="inv-btn-primary-action">
+                      Xác nhận Chốt ca
+                    </button>
+                    <button type="button" id="btnPrintShiftSlip" class="inv-btn-secondary-action">
+                      In phiếu chốt ca
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         MODAL: CHI TIẾT HÓA ĐƠN & IN LẠI (Figma Frame 27:304 / 27:591)
+         ======================================================================== -->
+    <div
+      id="invoiceDetailModal"
+      class="inv-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalInvoiceTitle"
+    >
+      <div class="inv-figma-modal-card">
+        <!-- Tiêu đề chi tiết hóa đơn (Figma Frame 27:592) -->
+        <div class="inv-modal-top-header">
+          <div>
+            <h2 id="modalInvoiceTitle" class="inv-modal-title">Chi tiết hóa đơn</h2>
+            <p id="modalInvoiceSubtitle" class="inv-modal-subtitle">
+              #HD-20261122-01 · Bản xem trước &amp; in lại
+            </p>
+          </div>
+          <div class="inv-modal-header-actions">
+            <span class="inv-modal-paid-tag">✓ Đã thanh toán</span>
+            <button
+              type="button"
+              class="inv-modal-x-close"
+              data-close-modal="invoiceDetailModal"
+              aria-label="Đóng cửa sổ"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <!-- Khung bản xem trước hóa đơn thanh toán (Figma Frame 27:598) -->
+        <div class="inv-modal-receipt-container">
+          <div id="invPrintArea" class="inv-thermal-sheet">
+            <!-- Thương hiệu hóa đơn (Figma Frame 27:599) -->
+            <div class="inv-sheet-brand">
+              <div class="inv-sheet-brand-mark">//</div>
+              <div class="inv-sheet-brand-name">RK BADMINTON</div>
+            </div>
+            <p class="inv-sheet-address">28 Nguyễn Thị Minh Khai, Quận 1, TP. Hồ Chí Minh</p>
+            <p class="inv-sheet-phone">Điện thoại: 028 3822 1818</p>
+
+            <h3 class="inv-sheet-heading">HÓA ĐƠN THANH TOÁN</h3>
+
+            <!-- Thông tin hóa đơn 2 cột (Figma Frame 27:607 .. 27:618) -->
+            <div class="inv-sheet-meta-grid">
+              <div class="meta-row">
+                <span class="meta-lbl">Mã hóa đơn</span>
+                <strong id="recInvoiceCode" class="meta-val">#HD-20261122-01</strong>
+              </div>
+              <div class="meta-row">
+                <span class="meta-lbl">Ngày tạo</span>
+                <span id="recDateTime" class="meta-val">22/11/2026 · 14:55</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-lbl">Khách hàng</span>
+                <span id="recCustomerName" class="meta-val">Nguyễn Minh Anh</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-lbl">Lễ tân thu</span>
+                <span id="recStaffName" class="meta-val">Nguyễn Văn A</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-lbl">Mã đặt sân</span>
+                <span id="recBookingCode" class="meta-val">#BK-026113</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-lbl">Thanh toán</span>
+                <span id="recPaymentMethod" class="meta-val meta-green">Tiền mặt</span>
+              </div>
+            </div>
+
+            <!-- Bảng chi tiết dịch vụ & sân (Figma Frame 27:619 .. 27:644) -->
+            <div class="inv-sheet-items-table-wrap">
+              <table class="inv-sheet-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50%;">HẠNG MỤC</th>
+                    <th style="width: 15%; text-align: center;">SL</th>
+                    <th style="width: 17%; text-align: right;">ĐƠN GIÁ</th>
+                    <th style="width: 18%; text-align: right;">THÀNH TIỀN</th>
+                  </tr>
+                </thead>
+                <tbody id="recItemsTbody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Tổng thanh toán, Tiền khách đưa, Tiền thừa (Figma Frame 27:645 .. 27:650) -->
+            <div class="inv-sheet-totals-section">
+              <div class="inv-sheet-grand-row">
+                <span class="grand-text">Tổng thanh toán</span>
+                <span id="recGrandTotal" class="grand-num">390.000đ</span>
+              </div>
+              <div class="inv-sheet-sub-row">
+                <span class="sub-text">Tiền khách đưa</span>
+                <span id="recTendered" class="sub-num">500.000đ</span>
+              </div>
+              <div class="inv-sheet-sub-row">
+                <span class="sub-text">Tiền thừa</span>
+                <span id="recChange" class="sub-num">110.000đ</span>
+              </div>
+            </div>
+
+            <p class="inv-sheet-thanks">Cảm ơn quý khách. Hẹn gặp lại trên sân!</p>
+          </div>
+
+          <p class="inv-sheet-note">
+            Bản sao hóa đơn đã thanh toán. In lại không tạo giao dịch mới.
+          </p>
+        </div>
+
+        <!-- Nút hành động modal (Figma Frame 27:653 & 27:655) -->
+        <div class="inv-modal-bottom-actions">
+          <button
+            type="button"
+            class="inv-modal-btn-cancel"
+            data-close-modal="invoiceDetailModal"
+          >
+            Đóng
+          </button>
+          <button
+            type="button"
+            id="btnModalPrintInvoice"
+            class="inv-modal-btn-print"
+          >
+            In hóa đơn
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         MODAL: IN BIÊN BẢN CHỐT CA LỄ TÂN (Khổ in bàn giao ca)
+         ======================================================================== -->
+    <div
+      id="shiftSlipModal"
+      class="inv-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalShiftSlipTitle"
+    >
+      <div class="inv-figma-modal-card" style="max-width: 480px;">
+        <div class="inv-modal-top-header">
+          <div>
+            <h2 id="modalShiftSlipTitle" class="inv-modal-title">Biên bản chốt ca</h2>
+            <p id="slipSubHeader" class="inv-modal-subtitle">Đối soát thu ngân &amp; bàn giao quỹ</p>
+          </div>
+          <button
+            type="button"
+            class="inv-modal-x-close"
+            data-close-modal="shiftSlipModal"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="inv-modal-receipt-container">
+          <div id="shiftSlipPrintArea" class="inv-thermal-sheet">
+            <div class="inv-sheet-brand">
+              <div class="inv-sheet-brand-mark">//</div>
+              <div class="inv-sheet-brand-name">RK BADMINTON</div>
+            </div>
+            <p class="inv-sheet-address">BIÊN BẢN CHỐT CA &amp; BÀN GIAO THU NGÂN</p>
+            <p id="slipDateHeader" class="inv-sheet-phone">22/11/2026</p>
+
+            <div class="inv-sheet-meta-grid" style="margin-top: 14px;">
+              <div class="meta-row">
+                <span class="meta-lbl">Lễ tân chốt:</span>
+                <strong id="slipStaffName" class="meta-val">Nguyễn Văn A</strong>
+              </div>
+              <div class="meta-row">
+                <span class="meta-lbl">Ca làm việc:</span>
+                <span id="slipShiftName" class="meta-val">Ca Chiều (14:00 – 22:00)</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-lbl">Thời điểm chốt:</span>
+                <span id="slipClosedAt" class="meta-val">22/11/2026 22:05</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-lbl">Tổng hóa đơn:</span>
+                <span id="slipInvoiceCount" class="meta-val">18</span>
+              </div>
+            </div>
+
+            <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
+
+            <div class="inv-sheet-meta-grid">
+              <div class="meta-row" style="color: #166534;">
+                <span class="meta-lbl" style="font-weight: 600;">1. TIỀN MẶT THU ĐƯỢC:</span>
+                <strong id="slipCash" class="meta-val" style="font-size: 14px;">4.320.000đ</strong>
+              </div>
+              <div class="meta-row" style="color: #1d4ed8;">
+                <span class="meta-lbl" style="font-weight: 600;">2. CHUYỂN KHOẢN (BANK):</span>
+                <strong id="slipBank" class="meta-val" style="font-size: 14px;">4.320.000đ</strong>
+              </div>
+              <div class="meta-row" style="color: #ba0000; font-size: 15px; margin-top: 6px;">
+                <span class="meta-lbl" style="font-weight: 700;">TỔNG DOANH THU CA:</span>
+                <strong id="slipTotal" class="meta-val">8.640.000đ</strong>
+              </div>
+              <div class="meta-row" style="margin-top: 4px;">
+                <span class="meta-lbl">Tiền két thực tế:</span>
+                <span id="slipActualCash" class="meta-val">4.320.000đ</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-lbl">Chênh lệch:</span>
+                <span id="slipDiff" class="meta-val meta-green">0đ (Khớp)</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px; font-size: 11px; color: #475569;">
+              <strong>Ghi chú:</strong> <span id="slipNotesText">Đã kiểm đếm đủ tiền mặt. Bàn giao quỹ và chứng từ cho ca sau.</span>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; justify-content: space-between; font-size: 11px; text-align: center;">
+              <div>
+                <strong>LỄ TÂN BÀN GIAO</strong><br />
+                <span style="font-size: 9px; color: #64748b;">(Ký &amp; ghi rõ họ tên)</span>
+                <div style="height: 48px;"></div>
+                <strong id="slipSignStaffName">Nguyễn Văn A</strong>
+              </div>
+              <div>
+                <strong>NGƯỜI NHẬN CA / QUẢN LÝ</strong><br />
+                <span style="font-size: 9px; color: #64748b;">(Ký &amp; ghi rõ họ tên)</span>
+                <div style="height: 48px;"></div>
+                <span>....................................</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-modal-bottom-actions">
+          <button
+            type="button"
+            class="inv-modal-btn-cancel"
+            data-close-modal="shiftSlipModal"
+          >
+            Đóng
+          </button>
+          <button
+            type="button"
+            id="btnModalPrintSlipConfirm"
+            class="inv-modal-btn-print"
+          >
+            In biên bản
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="invToast" class="inv-toast" role="alert" aria-live="polite"></div>
+
+    <!-- Scripts -->
+    <script src="../js/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/t3d2096-config.js"></script>
+    <script src="../js/authStorage.js"></script>
+    <script src="../js/axiosClient.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/ProtectedRoute.js"></script>
+    <script src="../js/t3d2096-ui.js"></script>
+    <script src="../js/rk-layout.js"></script>
+    <script src="../js/pages/invoices.js"></script>
+  </body>
+</html>
