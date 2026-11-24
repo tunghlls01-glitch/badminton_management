@@ -106,6 +106,8 @@ async def lifespan(app: FastAPI):
             # invoices
             if "invoices" in insp.get_table_names():
                 inv_cols = {c["name"] for c in insp.get_columns("invoices")}
+                if "staff_id" not in inv_cols:
+                    conn.execute(text("ALTER TABLE invoices ADD COLUMN staff_id INT NULL"))
                 if "discount_amount" not in inv_cols:
                     conn.execute(text("ALTER TABLE invoices ADD COLUMN discount_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00"))
                 if "discount_reason" not in inv_cols:
