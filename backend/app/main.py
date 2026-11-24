@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
+from sqlalchemy import text
 from app import models  # noqa: F401 - import để SQLAlchemy biết các bảng
 from app.models import maintenance_block  # noqa: F401 - đăng ký bảng court_maintenance_blocks
 from app.core.config import BASE_DIR, settings
@@ -26,7 +27,7 @@ from app.routers import auth, health, items, reception, service_orders, services
 from app.routers import slot
 from app.routers import booking
 from app.routers import court_management, price_rule_management, maintenance_blocks
-from app.routers import profile, admin_users, analytics, notification
+from app.routers import profile, admin_users, analytics, notification, invoice
 from app.routers import admin_overview
 
 @asynccontextmanager
@@ -66,6 +67,11 @@ async def lifespan(app: FastAPI):
         added_courts = seed_courts()
         if added_courts:
             print(f"[SEED] Đã thêm {added_courts} sân mẫu vào database")
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE invoices ADD COLUMN staff_id INT NULL;"))
+        except Exception:
+            pass
         print(f"[DB] Đã kết nối MySQL {settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
         # Đảm bảo cấu trúc cột cho các bảng booking_slots, bookings, invoices, payments, services
         with engine.begin() as conn:
@@ -186,7 +192,7 @@ app.include_router(price_rule_management.router, prefix="/api")
 app.include_router(maintenance_blocks.router, prefix="/api")
 app.include_router(notification.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
-
+app.include_router(invoice.router, prefix="/api")
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} đang chạy. Xem tài liệu API tại /docs"}

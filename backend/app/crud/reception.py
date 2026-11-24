@@ -127,6 +127,7 @@ def checkout_booking(
     db: Session,
     booking_id: int,
     data: BookingCheckoutRequest,
+    staff_id: int | None = None,
 ) -> BookingCheckoutResponse:
     """Thanh toán tổng kết cho booking (tiền sân + tiền dịch vụ - giảm giá) trong 1 Transaction duy nhất.
     
@@ -205,10 +206,15 @@ def checkout_booking(
         invoice_code = f"INV-{timestamp_str}-{booking.id}"
 
         # 4. Tạo bản ghi Hóa đơn (Invoice)
+        actual_staff_id = staff_id or booking.created_by
+        if not booking.created_by and staff_id:
+            booking.created_by = staff_id
+
         invoice = Invoice(
             invoice_code=invoice_code,
             booking_id=booking.id,
             customer_id=booking.user_id,
+            staff_id=actual_staff_id,
             total_court_amount=total_court_amount,
             total_service_amount=total_service_amount,
             discount_amount=discount,

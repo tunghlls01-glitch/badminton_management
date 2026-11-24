@@ -221,7 +221,10 @@
     const revEl = $("kpi-total-revenue");
     if (revEl) revEl.textContent = formatMoney(totalRev);
 
-    const revGrowth = comparison.revenue_growth_pct !== undefined ? comparison.revenue_growth_pct : 12.5;
+    const revGrowth =
+      comparison.revenue_growth_pct !== undefined && comparison.revenue_growth_pct !== null
+        ? comparison.revenue_growth_pct
+        : 0.0;
     const revBadge = $("kpi-revenue-trend-badge");
     const revText = $("kpi-revenue-trend-text");
     if (revBadge && revText) {
@@ -232,14 +235,19 @@
 
     // 2. Tổng lượt đặt sân
     const totalBookings =
-      cancellations.total_bookings ||
-      (data.revenue?.timeline || []).reduce((acc, t) => acc + (t.booking_count || 0), 0) ||
-      occupancy.total_booked_slots ||
-      312;
+      cancellations.total_bookings ??
+      (data.revenue?.timeline && data.revenue.timeline.length > 0
+        ? data.revenue.timeline.reduce((acc, t) => acc + (t.booking_count || 0), 0)
+        : null) ??
+      occupancy.total_booked_slots ??
+      0;
     const bkEl = $("kpi-total-bookings");
     if (bkEl) bkEl.textContent = totalBookings.toLocaleString("vi-VN");
 
-    const bkGrowth = comparison.booking_growth_pct !== undefined ? comparison.booking_growth_pct : 8.2;
+    const bkGrowth =
+      comparison.booking_growth_pct !== undefined && comparison.booking_growth_pct !== null
+        ? comparison.booking_growth_pct
+        : 0.0;
     const bkBadge = $("kpi-bookings-trend-badge");
     const bkText = $("kpi-bookings-trend-text");
     if (bkBadge && bkText) {
@@ -249,14 +257,17 @@
     }
 
     // 3. Tỷ lệ sử dụng sân
-    const occRate = occupancy.overall_occupancy_rate || 74.5;
+    const occRate = occupancy.overall_occupancy_rate ?? 0;
     const occEl = $("kpi-occupancy-rate");
     if (occEl) occEl.textContent = formatPercent(occRate);
 
     const occBar = $("kpi-occupancy-bar");
     if (occBar) occBar.style.width = `${Math.min(100, Math.max(0, occRate))}%`;
 
-    const occDiff = comparison.occupancy_growth_pts !== undefined ? comparison.occupancy_growth_pts : 4.1;
+    const occDiff =
+      comparison.occupancy_growth_pts !== undefined && comparison.occupancy_growth_pts !== null
+        ? comparison.occupancy_growth_pts
+        : 0.0;
     const occDiffEl = $("kpi-occupancy-diff");
     if (occDiffEl) {
       const isPositive = occDiff >= 0;
