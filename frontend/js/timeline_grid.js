@@ -19,49 +19,20 @@ function getLoggedInUser() {
 }
 
 async function requireAuthenticatedUser() {
-  const token = getAccessToken();
-  const accountLink = document.getElementById("accountLink");
-  const accountLabel = document.getElementById("accountLabel");
   const loginUrl = "./login.html";
-
-  if (!token) {
-    window.location.replace(loginUrl);
-    return null;
-  }
-
   try {
-    const response = await fetch(`${API_ROOT}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      for (const storage of [localStorage, sessionStorage]) {
-        storage.removeItem("access_token");
-        storage.removeItem("user");
-        storage.removeItem("token");
-      }
-      const reason = response.status === 403 ? "locked" : "session-expired";
+    const user = await window.RK_CUSTOMER_ACCOUNT.load();
+    if (!user) {
+      window.location.replace(loginUrl);
+      return null;
+    }
+    return user;
+  } catch (error) {
+    if ([401, 403].includes(error.status)) {
+      const reason = error.status === 403 ? "locked" : "session-expired";
       window.location.replace(`${loginUrl}?reason=${reason}`);
       return null;
     }
-    if (!response.ok) {
-      throw new Error(`Không thể kiểm tra phiên đăng nhập (HTTP ${response.status}).`);
-    }
-
-    const user = await response.json();
-    if (!user?.id || !user?.full_name) {
-      throw new Error("API không trả về thông tin tài khoản hợp lệ.");
-    }
-
-    // Làm mới hồ sơ lưu ở đúng storage đang giữ token.
-    const storage = localStorage.getItem("access_token") ? localStorage : sessionStorage;
-    storage.setItem("user", JSON.stringify(user));
-    accountLabel.textContent = user.full_name;
-    accountLink.title = user.email || user.full_name;
-    accountLink.setAttribute("aria-label", `Tài khoản ${user.full_name}; mở hồ sơ`);
-    return user;
-  } catch (error) {
-    accountLabel.textContent = "Không kiểm tra được tài khoản";
     throw error;
   }
 }
@@ -175,8 +146,6 @@ const appState = {
   refreshQueued: false,
   gridRequestId: 0,
 };
-
-const GRID_REFRESH_MS = 15_000;
 
 async function fetchSlotsGrid(dateStr) {
   const result = await apiRequest(`/v1/slots/grid?date=${encodeURIComponent(dateStr)}`);
@@ -783,6 +752,10 @@ async function loadAndRenderGrid({ preserveSelection = false, silent = false } =
     throw error;
   }
   if (requestId !== appState.gridRequestId || requestedDate !== appState.currentDate.dateStr) return false;
+  if (!freshGrid.length) {
+    if (silent) return false;
+    throw new Error("Database chưa có sân nào. Hãy kiểm tra backend và dữ liệu courts.");
+  }
 
   let lostSelection = null;
   if (preserveSelection && !appState.holdSession) {
