@@ -1,12 +1,12 @@
 /**
  * RK BADMINTON · Reception Check-in & Counter Checkout
- * Interactive frontend logic matching Figma specification.
+ * Interactive frontend logic connected directly to Backend Database & User Data.
  */
 (function () {
   "use strict";
 
-  // --- Initial Mock Bookings matching Figma Design ---
-  const INITIAL_BOOKINGS = [
+  // --- Initial Fallback Mock Bookings (used only when backend is completely offline) ---
+  const FALLBACK_MOCK_BOOKINGS = [
     {
       id: 1,
       booking_code: "#BK-20261113",
@@ -18,15 +18,15 @@
       hours: 1,
       court_hourly_rate: 180000,
       court_fee: 180000,
-      status: "CHECKED_IN", // CHECKED_IN, Confirmed, Completed
+      status: "CHECKED_IN",
       checked_in_at: "14:02",
       services: [
         { name: "Ống cầu lông", qty: 2, unit_price: 60000, amount: 120000 },
         { name: "Nước đóng chai", qty: 3, unit_price: 10000, amount: 30000 },
-        { name: "Thuê vợt", qty: 1, unit_price: 40000, amount: 40000 }
+        { name: "Thuê vợt", qty: 1, unit_price: 40000, amount: 40000 },
       ],
       discount_amount: 0,
-      discount_reason: ""
+      discount_reason: "",
     },
     {
       id: 2,
@@ -42,10 +42,10 @@
       status: "CHECKED_IN",
       checked_in_at: "14:05",
       services: [
-        { name: "Nước đóng chai", qty: 2, unit_price: 10000, amount: 20000 }
+        { name: "Nước đóng chai", qty: 2, unit_price: 10000, amount: 20000 },
       ],
       discount_amount: 0,
-      discount_reason: ""
+      discount_reason: "",
     },
     {
       id: 3,
@@ -62,65 +62,64 @@
       checked_in_at: null,
       services: [],
       discount_amount: 0,
-      discount_reason: ""
+      discount_reason: "",
     },
-    {
-      id: 4,
-      booking_code: "#BK-20261116",
-      customer_name: "Thu Ha Le",
-      customer_phone: "093 456 7890",
-      court_name: "Sân 3",
-      court_type: "Sân tiêu chuẩn",
-      time_slot: "15:00–16:00",
-      hours: 1,
-      court_hourly_rate: 180000,
-      court_fee: 180000,
-      status: "Confirmed",
-      checked_in_at: null,
-      services: [],
-      discount_amount: 0,
-      discount_reason: ""
-    },
-    {
-      id: 5,
-      booking_code: "#BK-20261117",
-      customer_name: "Bao Hoang",
-      customer_phone: "096 678 9012",
-      court_name: "Sân 2",
-      court_type: "Sân tiêu chuẩn",
-      time_slot: "16:00–17:00",
-      hours: 1,
-      court_hourly_rate: 180000,
-      court_fee: 180000,
-      status: "Confirmed",
-      checked_in_at: null,
-      services: [],
-      discount_amount: 0,
-      discount_reason: ""
-    }
   ];
+
+  // Date helper (local YYYY-MM-DD)
+  function getLocalDateISO(d = new Date()) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatDisplayDate(dateStr) {
+    if (!dateStr) return "";
+    try {
+      const parts = dateStr.split("-");
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+    } catch {}
+    return dateStr;
+  }
+
+  function formatTime(d = new Date()) {
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
+  }
 
   // Application State
   const state = {
-    bookings: [...INITIAL_BOOKINGS],
-    selectedId: 1,
+    bookings: [],
+    selectedId: null,
+    selectedDate: getLocalDateISO(),
     activeFilter: "all", // "all", "upcoming", "checkedin"
     searchQuery: "",
     paymentMethod: "CASH", // "CASH" | "BANK_TRANSFER"
-    cashReceived: 500000,
+    cashReceived: 0,
     isReceiptOpen: false,
-    apiBaseURL: (window.RK_CONFIG && window.RK_CONFIG.apiURL) || "http://localhost:8000/api"
+    isLoading: false,
+    currentUser: null,
   };
 
   // DOM Elements
   const el = {};
 
   function cacheDOMElements() {
+    el.receptionUserName = document.getElementById("receptionUserName");
+    el.receptionUserRole = document.getElementById("receptionUserRole");
+    el.receptionUserAvatar = document.getElementById("receptionUserAvatar");
+
+    el.receptionDateInput = document.getElementById("receptionDateInput");
+    el.btnTodayQuick = document.getElementById("btnTodayQuick");
     el.searchInput = document.getElementById("searchInput");
     el.filterTabs = document.querySelectorAll("[data-filter]");
     el.bookingsList = document.getElementById("bookingsList");
     el.bookingsCountLabel = document.getElementById("bookingsCountLabel");
-    
+
     // Checkout elements
     el.checkoutStatus = document.getElementById("checkoutStatus");
     el.checkoutBookingCode = document.getElementById("checkoutBookingCode");
@@ -133,6 +132,7 @@
     el.courtFeePrice = document.getElementById("courtFeePrice");
     el.servicesTableBody = document.getElementById("servicesTableBody");
     el.servicesSubtotal = document.getElementById("servicesSubtotal");
+    el.discountInput = document.getElementById("discountInput");
     el.grandTotal = document.getElementById("grandTotal");
     el.cashInput = document.getElementById("cashInput");
     el.changeDue = document.getElementById("changeDue");
@@ -140,14 +140,14 @@
     el.paymentMethodBank = document.getElementById("paymentMethodBank");
     el.cashCalculatorBox = document.getElementById("cashCalculatorBox");
     el.bankTransferBox = document.getElementById("bankTransferBox");
-    
+
     // Action buttons
     el.btnQuick200k = document.getElementById("btnQuick200k");
     el.btnQuick500k = document.getElementById("btnQuick500k");
     el.btnQuickExact = document.getElementById("btnQuickExact");
     el.btnPrintPreview = document.getElementById("btnPrintPreview");
     el.btnConfirmPayment = document.getElementById("btnConfirmPayment");
-    
+
     // Thermal Receipt Drawer elements
     el.modalOverlay = document.getElementById("modalOverlay");
     el.btnCloseReceipt = document.getElementById("btnCloseReceipt");
@@ -164,7 +164,7 @@
     el.receiptTender = document.getElementById("receiptTender");
     el.receiptChange = document.getElementById("receiptChange");
     el.receiptPaymentStatus = document.getElementById("receiptPaymentStatus");
-    
+
     // Toast
     el.toast = document.getElementById("rkToast");
     el.toastText = document.getElementById("rkToastText");
@@ -187,17 +187,196 @@
     el.toast.classList.add("show");
     setTimeout(() => {
       el.toast.classList.remove("show");
-    }, 3200);
+    }, 3500);
   }
 
-  // --- Get Selected Booking ---
+  // --- 1. User & Authentication Setup ---
+  function renderUserInfo() {
+    let user = null;
+    try {
+      if (window.RK_AUTH && typeof window.RK_AUTH.getState === "function") {
+        const auth = window.RK_AUTH.getState();
+        if (auth && auth.user) user = auth.user;
+      }
+      if (!user && window.authStorage && typeof window.authStorage.getUser === "function") {
+        user = window.authStorage.getUser();
+      }
+    } catch (e) {
+      console.warn("Could not read auth user:", e);
+    }
+
+    if (!user) {
+      user = {
+        full_name: "Lễ tân quầy",
+        role: "staff",
+        email: "letan@badminton.com",
+      };
+    }
+    state.currentUser = user;
+
+    if (el.receptionUserName) {
+      el.receptionUserName.textContent = user.full_name || "Lễ tân";
+    }
+    if (el.receptionUserRole) {
+      el.receptionUserRole.textContent =
+        user.role === "admin" ? "Quản trị viên" : "Lễ tân · Quầy thu ngân";
+    }
+    if (el.receptionUserAvatar) {
+      if (user.avatar) {
+        el.receptionUserAvatar.innerHTML = `<img src="${user.avatar}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      } else {
+        const initial = user.full_name ? user.full_name.trim().charAt(0).toUpperCase() : "LT";
+        el.receptionUserAvatar.textContent = initial;
+      }
+    }
+  }
+
+  // --- 2. Database Mapping: Backend BookingOut -> UI Booking Model ---
+  function mapBookingFromAPI(b) {
+    const firstSlot = b.slots && b.slots[0] ? b.slots[0] : null;
+    const totalMinutes = (b.slots || []).reduce(
+      (sum, s) => sum + (Number(s.duration_minutes) || 60),
+      0
+    );
+    const hours = totalMinutes > 0 ? totalMinutes / 60 : 1;
+    const rate = firstSlot ? Number(firstSlot.price_per_hour) : 180000;
+
+    let timeSlot = "14:00–15:00";
+    if (b.start_time && b.end_time) {
+      timeSlot = `${b.start_time}–${b.end_time}`;
+    } else if (firstSlot && firstSlot.start_at && firstSlot.end_at) {
+      const s = String(firstSlot.start_at).slice(11, 16);
+      const e = String(firstSlot.end_at).slice(11, 16);
+      timeSlot = `${s}–${e}`;
+    }
+
+    const courtName = b.court_name || (firstSlot ? firstSlot.court_name : "Sân 1");
+    const isVip = courtName && courtName.toLowerCase().includes("vip");
+
+    return {
+      id: b.id,
+      booking_code: b.booking_code,
+      user_id: b.user_id,
+      customer_name: b.user_name || "Khách hàng #" + (b.user_id || b.id),
+      customer_phone: b.user_phone || "---",
+      court_name: courtName,
+      court_type: isVip ? "Sân thi đấu VIP" : "Sân tiêu chuẩn",
+      time_slot: timeSlot,
+      hours: hours,
+      court_hourly_rate: rate,
+      court_fee: Number(b.total_price) || rate * hours,
+      status: b.status, // "Confirmed", "CHECKED_IN", "Completed", "Pending", "Cancelled", "NO_SHOW"
+      checked_in_at: b.status === "CHECKED_IN" ? b.start_time || "Đã nhận sân" : null,
+      services: [],
+      discount_amount: 0,
+      discount_reason: "",
+      invoice_code: null,
+    };
+  }
+
+  // --- 3. Load Services for Selected Booking ---
+  async function loadServicesForBooking(bookingId) {
+    const booking = state.bookings.find((b) => b.id === bookingId);
+    if (!booking || !window.axiosClient) return;
+
+    try {
+      const res = await window.axiosClient.get(`/service-orders/booking/${bookingId}/summary`);
+      if (res.data) {
+        const summary = res.data;
+        const services = [];
+        (summary.orders || []).forEach((order) => {
+          (order.items || []).forEach((item) => {
+            services.push({
+              name: item.service_name || "Dịch vụ",
+              qty: item.quantity || 1,
+              unit_price: Number(item.unit_price) || 0,
+              amount: Number(item.total_price) || (item.quantity * item.unit_price) || 0,
+            });
+          });
+        });
+        booking.services = services;
+        if (booking.id === state.selectedId) {
+          renderCheckoutPanel();
+        }
+      }
+    } catch (err) {
+      // 404 or no orders is normal when no services ordered
+      booking.services = [];
+      if (booking.id === state.selectedId) {
+        renderCheckoutPanel();
+      }
+    }
+  }
+
+  // --- 4. Load Bookings from Database API ---
+  async function loadBookingsFromAPI(dateStr = null, searchParams = {}) {
+    const targetDate = dateStr || state.selectedDate;
+    state.isLoading = true;
+
+    if (el.bookingsList) {
+      el.bookingsList.innerHTML = `
+        <div style="text-align:center;padding:36px 16px;color:var(--rk-text-muted);font-size:13px;">
+          <div style="display:inline-block;width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#ba0000;border-radius:50%;animation:rkSpin 0.8s linear infinite;margin-bottom:8px;"></div>
+          <div>Đang tải danh sách đặt sân từ cơ sở dữ liệu...</div>
+        </div>
+      `;
+    }
+
+    if (!window.axiosClient) {
+      state.isLoading = false;
+      state.bookings = [...FALLBACK_MOCK_BOOKINGS];
+      state.selectedId = state.bookings[0].id;
+      renderBookingsList();
+      renderCheckoutPanel();
+      return;
+    }
+
+    try {
+      const params = {
+        booking_date: targetDate,
+        ...searchParams,
+      };
+
+      const res = await window.axiosClient.get("/reception/bookings", { params });
+
+      if (res.data && Array.isArray(res.data)) {
+        state.bookings = res.data.map(mapBookingFromAPI);
+
+        if (state.bookings.length > 0) {
+          if (!state.bookings.some((b) => b.id === state.selectedId)) {
+            state.selectedId = state.bookings[0].id;
+          }
+        } else {
+          state.selectedId = null;
+        }
+
+        renderBookingsList();
+        renderCheckoutPanel();
+
+        if (state.selectedId) {
+          await loadServicesForBooking(state.selectedId);
+        }
+      }
+    } catch (err) {
+      console.warn("[Reception] Lỗi tải dữ liệu từ API:", err);
+      showToast("⚠️ Không thể kết nối cơ sở dữ liệu. Đang hiển thị bản dữ liệu xem trước.");
+      state.bookings = [...FALLBACK_MOCK_BOOKINGS];
+      state.selectedId = state.bookings[0].id;
+      renderBookingsList();
+      renderCheckoutPanel();
+    } finally {
+      state.isLoading = false;
+    }
+  }
+
+  // --- 5. Selected Booking & Totals ---
   function getSelectedBooking() {
-    return state.bookings.find((b) => b.id === state.selectedId) || state.bookings[0];
+    if (!state.selectedId) return null;
+    return state.bookings.find((b) => b.id === state.selectedId) || null;
   }
 
-  // --- Totals Calculation ---
   function calculateTotals(booking) {
-    if (!booking) return { courtTotal: 0, servicesTotal: 0, grandTotal: 0 };
+    if (!booking) return { courtTotal: 0, servicesTotal: 0, grandTotal: 0, discount: 0 };
     const courtTotal = Number(booking.court_fee || 0);
     const servicesTotal = (booking.services || []).reduce(
       (sum, s) => sum + Number(s.amount || s.unit_price * s.qty || 0),
@@ -208,14 +387,14 @@
     return { courtTotal, servicesTotal, grandTotal, discount };
   }
 
-  // --- Render Bookings List ---
+  // --- 6. Render Bookings List ---
   function renderBookingsList() {
     if (!el.bookingsList) return;
 
     // Filter by tab
     let filtered = state.bookings.filter((b) => {
       if (state.activeFilter === "upcoming") {
-        return b.status === "Confirmed";
+        return b.status === "Confirmed" || b.status === "Pending";
       }
       if (state.activeFilter === "checkedin") {
         return b.status === "CHECKED_IN";
@@ -237,7 +416,9 @@
 
     // Update filter counts
     const totalCount = state.bookings.length;
-    const upcomingCount = state.bookings.filter((b) => b.status === "Confirmed").length;
+    const upcomingCount = state.bookings.filter(
+      (b) => b.status === "Confirmed" || b.status === "Pending"
+    ).length;
     const checkedinCount = state.bookings.filter((b) => b.status === "CHECKED_IN").length;
 
     el.filterTabs.forEach((tab) => {
@@ -249,13 +430,20 @@
     });
 
     if (el.bookingsCountLabel) {
-      el.bookingsCountLabel.textContent = `Hôm nay · ${totalCount} lượt đặt sân`;
+      const isToday = state.selectedDate === getLocalDateISO();
+      const prefix = isToday ? "Hôm nay" : `Ngày ${formatDisplayDate(state.selectedDate)}`;
+      el.bookingsCountLabel.textContent = `${prefix} · ${totalCount} lượt đặt sân`;
     }
 
     if (filtered.length === 0) {
+      const msg =
+        totalCount === 0
+          ? `Chưa có lượt đặt sân nào cho ngày ${formatDisplayDate(state.selectedDate)}.`
+          : "Không tìm thấy lượt đặt sân nào phù hợp với bộ lọc.";
       el.bookingsList.innerHTML = `
-        <div style="text-align:center;padding:32px 16px;color:var(--rk-text-muted);font-size:13px;">
-          Không tìm thấy lượt đặt sân nào phù hợp.
+        <div style="text-align:center;padding:36px 16px;color:var(--rk-text-muted);font-size:13px;">
+          <div style="font-size:24px;margin-bottom:8px;">📋</div>
+          <div>${msg}</div>
         </div>
       `;
       return;
@@ -273,6 +461,9 @@
         } else if (b.status === "Completed") {
           statusBadge = `<span class="booking-status-tag status-tag-completed">Đã hoàn thành</span>`;
           actionBtn = `<button type="button" class="booking-action-btn btn-view-invoice" data-action="preview" data-id="${b.id}">Xem hóa đơn</button>`;
+        } else if (b.status === "NO_SHOW") {
+          statusBadge = `<span class="booking-status-tag" style="background:#fee2e2;color:#991b1b;">Vắng mặt</span>`;
+          actionBtn = `<button type="button" class="booking-action-btn" data-action="preview" data-id="${b.id}" style="background:#f1f5f9;color:#64748b;">Chi tiết</button>`;
         } else {
           statusBadge = `<span class="booking-status-tag status-tag-confirmed">Đã xác nhận</span>`;
           actionBtn = `<button type="button" class="booking-action-btn btn-checkin" data-action="checkin" data-id="${b.id}">Nhận sân</button>`;
@@ -290,7 +481,7 @@
             <div class="booking-item-body">
               <div>
                 <div class="booking-customer-name">${b.customer_name}</div>
-                <div class="booking-customer-phone">${b.customer_phone}</div>
+                <div class="booking-customer-phone">${b.customer_phone} · <small style="color:#64748b;">${b.booking_code}</small></div>
               </div>
               <div>
                 ${actionBtn}
@@ -302,10 +493,40 @@
       .join("");
   }
 
-  // --- Render Checkout Panel ---
+  // --- 7. Render Checkout Panel ---
   function renderCheckoutPanel() {
     const booking = getSelectedBooking();
-    if (!booking) return;
+
+    if (!booking) {
+      if (el.checkoutStatus) {
+        el.checkoutStatus.className = "checkout-status-badge pending";
+        el.checkoutStatus.textContent = "● Chưa chọn sân";
+      }
+      if (el.checkoutBookingCode) el.checkoutBookingCode.textContent = "---";
+      if (el.checkoutCustName) el.checkoutCustName.textContent = "---";
+      if (el.checkoutCustPhone) el.checkoutCustPhone.textContent = "---";
+      if (el.checkoutCourtName) el.checkoutCourtName.textContent = "---";
+      if (el.checkoutCheckinTime) el.checkoutCheckinTime.textContent = "---";
+      if (el.courtFeeDesc) el.courtFeeDesc.textContent = "Chưa có lượt đặt sân được chọn";
+      if (el.courtFeeFormula) el.courtFeeFormula.textContent = "0 giờ × 0";
+      if (el.courtFeePrice) el.courtFeePrice.textContent = "0";
+      if (el.servicesTableBody) {
+        el.servicesTableBody.innerHTML = `
+          <div style="padding:16px;color:var(--rk-text-muted);font-size:12px;font-style:italic;text-align:center;">
+            Vui lòng chọn một lượt đặt sân ở danh sách bên trái.
+          </div>
+        `;
+      }
+      if (el.servicesSubtotal) el.servicesSubtotal.textContent = "0";
+      if (el.discountInput) el.discountInput.value = "";
+      if (el.grandTotal) el.grandTotal.textContent = "0";
+      if (el.btnConfirmPayment) el.btnConfirmPayment.disabled = true;
+      if (el.btnPrintPreview) el.btnPrintPreview.disabled = true;
+      return;
+    }
+
+    if (el.btnConfirmPayment) el.btnConfirmPayment.disabled = false;
+    if (el.btnPrintPreview) el.btnPrintPreview.disabled = false;
 
     const totals = calculateTotals(booking);
 
@@ -313,9 +534,23 @@
     if (booking.status === "Completed") {
       el.checkoutStatus.className = "checkout-status-badge completed";
       el.checkoutStatus.innerHTML = "● Đã thanh toán";
+      if (el.btnConfirmPayment) {
+        el.btnConfirmPayment.textContent = "Đã thanh toán (Xem / In lại)";
+      }
+    } else if (booking.status === "CHECKED_IN") {
+      el.checkoutStatus.className = "checkout-status-badge active";
+      el.checkoutStatus.style.backgroundColor = "#dcfce7";
+      el.checkoutStatus.style.color = "#15803d";
+      el.checkoutStatus.innerHTML = "● Đang chơi · Chờ thanh toán";
+      if (el.btnConfirmPayment) {
+        el.btnConfirmPayment.textContent = "Thanh toán & in hóa đơn";
+      }
     } else {
       el.checkoutStatus.className = "checkout-status-badge pending";
-      el.checkoutStatus.innerHTML = "● Chờ thanh toán";
+      el.checkoutStatus.innerHTML = "● Chờ nhận sân & thanh toán";
+      if (el.btnConfirmPayment) {
+        el.btnConfirmPayment.textContent = "Thanh toán & in hóa đơn";
+      }
     }
 
     el.checkoutBookingCode.textContent = booking.booking_code;
@@ -354,15 +589,21 @@
     }
 
     el.servicesSubtotal.textContent = formatMoney(totals.servicesTotal);
+
+    // Discount input
+    if (el.discountInput) {
+      el.discountInput.value = booking.discount_amount > 0 ? formatMoney(booking.discount_amount) : "";
+    }
+
     el.grandTotal.textContent = formatMoney(totals.grandTotal);
 
-    // Cash received & change due calculation
+    // Cash calculator update
     renderCashCalculator(totals.grandTotal);
   }
 
-  // --- Render Cash Calculator ---
+  // --- 8. Render Cash Calculator ---
   function renderCashCalculator(grandTotal) {
-    if (state.cashReceived === 0) {
+    if (state.cashReceived === 0 || state.cashReceived < grandTotal) {
       state.cashReceived = grandTotal;
     }
 
@@ -383,7 +624,7 @@
     el.btnQuickExact.classList.toggle("active", state.cashReceived === grandTotal);
   }
 
-  // --- Render Thermal Receipt Drawer ---
+  // --- 9. Thermal Receipt Drawer ---
   function renderThermalReceipt() {
     const booking = getSelectedBooking();
     if (!booking) return;
@@ -393,14 +634,13 @@
     const dateStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
     const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
-    el.receiptBookingCode.textContent = booking.booking_code;
+    el.receiptBookingCode.textContent = booking.invoice_code || booking.booking_code;
     el.receiptDate.textContent = dateStr;
     el.receiptTime.textContent = timeStr;
     el.receiptCustomer.textContent = booking.customer_name;
     el.receiptCourt.textContent = booking.court_name;
     el.receiptCheckin.textContent = booking.checked_in_at || "14:02";
 
-    // Build receipt item groups
     let itemsHtml = `
       <div class="receipt-item-group">
         <div class="receipt-item-name">${booking.court_name} · ${booking.time_slot}</div>
@@ -423,6 +663,18 @@
       `;
     });
 
+    if (totals.discount > 0) {
+      itemsHtml += `
+        <div class="receipt-item-group" style="color:#b91c1c;">
+          <div class="receipt-item-name">Chiết khấu / Giảm giá</div>
+          <div class="receipt-item-calc">
+            <span>-</span>
+            <span>-${formatMoney(totals.discount)}</span>
+          </div>
+        </div>
+      `;
+    }
+
     el.receiptItemsList.innerHTML = itemsHtml;
     el.receiptTotal.textContent = formatMoney(totals.grandTotal);
     el.receiptTender.textContent = formatMoney(state.cashReceived);
@@ -431,74 +683,12 @@
     el.receiptChange.textContent = formatMoney(change);
 
     if (booking.status === "Completed") {
-      el.receiptPaymentStatus.textContent = "Hóa đơn đã được thanh toán thành công.";
+      el.receiptPaymentStatus.textContent = `Hóa đơn đã được thanh toán (${state.paymentMethod === "BANK_TRANSFER" ? "Chuyển khoản VietQR" : "Tiền mặt"}).`;
     } else {
       el.receiptPaymentStatus.textContent = "Thanh toán chưa được xác nhận.";
     }
   }
 
-  // --- Check-in Action ---
-  async function handleCheckIn(bookingId) {
-    const booking = state.bookings.find((b) => b.id === bookingId);
-    if (!booking) return;
-
-    const now = new Date();
-    const timeNow = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    booking.status = "CHECKED_IN";
-    booking.checked_in_at = timeNow;
-
-    state.selectedId = bookingId;
-    renderBookingsList();
-    renderCheckoutPanel();
-
-    if (window.axiosClient) {
-      try {
-        await window.axiosClient.post(`/reception/bookings/${bookingId}/check-in`);
-      } catch (err) {
-        console.warn("Check-in API fallback:", err);
-      }
-    }
-    showToast(`✓ Đã nhận sân thành công cho ${booking.customer_name}!`);
-  }
-
-  // --- Confirm Payment Action ---
-  async function handleConfirmPaymentAndPrint() {
-    const booking = getSelectedBooking();
-    if (!booking) return;
-
-    const totals = calculateTotals(booking);
-
-    booking.status = "Completed";
-    renderBookingsList();
-    renderCheckoutPanel();
-    renderThermalReceipt();
-
-    if (window.axiosClient) {
-      try {
-        const payload = {
-          payment_method: state.paymentMethod, // "CASH" | "BANK_TRANSFER"
-          discount_amount: booking.discount_amount || 0,
-          discount_reason: booking.discount_reason || (booking.discount_amount > 0 ? "Chiết khấu lễ tân" : null)
-        };
-        const res = await window.axiosClient.post(`/reception/bookings/${booking.id}/checkout`, payload);
-        if (res.data && res.data.invoice_code) {
-          booking.invoice_code = res.data.invoice_code;
-        }
-      } catch (err) {
-        console.warn("Checkout API fallback:", err);
-      }
-    }
-
-    showToast(`✓ Đã ghi nhận thanh toán ${formatMoney(totals.grandTotal)} VND!`);
-
-    // Open receipt drawer and trigger print
-    openReceiptDrawer();
-    setTimeout(() => {
-      window.print();
-    }, 450);
-  }
-
-  // --- Drawer Open / Close ---
   function openReceiptDrawer() {
     renderThermalReceipt();
     state.isReceiptOpen = true;
@@ -510,12 +700,127 @@
     el.modalOverlay.classList.remove("open");
   }
 
-  // --- Event Bindings ---
+  // --- 10. Check-in Action (POST /api/reception/bookings/{id}/check-in) ---
+  async function handleCheckIn(bookingId) {
+    const booking = state.bookings.find((b) => b.id === bookingId);
+    if (!booking) return;
+
+    if (window.axiosClient) {
+      try {
+        const res = await window.axiosClient.post(`/reception/bookings/${bookingId}/check-in`);
+        if (res.data) {
+          booking.status = res.data.status || "CHECKED_IN";
+        } else {
+          booking.status = "CHECKED_IN";
+        }
+        booking.checked_in_at = formatTime();
+        state.selectedId = bookingId;
+        renderBookingsList();
+        renderCheckoutPanel();
+        showToast(`✓ Đã nhận sân thành công cho ${booking.customer_name}!`);
+        await loadServicesForBooking(bookingId);
+      } catch (err) {
+        const msg = err.response?.data?.detail || err.message || "Không thể nhận sân";
+        showToast(`⚠️ Lỗi nhận sân: ${msg}`);
+      }
+    } else {
+      booking.status = "CHECKED_IN";
+      booking.checked_in_at = formatTime();
+      state.selectedId = bookingId;
+      renderBookingsList();
+      renderCheckoutPanel();
+      showToast(`✓ Đã nhận sân thành công cho ${booking.customer_name}!`);
+    }
+  }
+
+  // --- 11. Checkout Action (POST /api/reception/bookings/{id}/checkout) ---
+  async function handleConfirmPaymentAndPrint() {
+    const booking = getSelectedBooking();
+    if (!booking) return;
+
+    if (booking.status === "Completed") {
+      showToast("Booking này đã được thanh toán hoàn thành.");
+      openReceiptDrawer();
+      return;
+    }
+
+    const totals = calculateTotals(booking);
+
+    if (window.axiosClient) {
+      try {
+        const payload = {
+          payment_method: state.paymentMethod, // "CASH" | "BANK_TRANSFER"
+          discount_amount: Number(booking.discount_amount) || 0,
+          discount_reason:
+            booking.discount_reason ||
+            (booking.discount_amount > 0 ? "Chiết khấu lễ tân tại quầy" : null),
+        };
+
+        const res = await window.axiosClient.post(
+          `/reception/bookings/${booking.id}/checkout`,
+          payload
+        );
+
+        if (res.data) {
+          booking.status = "Completed";
+          if (res.data.invoice_code) {
+            booking.invoice_code = res.data.invoice_code;
+          }
+        }
+      } catch (err) {
+        const msg = err.response?.data?.detail || err.message || "Thanh toán thất bại";
+        showToast(`✕ Lỗi thanh toán: ${msg}`);
+        return;
+      }
+    } else {
+      booking.status = "Completed";
+    }
+
+    renderBookingsList();
+    renderCheckoutPanel();
+    renderThermalReceipt();
+    showToast(`✓ Đã ghi nhận thanh toán ${formatMoney(totals.grandTotal)} VND!`);
+
+    openReceiptDrawer();
+    setTimeout(() => {
+      window.print();
+    }, 450);
+  }
+
+  // --- 12. Event Listeners ---
   function initEventListeners() {
-    // Search input
+    // Date filter change
+    if (el.receptionDateInput) {
+      el.receptionDateInput.value = state.selectedDate;
+      el.receptionDateInput.addEventListener("change", (e) => {
+        state.selectedDate = e.target.value || getLocalDateISO();
+        loadBookingsFromAPI();
+      });
+    }
+
+    // Quick today button
+    if (el.btnTodayQuick) {
+      el.btnTodayQuick.addEventListener("click", () => {
+        state.selectedDate = getLocalDateISO();
+        if (el.receptionDateInput) el.receptionDateInput.value = state.selectedDate;
+        loadBookingsFromAPI();
+      });
+    }
+
+    // Search input (Real-time filter + Enter key to query API)
     el.searchInput.addEventListener("input", (e) => {
       state.searchQuery = e.target.value;
       renderBookingsList();
+    });
+
+    el.searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const q = state.searchQuery.trim();
+        loadBookingsFromAPI(state.selectedDate, {
+          booking_code: q,
+          phone: q,
+        });
+      }
     });
 
     // Filter tabs
@@ -527,22 +832,24 @@
     });
 
     // Bookings list click delegation
-    el.bookingsList.addEventListener("click", (e) => {
+    el.bookingsList.addEventListener("click", async (e) => {
       const actionBtn = e.target.closest("[data-action]");
       if (actionBtn) {
         e.stopPropagation();
         const action = actionBtn.dataset.action;
         const id = Number(actionBtn.dataset.id);
         if (action === "checkin") {
-          handleCheckIn(id);
+          await handleCheckIn(id);
         } else if (action === "checkout") {
           state.selectedId = id;
           renderBookingsList();
           renderCheckoutPanel();
+          await loadServicesForBooking(id);
         } else if (action === "preview") {
           state.selectedId = id;
           renderBookingsList();
           renderCheckoutPanel();
+          await loadServicesForBooking(id);
           openReceiptDrawer();
         }
         return;
@@ -554,8 +861,29 @@
         state.selectedId = id;
         renderBookingsList();
         renderCheckoutPanel();
+        await loadServicesForBooking(id);
       }
     });
+
+    // Discount input
+    if (el.discountInput) {
+      el.discountInput.addEventListener("input", (e) => {
+        const booking = getSelectedBooking();
+        if (!booking) return;
+        const val = parseMoney(e.target.value);
+        booking.discount_amount = val;
+        booking.discount_reason = val > 0 ? "Chiết khấu lễ tân tại quầy" : "";
+        const totals = calculateTotals(booking);
+        el.grandTotal.textContent = formatMoney(totals.grandTotal);
+        renderCashCalculator(totals.grandTotal);
+      });
+      el.discountInput.addEventListener("blur", (e) => {
+        const booking = getSelectedBooking();
+        if (booking && booking.discount_amount > 0) {
+          e.target.value = formatMoney(booking.discount_amount);
+        }
+      });
+    }
 
     // Payment method selector
     el.paymentMethodCash.addEventListener("click", () => {
@@ -648,54 +976,31 @@
         closeReceiptDrawer();
       }
     });
-  }
 
-  // --- Load Bookings from Backend API ---
-  async function loadBookingsFromAPI() {
-    if (!window.axiosClient) return;
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const res = await window.axiosClient.get(`/reception/bookings?booking_date=${today}`);
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        state.bookings = res.data.map((b) => {
-          const firstSlot = b.slots && b.slots[0] ? b.slots[0] : null;
-          const hours = firstSlot ? (firstSlot.duration_minutes / 60) : 1;
-          const rate = firstSlot ? firstSlot.price_per_hour : 180000;
-          return {
-            id: b.id,
-            booking_code: b.booking_code,
-            customer_name: b.user_name || "Khách vãng lai",
-            customer_phone: b.user_phone || "",
-            court_name: b.court_name || (firstSlot ? firstSlot.court_name : "Sân 1"),
-            court_type: "Sân tiêu chuẩn",
-            time_slot: b.start_time && b.end_time ? `${b.start_time}–${b.end_time}` : "14:00–15:00",
-            hours: hours,
-            court_hourly_rate: rate,
-            court_fee: b.total_price || 180000,
-            status: b.status, // "CHECKED_IN", "Confirmed", "Completed"
-            checked_in_at: b.status === "CHECKED_IN" ? "14:02" : null,
-            services: [],
-            discount_amount: 0,
-            discount_reason: ""
-          };
-        });
-        if (!state.bookings.some((b) => b.id === state.selectedId)) {
-          state.selectedId = state.bookings[0].id;
+    // Logout button handler
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest('[data-rk-action="logout"]');
+      if (btn) {
+        if (window.RK_AUTH && typeof window.RK_AUTH.logout === "function") {
+          window.RK_AUTH.logout();
         }
-        renderBookingsList();
-        renderCheckoutPanel();
+        if (window.RK_NAV && typeof window.RK_NAV.go === "function") {
+          window.RK_NAV.go(
+            window.RK_CONFIG ? window.RK_CONFIG.loginURL : "login.html",
+            true
+          );
+        } else {
+          window.location.href = "login.html";
+        }
       }
-    } catch (err) {
-      console.warn("Chưa tải được booking từ API, duy trì dữ liệu quầy mẫu:", err);
-    }
+    });
   }
 
-  // --- Initialization ---
-  document.addEventListener("DOMContentLoaded", () => {
+  // --- 13. Initialization ---
+  document.addEventListener("DOMContentLoaded", async () => {
     cacheDOMElements();
+    renderUserInfo();
     initEventListeners();
-    renderBookingsList();
-    renderCheckoutPanel();
-    loadBookingsFromAPI();
+    await loadBookingsFromAPI();
   });
 })();

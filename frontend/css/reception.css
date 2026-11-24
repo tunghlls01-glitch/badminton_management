@@ -1379,3 +1379,19 @@ body.rk-reception-body {
     margin: 0;
   }
 }
+
+@keyframes rkSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.status-tag-noshow {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.status-tag-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}

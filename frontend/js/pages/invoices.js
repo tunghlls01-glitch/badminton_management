@@ -952,35 +952,9 @@
         if (e.target === modal) modal.classList.remove("open");
       });
     });
-
-    // 12. Layout actions (Mobile sidebar toggle & Logout)
-    document.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-rk-action]");
-      if (!btn) return;
-      const action = btn.dataset.rkAction;
-      if (action === "sidebar" || action === "sidebar-close") {
-        const sidebar = document.getElementById("rk-sidebar");
-        const backdrop = document.getElementById("rk-backdrop");
-        if (sidebar) {
-          const isOpen = action === "sidebar" && !sidebar.classList.contains("is-open");
-          sidebar.classList.toggle("is-open", isOpen);
-          btn.setAttribute("aria-expanded", String(isOpen));
-          if (backdrop) backdrop.hidden = !isOpen;
-        }
-      } else if (action === "logout") {
-        if (global.RK_AUTH && typeof global.RK_AUTH.logout === "function") {
-          global.RK_AUTH.logout();
-        }
-        if (global.RK_NAV && typeof global.RK_NAV.go === "function") {
-          global.RK_NAV.go(global.RK_CONFIG ? global.RK_CONFIG.loginURL : "login.html", true);
-        } else {
-          window.location.href = "login.html";
-        }
-      }
-    });
   }
 
-  // --- Layout & Navigation Setup (Figma Frame 27:7 & Frame 27:60) ---
+  // --- Layout & Navigation Setup ---
   function getActiveUser() {
     let user = null;
     try {
@@ -997,9 +971,9 @@
     if (!user) {
       user = {
         id: 1,
-        full_name: "Nguyễn Văn A",
-        role: "staff",
-        email: "vana@badminton.com",
+        full_name: "Do Hieu",
+        role: "admin",
+        email: "admin@badminton.com",
       };
     }
     return user;
@@ -1007,12 +981,9 @@
 
   function renderLayout() {
     const user = getActiveUser();
-    const userNameEl = document.getElementById("topbarUserName");
-    const userRoleEl = document.getElementById("topbarUserRole");
-    const userAvatarEl = document.getElementById("topbarUserAvatar");
-    if (userNameEl) userNameEl.textContent = user.full_name || "Nguyễn Văn A";
-    if (userRoleEl) userRoleEl.textContent = user.role === "admin" ? "Quản trị viên" : "Lễ tân · Ca chiều";
-    if (userAvatarEl) userAvatarEl.textContent = user.full_name ? user.full_name.trim().charAt(0).toUpperCase() : "A";
+    if (global.RK_LAYOUT && typeof global.RK_LAYOUT.dashboard === "function") {
+      global.RK_LAYOUT.dashboard(user);
+    }
   }
 
   // --- Init ---
