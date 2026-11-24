@@ -33,15 +33,20 @@
       global.RK_NAV.go(global.RK_CONFIG.forbiddenURL, true);
       return;
     }
-    if (new URLSearchParams(global.location.search).get("view") === "revenue" && session.user.role === "admin") {
+    const view = new URLSearchParams(global.location.search).get("view");
+    if (session.user.role === "staff" && view === "bookings") {
+      global.RK_NAV.go(global.RK_CONFIG.staffHome, true);
+      return;
+    }
+    if (view === "revenue" && session.user.role === "admin") {
       global.RK_NAV.go("analytics.html", true);
       return;
     }
     global.RK_LAYOUT.dashboard(session.user);
-    const isOverview =
-      session.user.role === "admin" &&
-      [null, "dashboard"].includes(new URLSearchParams(global.location.search).get("view"));
-    if (isOverview) global.RK_ADMIN_OVERVIEW.mount();
+    if (!view || view === "dashboard") {
+      if (session.user.role === "admin") global.RK_ADMIN_OVERVIEW.mount();
+      else global.RK_STAFF_OVERVIEW.mount();
+    }
     box.hidden = true;
     shell.hidden = false;
   }

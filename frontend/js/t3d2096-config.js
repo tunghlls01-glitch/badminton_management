@@ -23,19 +23,20 @@
     forbiddenURL: page("403.html"),
     dashboardURL: page("dashboard.html"),
     bookingURL: page("booking.html"),
-    myBookingsURL: page("court_booking_schedule.html"),
+    myBookingsURL: page("booking.html"),
     assetURL: new URL("assets/images/", root).href,
     adminHome: custom.adminHome || page("dashboard.html") + "?view=dashboard",
-    staffHome: custom.staffHome || page("dashboard.html") + "?view=bookings",
+    staffHome: custom.staffHome || page("dashboard.html") + "?view=dashboard",
     receptionURL: page("reception.html"),
     posURL: page("pos.html"),
     // Các module do thành viên phụ trách nối URL thật tại đây.
     dashboardLinks: {
       "admin.dashboard": page("dashboard.html") + "?view=dashboard",
+      "staff.dashboard": page("dashboard.html") + "?view=dashboard",
       "admin.courts": page("courts.html"),
       "staff.courts": page("courts.html"),
       "admin.bookings": page("booking.html"),
-      "staff.bookings": page("court_booking_schedule.html"),
+      "staff.bookings": page("booking.html"),
       "admin.pricing": page("pricing.html"),
       "admin.users": page("admin-users.html") + "?view=users",
       "admin.customers": page("admin-users.html") + "?view=customers",
@@ -52,6 +53,11 @@
     },
   });
   global.RK_NAV = {
+    managementHome(role) {
+      if (role === "admin") return global.RK_CONFIG.adminHome;
+      if (role === "staff") return global.RK_CONFIG.staffHome;
+      return null;
+    },
     go(url, replace = false) {
       if (replace) global.location.replace(url);
       else global.location.assign(url);

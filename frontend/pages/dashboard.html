@@ -107,6 +107,41 @@
               </section>
             </div>
           </section>
+          <section id="staff-overview" class="ov" hidden aria-labelledby="staff-overview-title">
+            <div class="ov-intro">
+              <div><h1 id="staff-overview-title">Tổng quan lễ tân</h1><p id="staff-overview-date"></p></div>
+              <div class="ov-controls">
+                <a class="ov-button ov-outline" href="reception_slot_grid.html?view=check-in">Mở lưới sân</a>
+                <a class="ov-button ov-primary" href="reception.html">Check-in / Thanh toán</a>
+              </div>
+            </div>
+            <div class="ov-metrics">
+              <article class="ov-card"><span class="ov-tile" data-staff-icon="calendar"></span><div><h2>Lượt đặt hôm nay</h2><strong id="staff-total">—</strong></div></article>
+              <article class="ov-card"><span class="ov-tile" data-staff-icon="clock"></span><div><h2>Đã xác nhận, chờ nhận sân</h2><strong id="staff-confirmed">—</strong></div></article>
+              <article class="ov-card"><span class="ov-tile" data-staff-icon="grid"></span><div><h2>Đã nhận sân</h2><strong id="staff-checked-in">—</strong></div></article>
+              <article class="ov-card"><span class="ov-tile" data-staff-icon="card"></span><div><h2>Đã hoàn thành</h2><strong id="staff-completed">—</strong></div></article>
+            </div>
+            <div class="ov-row ov-bottom">
+              <section class="ov-card ov-panel">
+                <div class="ov-panel-head"><h2>Lịch đặt hôm nay</h2><a href="reception.html">Xem tại quầy →</a></div>
+                <div class="ov-scroll"><table class="ov-bookings" id="staff-booking-table" hidden>
+                  <thead><tr><th>Giờ chơi</th><th>Sân</th><th>Mã đặt</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
+                  <tbody id="staff-booking-rows"></tbody>
+                </table></div>
+                <p class="ov-placeholder" id="staff-booking-status" role="status">Đang tải lượt đặt…</p>
+                <button type="button" id="staff-booking-retry" class="ov-button ov-outline" hidden>Thử lại</button>
+              </section>
+              <section class="ov-card ov-panel ov-work">
+                <h2>Thao tác nhanh</h2>
+                <nav class="ov-shortcuts" aria-label="Thao tác nhanh của lễ tân">
+                  <a href="reception_slot_grid.html?view=check-in"><span data-staff-icon="calendar"></span>Lưới sân</a>
+                  <a href="reception.html"><span data-staff-icon="grid"></span>Nhận sân</a>
+                  <a href="pos.html"><span data-staff-icon="cart"></span>Bán hàng tại quầy</a>
+                  <a href="invoices.html"><span data-staff-icon="card"></span>Hóa đơn &amp; chốt ca</a>
+                </nav>
+              </section>
+            </div>
+          </section>
           <div id="rk-dashboard-workspace">
           <div class="rk-workspace-title">
             <span class="rk-eyebrow">KHÔNG GIAN QUẢN LÝ</span>
@@ -147,6 +182,7 @@
     <script src="../js/t3d2096-ui.js"></script>
     <script src="../js/rk-layout.js"></script>
     <script src="../js/pages/admin-overview.js"></script>
+    <script src="../js/pages/staff-overview.js"></script>
     <script src="../js/pages/dashboard-layout.js"></script>
   </body>
 </html>

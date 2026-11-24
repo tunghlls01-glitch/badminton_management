@@ -100,7 +100,7 @@
     "Tổng quan lịch chơi": "Booking Overview",
     "Sắp diễn ra": "Upcoming",
     "Đã hoàn thành": "Completed",
-    "Thời lượng tuần này": "Duration This Week",
+    "Thời lượng tuần đang xem": "Selected Week Duration",
     "TUẦN NÀY": "THIS WEEK",
     "Tuần này": "This Week",
     "giờ": "hrs",

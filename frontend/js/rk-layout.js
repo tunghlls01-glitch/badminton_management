@@ -4,6 +4,7 @@
   const config = global.RK_CONFIG;
   const menu = [
     { key: "dashboard", label: "Tổng quan", icon: "grid", roles: ["admin"] },
+    { key: "dashboard", label: "Tổng quan lễ tân", icon: "grid", roles: ["staff"] },
     { key: "courts", label: "Quản lý sân", icon: "grid", roles: ["admin"] },
     {
       key: "bookings",
@@ -84,8 +85,12 @@
   function guest(session, minimal = false) {
     const target = document.getElementById("rk-header");
     const user = session.user;
+    const managementHome = global.RK_NAV.managementHome(user?.role);
+    const managementLink = managementHome
+      ? `<a href="${h(managementHome)}">Về trang quản lý</a>`
+      : "";
     if (target)
-      target.innerHTML = `<div class="rk-header-inner">${logo()}${minimal ? `<a class="rk-back" href="${h(config.homeURL)}">← Quay về trang chủ</a>` : `<button class="rk-icon-button rk-mobile-toggle" type="button" data-rk-action="menu" aria-label="Mở menu" aria-expanded="false" aria-controls="rk-nav">${icon("menu")}</button><nav id="rk-nav" class="rk-nav" aria-label="Điều hướng chính"><a class="active" href="${h(config.homeURL)}">Trang chủ</a><a href="${h(config.homeURL)}#courts">Danh sách sân</a><a href="${h(config.homeURL)}#pricing">Bảng giá</a><a data-require-auth href="${h(config.myBookingsURL)}">Lịch đặt của tôi</a></nav><div class="rk-header-actions">${user ? `<a class="rk-user" href="${h(config.profileURL)}">${renderAvatar(user)}<span class="rk-user-name">${h(user.full_name)}</span></a><button class="rk-icon-button" type="button" data-rk-action="logout" aria-label="Đăng xuất">${icon("logout")}<span class="rk-logout-label">Đăng xuất</span></button>` : `<a class="rk-login-link" href="${h(config.loginURL)}">Đăng nhập</a><a class="rk-btn rk-primary rk-small" href="${h(config.registerURL)}">Đăng ký</a>`}</div>`}</div>`;
+      target.innerHTML = `<div class="rk-header-inner">${logo()}${minimal ? `<a class="rk-back" href="${h(config.homeURL)}">← Quay về trang chủ</a>` : `<button class="rk-icon-button rk-mobile-toggle" type="button" data-rk-action="menu" aria-label="Mở menu" aria-expanded="false" aria-controls="rk-nav">${icon("menu")}</button><nav id="rk-nav" class="rk-nav" aria-label="Điều hướng chính"><a class="active" href="${h(config.homeURL)}">Trang chủ</a><a href="${h(config.homeURL)}#courts">Danh sách sân</a><a href="${h(config.homeURL)}#pricing">Bảng giá</a><a data-require-auth href="${h(config.myBookingsURL)}">Lịch đặt của tôi</a>${managementLink}</nav><div class="rk-header-actions">${user ? `<a class="rk-user" href="${h(config.profileURL)}">${renderAvatar(user)}<span class="rk-user-name">${h(user.full_name)}</span></a><button class="rk-icon-button" type="button" data-rk-action="logout" aria-label="Đăng xuất">${icon("logout")}<span class="rk-logout-label">Đăng xuất</span></button>` : `<a class="rk-login-link" href="${h(config.loginURL)}">Đăng nhập</a><a class="rk-btn rk-primary rk-small" href="${h(config.registerURL)}">Đăng ký</a>`}</div>`}</div>`;
     const footer = document.getElementById("rk-footer");
     if (footer)
       footer.innerHTML = `<div class="rk-container rk-footer-inner"><div><strong>RK BADMINTON</strong><p>Đam mê hết mình. Sân đồng hành tuyệt vời.</p></div><div><p>Giờ mở cửa 06:00 - 23:00 · Hỗ trợ trực tiếp tại quầy lễ tân</p><div class="rk-footer-links"><small>© ${new Date().getFullYear()} RK BADMINTON</small><a href="${h(config.homeURL)}#courts">Danh sách sân</a><a href="${h(config.homeURL)}#pricing">Bảng giá</a><a data-require-auth href="${h(config.myBookingsURL)}">Lịch đặt của tôi</a></div><small class="rk-credit">Ảnh minh họa: AI và Alanands3 / CC BY-SA 4.0.</small></div></div>`;
@@ -104,7 +109,7 @@
       new URLSearchParams(global.location.search).get("view") ||
       ({"dashboard.html": "dashboard", "courts.html": "courts", "pricing.html": "pricing", "services.html": "services",
         "pos.html": "pos", "reception.html": "check-in", "invoices.html": "invoices", "admin-users.html": "users", "analytics.html": "revenue",
-        "booking.html": "bookings", "court_booking_schedule.html": "bookings", "timeline_grid.html": "bookings"})[global.location.pathname.split("/").pop()] ||
+        "booking.html": "bookings", "timeline_grid.html": "bookings"})[global.location.pathname.split("/").pop()] ||
       items[0].key;
     const active = items.find((item) => item.key === view) || items[0];
 
