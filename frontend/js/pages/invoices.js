@@ -411,19 +411,24 @@
     }, 3200);
   }
 
-  function resolveReceiptUrl(url) {
-    if (!url) return "";
-    if (
-      url.startsWith("http://") ||
-      url.startsWith("https://") ||
-      url.startsWith("blob:") ||
-      url.startsWith("data:")
-    ) {
-      return url;
+  async function openReceipt(url) {
+    const path = /^\/api(\/bookings\/\d+\/payment-receipt)$/.exec(url)?.[1];
+    if (!path) return;
+    const viewer = global.open("about:blank", "_blank");
+    if (!viewer) {
+      showToast("Trình duyệt đang chặn cửa sổ biên lai.");
+      return;
     }
-    const baseUrl = (window.CONFIG && window.CONFIG.API_BASE_URL) || "http://127.0.0.1:8000/api";
-    const origin = baseUrl.replace(/\/api\/?$/, "");
-    return url.startsWith("/") ? origin + url : origin + "/" + url;
+    viewer.opener = null;
+    try {
+      const { data } = await global.axiosClient.get(path, { responseType: "blob" });
+      const imageUrl = URL.createObjectURL(data);
+      viewer.location.replace(imageUrl);
+      setTimeout(() => URL.revokeObjectURL(imageUrl), 60000);
+    } catch {
+      viewer.close();
+      showToast("Không tải được ảnh biên lai.");
+    }
   }
 
   // --- Load Receptionists List ---
@@ -441,7 +446,7 @@
   }
 
   function renderStaffDropdowns() {
-    const activeUser = getActiveUser();
+    const activeUser = state.currentUser;
 
     // Đảm bảo nhân viên / quản trị viên đang đăng nhập có mặt trong danh sách
     if (activeUser && activeUser.id) {
@@ -471,11 +476,7 @@
       const opt = document.createElement("option");
       opt.value = u.id;
       opt.textContent = u.full_name;
-      if (activeUser && Number(u.id) === Number(activeUser.id)) {
-        opt.selected = true;
-      } else if (!activeUser && u.id === 1) {
-        opt.selected = true;
-      }
+      if (String(u.id) === String(state.currentUser.id)) opt.selected = true;
       el.shiftStaffSelect.appendChild(opt);
     });
   }
@@ -611,9 +612,9 @@
               <span class="inv-badge-pill ${badgeClass}">${badgeText}</span>
               ${item.receipt_url ? `
                 <div style="margin-top: 3px;">
-                  <a href="${resolveReceiptUrl(item.receipt_url)}" target="_blank" style="color: #0284c7; font-size: 11px; font-weight: 600; text-decoration: underline; display: inline-flex; align-items: center; gap: 3px;">
+                  <button type="button" data-invoice-receipt="${global.RK_UI.escape(item.receipt_url)}" style="color: #0284c7; font-size: 11px; font-weight: 600; text-decoration: underline; display: inline-flex; align-items: center; gap: 3px;">
                     <span>📄</span> Biên lai
-                  </a>
+                  </button>
                 </div>
               ` : ""}
             </td>
@@ -668,7 +669,7 @@
 
   // --- Load Shift Summary (Chốt ca & Bàn giao) ---
   async function loadShiftSummary() {
-    const activeUser = getActiveUser();
+    const activeUser = state.currentUser;
     const defaultStaffId = activeUser && activeUser.id ? activeUser.id : (state.receptionists[0] ? state.receptionists[0].id : 1);
     const staffId = el.shiftStaffSelect && el.shiftStaffSelect.value ? el.shiftStaffSelect.value : defaultStaffId;
     const shiftType = el.shiftTypeSelect ? el.shiftTypeSelect.value : "ALL_DAY";
@@ -774,7 +775,7 @@
     const isBank = (inv.payment_method || "").toUpperCase().includes("BANK");
     let pmLabel = isBank ? "Chuyển khoản (Ngân hàng / VietQR)" : "Tiền mặt";
     if (inv.receipt_url) {
-      pmLabel += ` · <a href="${resolveReceiptUrl(inv.receipt_url)}" target="_blank" style="color:#0284c7;text-decoration:underline;font-weight:600;">Xem ảnh biên lai</a>`;
+      pmLabel += ` · <button type="button" data-invoice-receipt="${global.RK_UI.escape(inv.receipt_url)}" style="color:#0284c7;text-decoration:underline;font-weight:600;">Xem ảnh biên lai</button>`;
     }
     el.recPaymentMethod.innerHTML = pmLabel;
     el.recPaymentMethod.className = isBank ? "meta-val" : "meta-val meta-green";
@@ -971,6 +972,7 @@
 
     // 7. Action buttons in table (View & Reprint)
     el.invoicesTableBody.addEventListener("click", (e) => {
+      if (e.target.closest("[data-invoice-receipt]")) return;
       const btn = e.target.closest("button[data-action]");
       if (btn) {
         const action = btn.dataset.action;
@@ -1036,61 +1038,12 @@
     });
   }
 
-  // --- Layout & Navigation Setup ---
-  function getActiveUser() {
-    let user = null;
-    try {
-      if (global.RK_AUTH && typeof global.RK_AUTH.getState === "function") {
-        const authState = global.RK_AUTH.getState();
-        if (authState && authState.user) {
-          user = authState.user;
-        }
-      }
-      if (!user) {
-        const raw = localStorage.getItem("user") || sessionStorage.getItem("user");
-        if (raw) user = JSON.parse(raw);
-      }
-    } catch {
-      // Ignore auth read errors
-    }
-
-    if (!user) {
-      user = {
-        id: 1,
-        full_name: "Quản Trị Viên Hệ Thống",
-        role: "admin",
-        email: "admin@badminton.com",
-      };
-    }
-    return user;
-  }
-
-  function renderLayout() {
-    const user = getActiveUser();
-    if (global.RK_LAYOUT && typeof global.RK_LAYOUT.dashboard === "function") {
-      global.RK_LAYOUT.dashboard(user);
-    }
-  }
-
-  // --- Init ---
   async function init() {
-    renderLayout();
+    if (!await global.ProtectedRoute(["admin", "staff"])) return;
+    state.currentUser = global.RK_AUTH.getState().user;
+    global.RK_LAYOUT.dashboard(state.currentUser);
+    document.getElementById("rk-dashboard").hidden = false;
     cacheElements();
-
-    if (global.RK_AUTH && typeof global.RK_AUTH.subscribe === "function") {
-      global.RK_AUTH.subscribe((authState) => {
-        if (authState && authState.user) {
-          renderLayout();
-          renderStaffDropdowns();
-          loadShiftSummary();
-        }
-      });
-    }
-    global.addEventListener("rk:auth-change", () => {
-      renderLayout();
-      renderStaffDropdowns();
-      loadShiftSummary();
-    });
 
     // Set default date text
     if (el.invCurrentDateText) {
@@ -1102,6 +1055,10 @@
     }
 
     bindEvents();
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-invoice-receipt]");
+      if (button) void openReceipt(button.dataset.invoiceReceipt);
+    });
     await loadReceptionists();
     await loadInvoices();
     await loadShiftSummary();

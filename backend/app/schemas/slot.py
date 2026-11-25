@@ -46,6 +46,7 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class SlotTimeRange(BaseModel):
+    court_id: Optional[int] = Field(default=None, gt=0, examples=[1])
     start_at: datetime = Field(examples=["2026-11-20T08:00:00"])
     end_at: datetime = Field(examples=["2026-11-20T09:00:00"])
 
@@ -57,22 +58,34 @@ class SlotTimeRange(BaseModel):
 
 
 class SlotHoldRequest(BaseModel):
-    court_id: int = Field(gt=0, examples=[1])
+    court_id: Optional[int] = Field(default=None, gt=0, examples=[1])
     user_id: int = Field(gt=0, examples=[1])
     slots: List[SlotTimeRange] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def check_contiguous_slots(self):
-        self.slots.sort(key=lambda s: s.start_at)
-        for i in range(len(self.slots) - 1):
-            if self.slots[i].end_at != self.slots[i + 1].start_at:
-                raise ValueError("Các slot được chọn phải liền nhau")
+    def validate_court_slot_groups(self):
+        slots_by_court: dict[int, list[SlotTimeRange]] = {}
+        for slot in self.slots:
+            if slot.court_id is None:
+                slot.court_id = self.court_id
+            if slot.court_id is None:
+                raise ValueError("Mỗi slot cần có court_id")
+            slots_by_court.setdefault(slot.court_id, []).append(slot)
+
+        for court_slots in slots_by_court.values():
+            court_slots.sort(key=lambda slot: slot.start_at)
+            for previous, current in zip(court_slots, court_slots[1:]):
+                if previous.end_at != current.start_at:
+                    raise ValueError("Các slot trên cùng một sân phải liền nhau")
+
+        self.slots.sort(key=lambda slot: (slot.court_id or 0, slot.start_at))
         return self
 
 
 class SlotHoldResponse(BaseModel):
     booking_id: int
     court_id: int
+    court_ids: List[int] = Field(default_factory=list)
     held_slot_ids: List[int]
     hold_expires_at: datetime
     message: str

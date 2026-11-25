@@ -53,16 +53,24 @@ def _hold_session_payload(booking: Booking) -> dict:
 @router.get("/grid", response_model=SlotGridResponse)
 def get_slot_grid(
     target_date: date = Query(..., alias="date", description="Ngày cần xem dạng YYYY-MM-DD"),
+    slot_minutes: int = Query(60, description="Độ dài mỗi ô: 30 hoặc 60 phút"),
     db: Session = Depends(get_db)
 ):
-    courts_data = get_slot_grid_by_date(db=db, query_date=target_date)
+    if slot_minutes not in (30, 60):
+        raise HTTPException(status_code=422, detail="slot_minutes chỉ hỗ trợ 30 hoặc 60 phút")
+
+    courts_data = get_slot_grid_by_date(
+        db=db,
+        query_date=target_date,
+        slot_minutes=slot_minutes,
+    )
 
     return SlotGridResponse(
         date=str(target_date),
         operating_hours={
             "open": "06:00",
             "close": "23:00",
-            "slot_duration_minutes": 60
+            "slot_duration_minutes": slot_minutes
         },
         courts=courts_data
     )
@@ -125,6 +133,12 @@ def get_slot_hold(
         }
     if booking.status != BookingStatus.Pending:
         raise HTTPException(status_code=404, detail="Phiên giữ chỗ không còn ở trạng thái chờ xác nhận.")
+    if booking.hold_expires_at is None:
+        return {
+            "state": "awaiting_reception",
+            "booking_id": booking.id,
+            "booking_code": booking.booking_code,
+        }
     if not booking.hold_expires_at or booking.hold_expires_at <= vietnam_now():
         raise HTTPException(status_code=410, detail="Phiên giữ chỗ đã hết hạn.")
     return _hold_session_payload(booking)

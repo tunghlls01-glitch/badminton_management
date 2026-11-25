@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, select, text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from sqlalchemy import text
@@ -19,7 +19,8 @@ from app import models  # noqa: F401 - import để SQLAlchemy biết các bản
 from app.models import maintenance_block  # noqa: F401 - đăng ký bảng court_maintenance_blocks
 from app.core.config import BASE_DIR, settings
 from app.crud import court_service
-from app.db.session import Base, engine
+from app.db.session import Base, engine, SessionLocal
+from app.models.promotion import Promotion
 
 from app.seeds.seed_courts import seed_courts
 from app.routers import auth, health, items, reception, service_orders, services, racket_rentals
@@ -49,12 +50,44 @@ async def lifespan(app: FastAPI):
         booking_columns = {
             column["name"] for column in inspect(engine).get_columns("bookings")
         }
-        if "hold_expires_at" not in booking_columns:
-            with engine.begin() as connection:
+        with engine.begin() as connection:
+            if "hold_expires_at" not in booking_columns:
                 connection.execute(
                     text("ALTER TABLE bookings ADD COLUMN hold_expires_at DATETIME NULL")
                 )
-            print("[DB] Đã thêm cột bookings.hold_expires_at")
+                print("[DB] Đã thêm cột bookings.hold_expires_at")
+            booking_discount_columns = {
+                "subtotal_price": "DECIMAL(10, 2) NOT NULL DEFAULT 0.00",
+                "discount_code": "VARCHAR(40) NULL",
+                "discount_percent": "DECIMAL(5, 2) NOT NULL DEFAULT 0.00",
+                "discount_amount": "DECIMAL(10, 2) NOT NULL DEFAULT 0.00",
+                "discount_reason": "VARCHAR(255) NULL",
+            }
+            for column_name, column_definition in booking_discount_columns.items():
+                if column_name not in booking_columns:
+                    connection.execute(text(
+                        f"ALTER TABLE bookings ADD COLUMN {column_name} {column_definition}"
+                    ))
+                    print(f"[DB] Đã thêm cột bookings.{column_name}")
+            if "subtotal_price" not in booking_columns:
+                connection.execute(text(
+                    "UPDATE bookings SET subtotal_price = total_price WHERE subtotal_price = 0"
+                ))
+
+        with SessionLocal() as db:
+            first_booking_promotion = db.scalar(
+                select(Promotion).where(Promotion.code == "FIRST15")
+            )
+            if first_booking_promotion is None:
+                db.add(Promotion(
+                    code="FIRST15",
+                    name="Ưu đãi lần đặt đầu",
+                    discount_percent=15,
+                    first_booking_only=True,
+                    is_active=True,
+                ))
+                db.commit()
+                print("[DB] Đã tạo mã ưu đãi FIRST15")
         payment_columns = {
             column["name"] for column in inspect(engine).get_columns("payments")
         }
@@ -201,7 +234,3 @@ def root():
 frontend_dir = BASE_DIR.parent / "frontend"
 if frontend_dir.is_dir():
     app.mount("/web", StaticFiles(directory=frontend_dir, html=True), name="frontend")
-
-static_dir = BASE_DIR / "static"
-if static_dir.is_dir():
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")

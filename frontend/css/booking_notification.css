@@ -55,9 +55,25 @@ h1, h2 { font-family: Manrope, sans-serif; }
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font: 800 26px Manrope, sans-serif;
-  letter-spacing: -1px;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.logo {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  max-width: 42px;
+  max-height: 42px;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 3px 8px rgba(186, 0, 0, 0.22);
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.brand:hover .logo {
+  transform: scale(1.05);
 }
 
 .brand-mark {
@@ -72,7 +88,13 @@ h1, h2 { font-family: Manrope, sans-serif; }
 }
 
 .brand-mark svg { width: 25px; height: 25px; }
-.brand-name { color: var(--primary); }
+.brand-name {
+  font-family: Manrope, "Be Vietnam Pro", sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.5px;
+  color: #1a1a1a;
+}
 
 .header-note {
   display: flex;
@@ -273,6 +295,30 @@ h1 {
 .schedule-item strong { font-size: 12px; font-weight: 600; }
 .schedule-item p { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
+.confirmation-slot-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: -5px 0 16px;
+  padding: 0;
+}
+
+.confirmation-slot-list[hidden] { display: none; }
+
+.confirmation-slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.confirmation-slot-row strong { text-align: right; white-space: nowrap; }
+
 .customer {
   display: flex;
   justify-content: space-between;
@@ -322,6 +368,11 @@ h1 {
 }
 
 .payment-line span:first-child { color: var(--muted); }
+
+.payment-line.payment-discount span {
+  color: #15803d;
+  font-weight: 600;
+}
 
 .total {
   padding-top: 14px;
@@ -469,10 +520,6 @@ dialog::backdrop { background: #39000065; backdrop-filter: blur(4px); }
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
   font-size: 12px;
-}
-.logo{
-    max-width: 50px;
-    max-height: 50px;
 }
 .dialog-row span { color: var(--muted); }
 .dialog-row strong { font-weight: 500; text-align: right; }

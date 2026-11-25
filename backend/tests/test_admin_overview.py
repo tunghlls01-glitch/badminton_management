@@ -33,6 +33,7 @@ class OverviewTest(TestCase):
         result = get_overview(self.db, self.day, self.now)
         self.assertEqual(result["courts"], [])
         self.assertEqual(result["booking_count"], 0)
+        self.assertEqual(result["booked_court_value"], Decimal(0))
         self.assertEqual([item["amount"] for item in result["revenue"]], [Decimal(0)] * 7)
 
     def test_occupancy_revenue_recurring_and_expired_hold(self):
@@ -80,6 +81,7 @@ class OverviewTest(TestCase):
 
         result = get_overview(self.db, self.day, self.now)
         self.assertEqual(result["booking_count"], 3)
+        self.assertEqual(result["booked_court_value"], Decimal(150000))
         self.assertEqual((result["pending_count"], result["checkin_count"]), (1, 1))
         self.assertEqual(result["next_checkin_id"], 5)
         self.assertEqual((result["courts_in_use"], result["courts_free"]), (1, 1))

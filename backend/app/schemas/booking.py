@@ -147,7 +147,12 @@ class BookingOut(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     booking_channel: BookingChannel
+    subtotal_price: float = 0
     total_price: float
+    discount_code: Optional[str] = None
+    discount_percent: float = 0
+    discount_amount: float = 0
+    discount_reason: Optional[str] = None
     status: BookingStatus
     note: Optional[str] = None
     created_at: datetime
@@ -157,6 +162,22 @@ class BookingOut(BaseModel):
     has_transferred: bool = False
     receipt_url: Optional[str] = None
     paid_amount: Optional[float] = None
+
+
+class PromotionPreviewRequest(BaseModel):
+    code: Optional[str] = Field(default=None, max_length=40)
+
+
+class PromotionPreviewResponse(BaseModel):
+    booking_id: int
+    subtotal_price: float
+    discount_code: Optional[str] = None
+    discount_name: Optional[str] = None
+    discount_percent: float = 0
+    discount_amount: float = 0
+    total_price: float
+    automatically_applied: bool = False
+    message: str
 
 
 class BookingCheckoutRequest(BaseModel):

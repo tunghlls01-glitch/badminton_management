@@ -28,7 +28,7 @@
         <div class="customer-offer-panel">
           <p class="customer-offer-eyebrow">CHƠI NHIỀU HƠN, VUI NHIỀU HƠN</p>
           <h3>Giảm 15% lượt đặt đầu</h3>
-          <p class="customer-offer-code">Mã ưu đãi: <strong aria-label="Chưa có mã ưu đãi"></strong></p>
+          <p class="customer-offer-message">Mã ưu đãi sẽ tự động nhập khi bạn đặt sân lần đầu</p>
         </div>
         <p class="customer-nav-note">Ưu đãi minh họa. Chức năng áp dụng mã và thanh toán chưa được kết nối trong bản demo.</p>
       `,
@@ -38,7 +38,7 @@
       body: `
         <p class="customer-support-intro">Cần đổi lịch, tìm sân hoặc hỗ trợ đặt sân?</p>
         <div class="customer-support-row"><span>Hotline</span><a href="tel:1900636888"><strong>1900 636 888</strong></a></div>
-        <div class="customer-support-row"><span>Email</span><a href="mailto:khangtien10032008@gmail.com"><strong>khangtien10032008@gmail.com</strong></a></div>
+        <div class="customer-support-row"><span>Email</span><a href="mailto:rkbadmintoncaulongso1noithanh@gmail.com"><strong>RKbadmintoncaulongso1noithanh@gmail.com</strong></a></div>
         <p class="customer-nav-note">Thời gian hỗ trợ: 07:00 – 22:00 mỗi ngày.</p>
       `,
     },

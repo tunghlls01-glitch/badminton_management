@@ -10,7 +10,7 @@
     PATCH  /api/bookings/{id}/status           → Đổi trạng thái
     DELETE /api/bookings/{id}                  → Xoá
 """
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Optional
 from uuid import uuid4
@@ -18,17 +18,15 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
-from fastapi.security import HTTPAuthorizationCredentials
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 
 from app.crud import booking as booking_crud
 from app.crud.booking import ConflictError
-from app.core.security import get_current_user, security, SECRET_KEY, ALGORITHM
+from app.core.security import get_current_user, require_roles
 from app.db.session import get_db
-from app.models.booking import BookingStatus
-from app.models.payment import Payment, PaymentMethod
+from app.models.booking import BookingChannel, BookingStatus
+from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.user import User, UserRole
 from app.schemas.booking import (
     BookingCreate,
@@ -40,6 +38,8 @@ from app.schemas.booking import (
     RecurringCheckResponse,
     RecurringBookingCreate,
     RecurringBookingResponse,
+    PromotionPreviewRequest,
+    PromotionPreviewResponse,
 )
 from app.schemas.booking_slot import BookingSlotOut
 from app.schemas.notification import AdminCancelBookingRequest, AdminCancelBookingOut
@@ -86,50 +86,22 @@ def _to_booking_out(booking) -> dict:
                 )
             )
 
-    pm_method = None
-    pm_status = None
-    has_transferred = False
-    receipt_url = None
-    paid_amount = None
-
-    if getattr(booking, "payments", None):
-        valid_payments = [
-            p for p in booking.payments
-            if str(getattr(getattr(p, "payment_status", None), "value", getattr(p, "payment_status", ""))).upper() not in {"FAILED", "CANCELLED"}
-        ]
-        bank_payments = [
-            p for p in valid_payments
-            if (
-                getattr(getattr(p, "payment_method", None), "value", str(getattr(p, "payment_method", ""))) == "BANK_TRANSFER"
-                or getattr(p, "receipt_path", None) is not None
-            )
-        ]
-        if bank_payments:
-            latest_payment = sorted(bank_payments, key=lambda p: getattr(p, "id", 0) or 0)[-1]
-            pm_method = "BANK_TRANSFER"
-            pm_status = (
-                latest_payment.payment_status.value
-                if hasattr(latest_payment.payment_status, "value")
-                else str(latest_payment.payment_status)
-            )
-            paid_amount = float(latest_payment.amount) if latest_payment.amount is not None else None
-            if getattr(latest_payment, "receipt_path", None):
-                receipt_url = f"/api/bookings/{booking.id}/payment-receipt"
-            has_transferred = True
-        elif valid_payments:
-            latest_payment = sorted(valid_payments, key=lambda p: getattr(p, "id", 0) or 0)[-1]
-            pm_method = (
-                latest_payment.payment_method.value
-                if hasattr(latest_payment.payment_method, "value")
-                else str(latest_payment.payment_method)
-            )
-            pm_status = (
-                latest_payment.payment_status.value
-                if hasattr(latest_payment.payment_status, "value")
-                else str(latest_payment.payment_status)
-            )
-            paid_amount = float(latest_payment.amount) if latest_payment.amount is not None else None
-            has_transferred = False
+    payments = getattr(booking, "payments", None) or []
+    latest_payment = max(payments, key=lambda payment: payment.id or 0, default=None)
+    payment_method = getattr(latest_payment, "payment_method", None)
+    payment_status = getattr(latest_payment, "payment_status", None)
+    receipt_url = (
+        f"/api/bookings/{booking.id}/payment-receipt"
+        if any(payment.receipt_path for payment in payments) else None
+    )
+    prepaid = max(
+        (payment for payment in payments
+         if payment.payment_method == PaymentMethod.BANK_TRANSFER
+         and payment.payment_status == PaymentStatus.SUCCESS
+         and payment.invoice_id is None),
+        key=lambda payment: payment.id or 0,
+        default=None,
+    )
 
     return BookingOut(
         id=booking.id,
@@ -148,16 +120,21 @@ def _to_booking_out(booking) -> dict:
         start_time=first_slot.start_at.strftime("%H:%M") if first_slot else None,
         end_time=first_slot.end_at.strftime("%H:%M") if first_slot else None,
         booking_channel=booking.booking_channel,
+        subtotal_price=float(booking.subtotal_price or booking.total_price or 0),
         total_price=float(booking.total_price),
+        discount_code=booking.discount_code,
+        discount_percent=float(booking.discount_percent or 0),
+        discount_amount=float(booking.discount_amount or 0),
+        discount_reason=booking.discount_reason,
         status=booking.status,
+        payment_method=getattr(payment_method, "value", payment_method),
+        payment_status=getattr(payment_status, "value", payment_status),
         note=booking.note,
         created_at=booking.created_at,
         slots=slots_out,
-        payment_method=pm_method,
-        payment_status=pm_status,
-        has_transferred=has_transferred,
+        has_transferred=prepaid is not None,
         receipt_url=receipt_url,
-        paid_amount=paid_amount,
+        paid_amount=float(prepaid.amount) if prepaid else None,
     )
 
 
@@ -175,6 +152,28 @@ def _get_or_404(booking_id: int, db: Session = Depends(get_db)):
 # ─────────────── endpoints ───────────────
 
 
+@router.post("/{booking_id}/promotion-preview", response_model=PromotionPreviewResponse)
+def preview_booking_promotion(
+    booking_id: int,
+    data: PromotionPreviewRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    booking = booking_crud.get_booking(db, booking_id)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiên giữ chỗ.")
+    if booking.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền xem ưu đãi của phiên này.")
+    if booking.status != BookingStatus.Pending:
+        raise HTTPException(status_code=409, detail="Phiên giữ chỗ không còn ở trạng thái chờ xác nhận.")
+    if not booking.hold_expires_at or booking.hold_expires_at <= datetime.now():
+        raise HTTPException(status_code=410, detail="Phiên giữ chỗ đã hết hạn.")
+    try:
+        return booking_crud.preview_booking_promotion(db, booking, data.code)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
 
 
 @router.post("", response_model=BookingOut, status_code=status.HTTP_201_CREATED)
@@ -186,6 +185,57 @@ def create_booking(data: BookingCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    return _to_booking_out(booking)
+
+
+@router.post("/walk-in", response_model=BookingOut, status_code=status.HTTP_201_CREATED)
+def create_walk_in_booking(
+    data: BookingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+):
+    """Lễ tân tạo lượt đặt quầy và lưu người tạo vào booking."""
+    if not (data.customer_name or "").strip():
+        raise HTTPException(status_code=422, detail="Vui lòng nhập tên khách hàng.")
+    if not (data.customer_phone or "").strip():
+        raise HTTPException(status_code=422, detail="Vui lòng nhập số điện thoại khách hàng.")
+
+    data.customer_name = data.customer_name.strip()
+    data.customer_phone = data.customer_phone.strip()
+    phone_digits = "".join(character for character in data.customer_phone if character.isdigit())
+    if len(data.customer_phone) > 15 or not 9 <= len(phone_digits) <= 15:
+        raise HTTPException(status_code=422, detail="Số điện thoại phải có từ 9 đến 15 chữ số.")
+    data.booking_channel = BookingChannel.Counter
+    data.status = BookingStatus.Pending
+
+    start_at = datetime.combine(data.booking_date, data.start_time)
+    end_at = datetime.combine(data.booking_date, data.end_time)
+    now = booking_crud.vietnam_now()
+    duration_minutes = int((end_at - start_at).total_seconds() / 60)
+    if (
+        data.start_time.minute not in (0, 30)
+        or data.end_time.minute not in (0, 30)
+        or data.start_time.second
+        or data.end_time.second
+        or duration_minutes < 30
+        or duration_minutes % 30 != 0
+    ):
+        raise HTTPException(status_code=422, detail="Thời lượng đặt phải gồm các ô 30 phút liền nhau.")
+    if data.start_time < time(6, 0) or data.end_time > time(23, 0):
+        raise HTTPException(status_code=422, detail="Khung giờ đặt phải nằm trong 06:00–23:00.")
+    if start_at <= now:
+        raise HTTPException(status_code=422, detail="Không thể đặt khung giờ đã bắt đầu hoặc đã qua.")
+
+    try:
+        booking = booking_crud.create_walk_in_booking(
+            db,
+            data,
+            created_by=current_user.id,
+        )
+    except ConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
     return _to_booking_out(booking)
 
 
@@ -244,7 +294,7 @@ def confirm_booking(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Khách xác nhận đặt (Pending → Confirmed). Tính lại tiền theo bảng giá hiện tại."""
+    """Khách gửi booking để lễ tân xác nhận; giá được tính lại theo bảng giá hiện tại."""
     booking = booking_crud.get_booking(db, booking_id)
     if booking is None:
         raise HTTPException(status_code=404, detail=f"Booking id={booking_id} không tồn tại")
@@ -268,6 +318,7 @@ async def confirm_booking_with_payment(
     customer_name: str = Form(...),
     customer_phone: str = Form(...),
     note: str = Form(""),
+    promotion_code: str = Form(""),
     receipt: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -333,6 +384,7 @@ async def confirm_booking_with_payment(
             ),
             receipt_path=receipt_filename,
             note=note,
+            promotion_code=promotion_code,
         )
     except ConflictError as error:
         db.rollback()
@@ -357,9 +409,9 @@ async def confirm_booking_with_payment(
             f"/api/bookings/{booking.id}/payment-receipt" if receipt_filename else None
         ),
         "message": (
-            "Đã xác nhận booking và lưu ảnh chuyển khoản. Thanh toán đang chờ quầy xác nhận."
+            "Đã gửi booking và ảnh chuyển khoản. Booking đang chờ lễ tân xác nhận; thanh toán đang chờ kiểm tra."
             if receipt_filename
-            else "Đã xác nhận booking. Thanh toán sẽ được ghi nhận tại quầy."
+            else "Đã gửi booking. Booking đang chờ lễ tân xác nhận; thanh toán tại quầy khi nhận sân."
         ),
     }
 
@@ -367,33 +419,16 @@ async def confirm_booking_with_payment(
 @router.get("/{booking_id}/payment-receipt")
 def get_booking_payment_receipt(
     booking_id: int,
-    token: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    current_user: User = Depends(get_current_user),
 ):
     booking = booking_crud.get_booking(db, booking_id)
     if booking is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy booking.")
-
-    # Authenticate user if token or header provided
-    raw_token = None
-    if credentials and getattr(credentials, "scheme", "").lower() == "bearer":
-        raw_token = credentials.credentials
-    elif token:
-        raw_token = token
-
-    user: Optional[User] = None
-    if raw_token:
-        try:
-            payload = jwt.decode(raw_token, SECRET_KEY, algorithms=[ALGORITHM])
-            user_id = payload.get("sub")
-            if user_id and str(user_id).isdigit():
-                user = db.query(User).filter(User.id == int(user_id)).first()
-        except JWTError:
-            pass
-
-    # If an authenticated customer is trying to view another customer's booking receipt, block it
-    if user and user.role == UserRole.CUSTOMER and user.id != booking.user_id:
+    if current_user.id != booking.user_id and current_user.role not in {
+        UserRole.ADMIN,
+        UserRole.STAFF,
+    }:
         raise HTTPException(status_code=403, detail="Bạn không có quyền xem ảnh minh chứng này.")
 
     payment = (
@@ -442,6 +477,14 @@ def get_booking(booking=Depends(_get_or_404)):
     return _to_booking_out(booking)
 
 
+@router.get("/{booking_id}/reception", response_model=BookingOut)
+def get_reception_booking(
+    booking=Depends(_get_or_404),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+):
+    return _to_booking_out(booking)
+
+
 
 
 @router.patch("/{booking_id}/status", response_model=BookingOut)
@@ -449,7 +492,10 @@ def update_status(
     new_status: BookingStatus = Query(..., alias="status"),
     booking=Depends(_get_or_404),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    if current_user.role not in {UserRole.ADMIN, UserRole.STAFF}:
+        raise HTTPException(status_code=403, detail="Chỉ lễ tân hoặc quản trị viên được đổi trạng thái booking.")
     booking = booking_crud.update_booking_status(db, booking, new_status)
     return _to_booking_out(booking)
 

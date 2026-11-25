@@ -23,7 +23,7 @@
     for (const [key, value] of Object.entries(params)) if (value != null) url.searchParams.set(key, value);
     return url.href;
   }
-  const manage = (params) => link("admin/manage_booking.html", params);
+  const bookingPage = (params) => link("booking.html", params);
   let mounted = false;
   let data;
   let selection;
@@ -54,9 +54,9 @@
       args.start = selection.court.cells[selection.first].start;
       args.end = selection.court.cells[selection.last + 1]?.start || data.close;
     }
-    $("ov-create").href = $("ov-quick-create").href = manage(args);
+    $("ov-create").href = $("ov-quick-create").href = bookingPage(args);
     $("ov-full-grid").href = link("timeline_grid.html", { day });
-    $("ov-bookings-link").href = manage({ day });
+    $("ov-bookings-link").href = bookingPage({ day }) + "#booking-list";
     $("ov-selection").hidden = !selection;
     if (selection) $("ov-selection").textContent = selection.court.name + " · " + args.start + "–" + args.end + " · Chưa giữ chỗ";
     for (const button of $("ov-grid").querySelectorAll("button[data-index]")) {
@@ -111,22 +111,20 @@
         td.className = "is-" + cell.state;
         const description = court.name + " · " + cell.start + " · " + (cell.reason || slotLabels[cell.state]);
         td.title = description;
-        if (cell.state === "free" || (cell.state === "booked" && cell.booking_id)) {
-          const control = node(cell.state === "free" ? "button" : "a");
+        if (cell.state === "free") {
+          const control = node("button");
           control.setAttribute("aria-label", description);
-          if (cell.state === "free") {
-            control.type = "button";
-            control.dataset.index = index;
-            control.dataset.court = court.id;
-            control.setAttribute("aria-pressed", "false");
-            control.onclick = () => choose(court, index);
-          } else {
-            control.href = manage({ booking_id: cell.booking_id, day: data.date });
-            if (index === 0 || court.cells[index - 1].booking_id !== cell.booking_id) control.textContent = "Đặt";
-          }
+          control.type = "button";
+          control.dataset.index = index;
+          control.dataset.court = court.id;
+          control.setAttribute("aria-pressed", "false");
+          control.onclick = () => choose(court, index);
           td.append(control);
         } else {
           const previous = court.cells[index - 1];
+          if (cell.state === "booked" && (previous?.state !== "booked" || previous.booking_id !== cell.booking_id)) {
+            td.textContent = "Đặt";
+          }
           if (cell.state === "hold" && previous?.booking_id !== cell.booking_id) td.textContent = "Giữ";
           if (cell.state === "locked" && (previous?.state !== "locked" || previous.reason !== cell.reason)) td.textContent = "Khóa";
           td.setAttribute("aria-label", description);
@@ -143,7 +141,7 @@
     for (const item of rows) {
       const row = body.insertRow();
       const a = node("a", item.code);
-      a.href = manage({ booking_id: item.id });
+      a.href = bookingPage({ booking: item.id, day: item.slots[0]?.start.slice(0, 10) });
       row.insertCell().append(a);
       row.insertCell().textContent = item.customer;
       const slots = row.insertCell();
@@ -205,6 +203,7 @@
     $("ov-count-title").textContent = "Lượt đặt " + suffix;
     $("ov-grid-title").textContent = "Lịch sân " + suffix;
     $("ov-revenue").textContent = money.format(result.revenue.at(-1).amount);
+    $("ov-booked-value").textContent = money.format(result.booked_court_value);
     $("ov-count").textContent = result.booking_count;
     $("ov-confirmed").textContent = result.confirmed_count + " đã xác nhận";
     $("ov-using").textContent = result.courts_in_use + "/" + result.courts.length;
@@ -215,10 +214,10 @@
     $("ov-checkin").textContent = result.checkin_count + " lượt có thể check-in";
     const pending = $("ov-pending-link");
     pending.hidden = !result.next_pending_id;
-    pending.href = manage({ day: result.date, status: "pending", booking_id: result.next_pending_id });
+    pending.href = bookingPage({ day: result.date, booking: result.next_pending_id });
     const checkin = $("ov-checkin-link");
     checkin.hidden = !result.next_checkin_id;
-    checkin.href = link("reception.html", { source: "overview", day: result.date, booking_id: result.next_checkin_id });
+    checkin.href = link("reception.html", { day: result.date, booking_id: result.next_checkin_id });
     grid();
     if (!submittedTerm) bookings(result.recent);
     graph(result.revenue);
@@ -234,7 +233,7 @@
     const day = $("ov-day").value;
     if (!day) return;
     updateActions();
-    for (const id of ["ov-revenue", "ov-count", "ov-confirmed", "ov-using", "ov-free", "ov-tasks", "ov-task-note"]) $(id).textContent = "—";
+    for (const id of ["ov-revenue", "ov-booked-value", "ov-count", "ov-confirmed", "ov-using", "ov-free", "ov-tasks", "ov-task-note"]) $(id).textContent = "—";
     $("ov-pending").textContent = "— đơn chờ xác nhận";
     $("ov-checkin").textContent = "— lượt có thể check-in";
     $("ov-pending-link").hidden = $("ov-checkin-link").hidden = true;

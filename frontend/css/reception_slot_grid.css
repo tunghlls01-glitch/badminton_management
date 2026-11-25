@@ -8,13 +8,23 @@
 }
 
 .slot-dashboard-body {
+  width: calc(100vw - 260px);
+  margin-left: 260px;
+  min-width: 0;
   min-height: 100vh;
   background: var(--slot-canvas);
 }
 
-.slot-grid-content {
+body[data-page="reception-slot-grid"] {
+  overflow-x: hidden;
+}
+
+#main-content.slot-grid-content {
   width: 100%;
   max-width: none;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
   padding: 32px clamp(18px, 3vw, 42px) 48px;
 }
 
@@ -83,7 +93,7 @@
   background: #f8fafc;
 }
 
-.slot-demo-notice {
+.slot-live-notice {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -97,8 +107,8 @@
   line-height: 1.55;
 }
 
-.slot-demo-notice strong { font-weight: 800; }
-.slot-demo-dot { width: 9px; height: 9px; flex: none; margin-top: 4px; border-radius: 50%; background: #f97316; }
+.slot-live-dot { width: 9px; height: 9px; flex: none; margin-top: 4px; border-radius: 50%; background: #22c55e; }
+.slot-live-notice { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
 
 .slot-summary {
   display: grid;
@@ -123,6 +133,9 @@
 .slot-summary-card strong { color: var(--slot-ink); font: 800 20px "Plus Jakarta Sans", Inter, sans-serif; }
 
 .slot-grid-panel {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid var(--slot-line);
   border-radius: 14px;
@@ -185,7 +198,9 @@
 .legend-swatch.is-locked { border-color: #e2e5e9; background: #e5e7eb; }
 
 .slot-grid-scroll {
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   overflow: auto;
   border-top: 1px solid var(--slot-line);
   scrollbar-color: #cbd5e1 #f8fafc;
@@ -214,7 +229,11 @@
 .slot-schedule-table thead th { background: #f8fafc; font-weight: 700; }
 .slot-schedule-table .slot-date-heading { height: 42px; color: #475569; font-size: 11px; text-align: left; padding-left: 15px; }
 .slot-schedule-table .slot-corner { position: sticky; left: 0; z-index: 3; width: 142px; min-width: 142px; text-align: left; padding-left: 15px; color: #64748b; }
-.slot-schedule-table .slot-time-heading { width: 72px; min-width: 72px; height: 38px; color: #475569; font: 700 10px "Roboto Mono", monospace; }
+.slot-schedule-table .slot-time-heading { width: 72px; min-width: 72px; height: 48px; color: #475569; font: 700 10px "Roboto Mono", monospace; }
+.slot-schedule-table .slot-time-heading.range-selected { background: #fff1f2; color: #991b1b; }
+.slot-schedule-table .slot-time-heading.range-boundary-start { border-left: 2px solid #b91c1c; }
+.slot-schedule-table .slot-time-heading.range-boundary-end { border-right: 2px solid #b91c1c; background: #fff7f7; color: #991b1b; }
+.slot-schedule-table .slot-time-heading small { display: block; margin-top: 3px; color: #b91c1c; font: 800 8px Inter, sans-serif; line-height: 1; }
 .slot-schedule-table tbody th { position: sticky; left: 0; z-index: 2; width: 142px; min-width: 142px; padding: 8px 12px; text-align: left; background: #fff; }
 .slot-court-name { display: block; font-size: 11px; font-weight: 800; }
 .slot-court-type { display: block; margin-top: 4px; color: #94a3b8; font-size: 9px; font-weight: 500; }
@@ -241,6 +260,9 @@
 .schedule-slot.is-booked { border-color: #e87979; background: #e87979; color: #fff; cursor: pointer; }
 .schedule-slot.is-held { border-color: #f4bf58; background: #fff1cc; color: #854d0e; cursor: pointer; }
 .schedule-slot.is-locked { border-color: #e5e7eb; background: #e5e7eb; color: #94a3b8; cursor: not-allowed; }
+.schedule-slot.is-selected { border-color: #b91c1c; background: #fff1f2; color: #991b1b; box-shadow: inset 0 0 0 1px #b91c1c; }
+.schedule-slot.is-selected:hover,
+.schedule-slot.is-selected:focus-visible { border-color: #991b1b; box-shadow: inset 0 0 0 1px #991b1b, 0 0 0 2px #b91c1c1c; outline: none; }
 .schedule-slot.is-demo-created { border-color: #b91c1c; background: #b91c1c; color: #fff; }
 .schedule-slot span:not(.sr-only) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
@@ -295,8 +317,34 @@
 .slot-detail-row strong { text-align: right; overflow-wrap: anywhere; }
 .slot-detail-status { display: inline-flex; padding: 4px 8px; border-radius: 999px; background: #fef2f2; color: #991b1b; font-size: 10px; }
 .slot-detail-status.held { background: #fff7ed; color: #9a3412; }
+.slot-info-loading,
+.slot-info-error { padding: 16px 0; color: var(--slot-muted); font-size: 12px; }
+.slot-info-error { color: var(--slot-red-dark); }
 
 .selected-slot-summary { margin-bottom: 16px; padding: 12px 13px; border: 1px solid #fee2e2; border-radius: 10px; background: #fff7f7; color: #7f1d1d; font-size: 12px; font-weight: 700; line-height: 1.6; }
+.slot-selection-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 16px;
+  padding: 16px 18px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff7f7;
+}
+.slot-selection-panel[hidden] { display: none; }
+.slot-selection-copy { display: grid; gap: 5px; min-width: 180px; }
+.slot-selection-label { color: #991b1b; font-size: 9px; font-weight: 800; letter-spacing: .9px; }
+.slot-selection-copy strong { color: var(--slot-ink); font-size: 13px; }
+.slot-selection-copy small { color: var(--slot-muted); font-size: 10px; }
+.slot-selection-total { display: grid; gap: 4px; }
+.slot-selection-total span { color: var(--slot-muted); font-size: 10px; }
+.slot-selection-total strong { color: var(--slot-red); font: 800 17px "Plus Jakarta Sans", Inter, sans-serif; }
+.slot-selection-actions { display: flex; align-items: center; gap: 8px; }
+.slot-selection-actions .slot-primary-button { border-color: var(--slot-red); color: #fff; background: var(--slot-red); }
+.slot-selection-actions .slot-primary-button:hover { border-color: var(--slot-red-dark); background: var(--slot-red-dark); }
 .slot-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .slot-form-field { display: grid; gap: 7px; color: #475569; font-size: 11px; font-weight: 700; }
 .slot-form-field i { color: var(--slot-red); font-style: normal; }
@@ -304,20 +352,22 @@
 .slot-form-field input, .slot-form-field textarea { width: 100%; min-height: 42px; padding: 10px 11px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; color: #172b4d; background: #fff; font: 400 12px Inter, sans-serif; }
 .slot-form-field textarea { min-height: 75px; resize: vertical; }
 .slot-form-field input:focus, .slot-form-field textarea:focus { border-color: var(--slot-red); box-shadow: 0 0 0 3px #b91c1c14; }
-.slot-form-demo-note { margin-top: 13px; color: #9a3412; font-size: 10px; line-height: 1.5; }
+.slot-form-note { margin-top: 13px; color: #475569; font-size: 11px; line-height: 1.5; }
 .slot-toast { position: fixed; right: 24px; bottom: 24px; z-index: 100; max-width: min(420px, calc(100vw - 32px)); padding: 13px 16px; border: 1px solid #bbf7d0; border-radius: 11px; background: #f0fdf4; color: #166534; box-shadow: 0 12px 32px #0f172a1a; font-size: 12px; font-weight: 600; opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .18s ease, transform .18s ease; }
 .slot-toast.is-visible { opacity: 1; transform: translateY(0); }
 
 @media (max-width: 900px) {
-  .slot-grid-content { padding: 25px 16px 38px; }
+  #rk-dashboard .slot-dashboard-body { width: 100%; margin-left: 0; }
+  #main-content.slot-grid-content { padding: 25px 16px 38px; }
   .slot-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .slot-page-heading { align-items: flex-start; }
   .slot-grid-toolbar { align-items: flex-start; flex-direction: column; }
+  .slot-schedule-table .slot-time-heading { height: 46px; }
   .slot-grid-controls { width: 100%; justify-content: space-between; }
 }
 
 @media (max-width: 560px) {
-  .slot-grid-content { padding: 21px 12px 32px; }
+  #main-content.slot-grid-content { padding: 21px 12px 32px; }
   .slot-page-heading { flex-direction: column; }
   .slot-back-link { width: 100%; }
   .slot-summary { gap: 8px; }
@@ -337,5 +387,8 @@
   .slot-form-grid { grid-template-columns: 1fr; }
   .slot-form-wide { grid-column: auto; }
   .slot-dialog-actions > button { flex: 1; }
+  .slot-selection-panel { align-items: stretch; flex-direction: column; margin: 12px; padding: 14px; }
+  .slot-selection-total { display: flex; align-items: center; justify-content: space-between; }
+  .slot-selection-actions { display: grid; grid-template-columns: 1fr 1.4fr; }
   .slot-toast { right: 12px; bottom: 12px; }
 }

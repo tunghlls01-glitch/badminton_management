@@ -188,6 +188,27 @@
 
           <div class="summary-divider"></div>
 
+          <div class="promo-box">
+            <label for="promoCodeInput" class="promo-label">Mã ưu đãi</label>
+            <div class="promo-input-row">
+              <input type="text" id="promoCodeInput" class="form-control promo-input"
+                placeholder="Nhập mã ưu đãi" maxlength="40" autocomplete="off" />
+              <button type="button" id="btnApplyPromo" class="btn-apply-promo">Áp dụng</button>
+            </div>
+            <p id="confirmPromoMessage" class="promo-message" hidden></p>
+          </div>
+
+          <div class="summary-price-breakdown">
+            <div class="summary-price-line">
+              <span>Tiền sân tạm tính</span>
+              <strong id="confirmSubtotalPrice">0đ</strong>
+            </div>
+            <div id="confirmDiscountRow" class="summary-price-line summary-discount-line" hidden>
+              <span>Ưu đãi <span id="confirmDiscountBadge" class="discount-badge"></span></span>
+              <strong id="confirmDiscountAmount">-0đ</strong>
+            </div>
+          </div>
+
           <div class="summary-total-row">
             <div>
               <div class="total-label-main">Tổng thanh toán</div>

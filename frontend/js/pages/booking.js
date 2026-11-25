@@ -147,8 +147,9 @@ function info(title, content) {
   closeMenu();
 }
 
-function detail(id) {
-  const b = bookings.find(x => x.id === Number(id));
+function detail(id, day) {
+  const b = bookings.find(x => x.id === Number(id) && (!day || x.date === day))
+    || bookings.find(x => x.id === Number(id));
   if (!b) return;
   const courtName = getCourtName(b);
   const row = (label, value) => `<div class="detail-row"><span>${label}</span><strong>${value}</strong></div>`;
@@ -205,6 +206,10 @@ function detail(id) {
     row('Ngày chơi', dateOf(b.date).toLocaleDateString('vi-VN')) +
     row('Khung giờ', b.start + ' – ' + endTime(b)) +
     row('Trạng thái', statusText(b.status)) +
+    (Number(b.discount_amount) > 0
+      ? row('Tiền sân gốc', money(Number(b.subtotal_price || b.total_price) || 0)) +
+        row('Ưu đãi' + (b.discount_code ? ` (${b.discount_code})` : ''), '-' + money(Number(b.discount_amount)))
+      : '') +
     row('Thành tiền', money(Number(b.total_price) || 100000)) +
     (b.customer_name ? row('Khách hàng', b.customer_name + (b.customer_phone ? ` (${b.customer_phone})` : '')) : '') +
     `<p class="form-note">Vui lòng đến trước 15 phút. Đưa mã đặt sân cho nhân viên tại quầy để nhận sân.</p>` +
@@ -818,27 +823,59 @@ async function fetchBookingsFromBackend() {
       const apiBookings = [];
       list.forEach(item => {
         if (item.slots && item.slots.length > 0) {
-          item.slots.forEach(slot => {
-            const startDt = new Date(slot.start_at);
-            const endDt = new Date(slot.end_at);
-            const dateStr = slot.start_at.slice(0, 10);
-            const startStr = slot.start_at.slice(11, 16);
-            let duration = (endDt - startDt) / 3600000;
-            if (isNaN(duration) || duration <= 0) duration = (slot.duration_minutes || 120) / 60;
-            const courtNum = (slot.court_name ? slot.court_name.replace(/\D/g, "") : "") || String(slot.court_id || 1).padStart(2, "0");
+          const sortedSlots = [...item.slots].sort((a, b) =>
+            Number(a.court_id) - Number(b.court_id) || String(a.start_at).localeCompare(String(b.start_at))
+          );
+          const groups = [];
+          for (const slot of sortedSlots) {
+            const startAt = String(slot.start_at || "");
+            const endAt = String(slot.end_at || "");
+            const dateStr = startAt.slice(0, 10);
+            const startStr = startAt.slice(11, 16);
+            const endStr = endAt.slice(11, 16);
+            const startDt = new Date(startAt);
+            const endDt = new Date(endAt);
+            let durationMinutes = Number(slot.duration_minutes) || (endDt - startDt) / 60000;
+            if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) durationMinutes = 30;
+            const previous = groups[groups.length - 1];
 
+            if (
+              previous &&
+              String(previous.court_id) === String(slot.court_id) &&
+              previous.date === dateStr &&
+              previous.end === startStr
+            ) {
+              previous.end = endStr;
+              previous.durationMinutes += durationMinutes;
+              previous.amount += Number(slot.amount) || 0;
+            } else {
+              groups.push({
+                slot_id: slot.id,
+                court_id: slot.court_id,
+                court_name: slot.court_name,
+                date: dateStr,
+                start: startStr,
+                end: endStr,
+                durationMinutes,
+                amount: Number(slot.amount) || 0,
+              });
+            }
+          }
+
+          groups.forEach(group => {
+            const courtNum = (group.court_name ? group.court_name.replace(/\D/g, "") : "") || String(group.court_id || 1).padStart(2, "0");
             apiBookings.push({
               id: item.id,
-              slot_id: slot.id,
+              slot_id: group.slot_id,
               booking_code: item.booking_code,
-              court_id: slot.court_id,
-              court_name: slot.court_name,
+              court_id: group.court_id,
+              court_name: group.court_name,
               court: courtNum.padStart(2, "0"),
-              date: dateStr,
-              start: startStr,
-              duration: duration,
+              date: group.date,
+              start: group.start,
+              duration: group.durationMinutes / 60,
               status: item.status ? item.status.toLowerCase() : 'confirmed',
-              total_price: slot.amount || (item.total_price / item.slots.length),
+              total_price: group.amount || (item.total_price / groups.length),
               customer_name: item.user_name,
               customer_phone: item.user_phone
             });
@@ -863,6 +900,10 @@ async function fetchBookingsFromBackend() {
             start: startStr,
             duration: duration,
             status: item.status ? item.status.toLowerCase() : 'confirmed',
+            subtotal_price: item.subtotal_price,
+            discount_code: item.discount_code,
+            discount_percent: item.discount_percent,
+            discount_amount: item.discount_amount,
             total_price: item.total_price,
             customer_name: item.user_name,
             customer_phone: item.user_phone
@@ -947,17 +988,63 @@ function renderCourtFilterTabs() {
   });
 }
 
-loadCourtsFromBackend();
-fetchBookingsFromBackend().then(() => {
-  const requestedId = new URLSearchParams(location.search).get('booking');
-  const requested = bookings.find(b => String(b.id) === requestedId);
-  if (!requested) return;
+const entry = new URLSearchParams(location.search);
+const requestedDay = entry.get('day');
+const requestedId = entry.get('booking');
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+const minutesOf = time => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
 
-  const now = new Date();
-  const [year, month, day] = requested.date.split('-').map(Number);
-  const currentMonday = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
-  weekOffset = Math.floor((Date.UTC(year, month - 1, day) - currentMonday) / 604800000);
-  renderCalendar();
+loadCourtsFromBackend().then(() => {
+  if (entry.get('action') !== 'new') return;
+  initDefaultDateTime();
+  prefillCustomerFields();
+  const dateInput = $('#bookingDate');
+  if (datePattern.test(requestedDay || '') && requestedDay >= dateInput.min) {
+    dateInput.value = requestedDay;
+    const start = entry.get('start');
+    const end = entry.get('end');
+    if (timePattern.test(start || '') && timePattern.test(end || '') && end > start) {
+      const startField = $('#startTime');
+      const durationField = $('#duration');
+      const duration = (minutesOf(end) - minutesOf(start)) / 60;
+      if (!Array.from(startField.options).some(option => option.value === start)) {
+        startField.add(new Option(start, start));
+      }
+      if (!Array.from(durationField.options).some(option => Number(option.value) === duration)) {
+        durationField.add(new Option(duration + ' giờ', duration));
+      }
+      startField.value = start;
+      durationField.value = duration;
+    }
+    const court = $('#courtSelect');
+    const courtId = entry.get('court_id');
+    if (Array.from(court.options).some(option => option.value === courtId && !option.disabled)) {
+      court.value = courtId;
+    }
+  }
+  updatePrice();
+  if (!$('#bookingDialog').open) $('#bookingDialog').showModal();
+});
+fetchBookingsFromBackend().then(() => {
+  const requested = bookings.find(b => String(b.id) === requestedId && b.date === requestedDay)
+    || bookings.find(b => String(b.id) === requestedId);
+  const day = datePattern.test(requestedDay || '') ? requestedDay : requested?.date;
+  if (day) {
+    const now = new Date();
+    const [year, month, dayOfMonth] = day.split('-').map(Number);
+    const currentMonday = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
+    weekOffset = Math.floor((Date.UTC(year, month - 1, dayOfMonth) - currentMonday) / 604800000);
+    renderCalendar();
+  }
+  if (requestedId && entry.has('day')) {
+    if (requested) detail(requested.id, requested.date);
+    else toast('Không tìm thấy lượt đặt.');
+  } else if (location.hash === '#booking-list') {
+    const allBookings = document.querySelector('[data-filter="all"]');
+    allBookings.click();
+    $('#booking-list').scrollIntoView();
+  }
 });
 applyUserUI();
 
@@ -976,9 +1063,10 @@ $('#bookingForm').onsubmit = async e => {
   const duration = Number($('#duration').value);
   const courtSelect = $('#courtSelect');
   const realCourtId = Number(courtSelect.value) || 1;
-  const startHour = Number(start.slice(0, 2));
+  const startMinutes = minutesOf(start);
+  const endMinutes = startMinutes + duration * 60;
 
-  if (startHour + duration > 23) {
+  if (endMinutes > 23 * 60) {
     const msg = 'Vui lòng chọn khung giờ kết thúc trước 23:00.';
     setDialogError(msg);
     toast(msg);
@@ -994,8 +1082,6 @@ $('#bookingForm').onsubmit = async e => {
     return;
   }
 
-  const startMinutes = startHour * 60 + Number(start.slice(3, 5) || 0);
-  const endMinutes = startMinutes + duration * 60;
   const endStr = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}:00`;
   const startStr = `${start}:00`;
 
@@ -1069,10 +1155,6 @@ document.addEventListener('click', e => {
   if (e.target.closest('#btnSwitchToRecurring') || e.target.closest('#btnTypeRecurring')) {
     e.preventDefault();
     openRecurringFromBooking();
-  }
-  if (e.target.closest('#rcBtnTypeSingle')) {
-    e.preventDefault();
-    openBookingFromRecurring();
   }
 });
 

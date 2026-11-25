@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="../css/admin-sidebar.css">
   <link rel="stylesheet" href="../css/reception_slot_grid.css">
 </head>
-<body class="rk-app" data-admin-sidebar="true" data-root="../" data-page="reception-slot-grid">
+<body data-management-layout class="rk-app" data-admin-sidebar="true" data-root="../" data-page="reception-slot-grid">
   <a class="rk-skip" href="#main-content">Đến nội dung chính</a>
 
   <div id="rk-dashboard-state" class="rk-container rk-session-state" role="status" aria-live="polite">
@@ -31,14 +31,14 @@
           <div>
             <span class="slot-eyebrow">VẬN HÀNH SÂN</span>
             <h1 id="pageTitle">Lưới sân lễ tân</h1>
-            <p>Xem tình trạng từng sân theo khung 30 phút; bấm ô đã đặt để xem khách hoặc ô trống để tạo lượt đặt hộ.</p>
+            <p>Chọn nhiều ô trống liền nhau trên cùng một sân, nhập thông tin khách một lần; bấm ô đã đặt để xem người đặt.</p>
           </div>
           <a class="slot-back-link" href="./reception.html">Quay lại nhận sân &amp; thanh toán</a>
         </section>
 
-        <div class="slot-demo-notice" role="note">
-          <span class="slot-demo-dot" aria-hidden="true"></span>
-          <span><strong>Bản dựng giao diện.</strong> Dữ liệu và thao tác đặt hộ đang chạy ở chế độ minh họa, chưa lưu booking vào backend.</span>
+        <div class="slot-live-notice" role="note">
+          <span class="slot-live-dot" aria-hidden="true"></span>
+          <span>Lịch sân, khung giá và thông tin booking được tải từ hệ thống. Booking đặt hộ sẽ được lưu ở trạng thái chờ xác nhận.</span>
         </div>
 
         <section class="slot-summary" aria-label="Tổng quan lịch sân">
@@ -64,7 +64,7 @@
           <div class="slot-grid-toolbar">
             <div>
               <h2 id="gridTitle">Lịch sân trong ngày</h2>
-              <p>Giờ mở cửa 06:00–23:00 · mỗi ô là 30 phút</p>
+              <p>Mốc giờ trên cột là giờ bắt đầu; mỗi ô kéo dài 30 phút</p>
             </div>
             <div class="slot-grid-controls">
               <label class="slot-date-control" for="scheduleDate">
@@ -97,7 +97,22 @@
           <div id="gridContainer" class="slot-grid-scroll" hidden>
             <table id="scheduleGrid" class="slot-schedule-table" aria-label="Lịch trạng thái sân theo khung giờ"></table>
           </div>
-          <p class="slot-grid-footnote">Dữ liệu mẫu để xem bố cục và thao tác. Trạng thái thực tế sẽ lấy từ API khi nối backend.</p>
+          <div id="slotSelectionPanel" class="slot-selection-panel" aria-live="polite" hidden>
+            <div class="slot-selection-copy">
+              <span class="slot-selection-label">KHUNG GIỜ ĐANG CHỌN</span>
+              <strong id="slotSelectionTitle">—</strong>
+              <small id="slotSelectionDetail">—</small>
+            </div>
+            <div class="slot-selection-total">
+              <span>Tạm tính</span>
+              <strong id="slotSelectionPrice">0đ</strong>
+            </div>
+            <div class="slot-selection-actions">
+              <button id="clearSlotSelection" class="slot-secondary-button" type="button">Bỏ chọn</button>
+              <button id="proceedWalkIn" class="slot-primary-button" type="button">Nhập thông tin khách</button>
+            </div>
+          </div>
+          <p class="slot-grid-footnote">Nhãn “Từ” và “Đến” trên hàng giờ đánh dấu toàn bộ khoảng đặt. Ví dụ, chọn các ô 09:30 và 10:00 là đặt từ 09:30 đến 10:30.</p>
         </section>
       </main>
     </div>
@@ -134,17 +149,17 @@
         </label>
         <label class="slot-form-field">
           <span>Số điện thoại <i>*</i></span>
-          <input name="customerPhone" type="tel" autocomplete="tel" minlength="9" maxlength="16" required placeholder="Nhập số điện thoại">
+          <input name="customerPhone" type="tel" autocomplete="tel" minlength="9" maxlength="15" required placeholder="Nhập số điện thoại">
         </label>
         <label class="slot-form-field slot-form-wide">
           <span>Ghi chú</span>
           <textarea name="note" rows="3" maxlength="255" placeholder="Thông tin thêm (nếu có)"></textarea>
         </label>
       </div>
-      <p class="slot-form-demo-note">Nút xác nhận chỉ cập nhật lưới minh họa trên trang này.</p>
+      <p class="slot-form-note">Booking sẽ được lưu vào hệ thống và chờ lễ tân xác nhận.</p>
       <div class="slot-dialog-actions">
         <button class="slot-secondary-button" type="button" data-close-dialog="walkInDialog">Hủy</button>
-        <button class="slot-primary-button" type="submit">Tạo lượt đặt mẫu</button>
+        <button class="slot-primary-button" type="submit">Đặt hộ</button>
       </div>
     </form>
   </dialog>

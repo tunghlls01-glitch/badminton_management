@@ -189,32 +189,35 @@ button, select {
 .customer-account-shell { flex: none; }
 .customer-account[hidden],
 .customer-account-login[hidden] { display: none !important; }
-.customer-account { gap: 34px; }
-.customer-account-profile { gap: 12px; color: var(--text-primary); text-decoration: none; }
+.customer-account { gap: 18px; }
+.customer-account-profile { gap: 10px; color: var(--text-primary); text-decoration: none; }
 .customer-account-avatar {
-  width: 54px;
-  height: 54px;
+  width: 40px;
+  height: 40px;
   flex: none;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: #fee2e2;
   color: #b91c1c;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
-.customer-account-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 600; }
+.customer-account-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
 .customer-account-logout {
-  gap: 7px;
-  padding: 8px 2px;
-  border: 0;
-  background: transparent;
+  min-height: 40px;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  background: var(--bg-page);
   color: #64748b;
-  font: 600 16px Inter, sans-serif;
+  font: 600 13.5px Inter, sans-serif;
   white-space: nowrap;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
-.customer-account-logout svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.customer-account-logout svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .customer-account-profile:hover .customer-account-name,
 .customer-account-logout:hover { color: #334155; }
 .customer-account-profile:focus-visible,
@@ -608,6 +611,38 @@ button, select {
   font-weight: 700;
 }
 
+.time-header-cell.range-selected {
+  background: #fff1f2;
+  color: #991b1b;
+}
+
+.time-header-cell.range-boundary-start,
+.time-header-cell.range-boundary-end {
+  background: #fff7f7;
+  color: #991b1b;
+  font-weight: 700;
+  box-shadow: inset 2px 0 0 var(--brand-red), inset 0 -2px 0 var(--brand-red);
+}
+
+.time-header-cell.range-boundary-end {
+  box-shadow: inset -2px 0 0 var(--brand-red), inset 0 -2px 0 var(--brand-red);
+}
+
+.time-header-cell.range-boundary-start.range-boundary-end {
+  box-shadow: inset 2px 0 0 var(--brand-red), inset -2px 0 0 var(--brand-red), inset 0 -2px 0 var(--brand-red);
+}
+
+.time-header-cell .range-boundary-label {
+  display: block;
+  min-height: 9px;
+  margin-top: 2px;
+  color: var(--brand-red);
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .court-cell {
   position: sticky;
   left: 0;
@@ -659,6 +694,20 @@ tr.has-selection .court-selected-dot {
   background: var(--bg-page);
 }
 
+.slot-cell.range-cell {
+  padding-left: 0;
+  padding-right: 0;
+  border-right-color: transparent;
+}
+
+.slot-cell.range-start { padding-left: 3px; }
+.slot-cell.range-end { border-right-color: var(--border-light); }
+.slot-cell.range-single {
+  padding-left: 3px;
+  padding-right: 3px;
+  border-right-color: var(--border-light);
+}
+
 .slot-btn {
   width: 100%;
   height: 100%;
@@ -684,18 +733,57 @@ tr.has-selection .court-selected-dot {
 }
 
 .slot-btn.selected {
-  background-color: var(--slot-selected-bg);
-  border-color: var(--slot-selected-bg);
-  color: #FFFFFF;
+  background-color: #fff1f2;
+  border-color: #e5a3a7;
+  color: #991b1b;
   cursor: pointer;
   font-size: 15px;
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(75, 85, 99, 0.35);
+  box-shadow: none;
 }
 
 .slot-btn.selected:hover {
-  background-color: var(--slot-selected-hover);
-  border-color: var(--slot-selected-hover);
+  background-color: #ffe4e6;
+  border-color: #dc777d;
+}
+
+.slot-btn.selected.range-start,
+.slot-btn.holding.range-start {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right-width: 0;
+  box-shadow: none;
+}
+
+.slot-btn.selected.range-start,
+.slot-btn.selected.range-middle,
+.slot-btn.selected.range-end {
+  border-top-color: #b91c1c;
+  border-bottom-color: #b91c1c;
+}
+
+.slot-btn.selected.range-start { border-left-color: #b91c1c; }
+.slot-btn.selected.range-end { border-right-color: #b91c1c; }
+
+.slot-btn.selected.range-middle,
+.slot-btn.holding.range-middle {
+  border-radius: 0;
+  border-left-width: 0;
+  border-right-width: 0;
+  box-shadow: none;
+}
+
+.slot-btn.selected.range-end,
+.slot-btn.holding.range-end {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-width: 0;
+  box-shadow: none;
+}
+
+.slot-btn.selected.range-single,
+.slot-btn.holding.range-single {
+  border-radius: var(--radius-sm);
 }
 
 /* Đổi màu đỏ thương hiệu khi đã khóa giữ chỗ */
@@ -1169,8 +1257,8 @@ tr.has-selection .court-selected-dot {
   .customer-account { gap: 8px; }
   .customer-account-avatar { width: 36px; height: 36px; }
   .customer-account-name { max-width: 82px; font-size: 12px; }
-  .customer-account-logout { gap: 4px; font-size: 12px; }
-  .customer-account-logout svg { width: 20px; height: 20px; }
+  .customer-account-logout { min-height: 36px; gap: 4px; padding: 6px 8px; font-size: 12px; }
+  .customer-account-logout svg { width: 18px; height: 18px; }
 }
 
 @media (max-width: 420px) {
@@ -1322,61 +1410,82 @@ tr.has-selection .court-selected-dot {
   color: var(--brand-red);
 }
 
-.customer-nav-backdrop { z-index: 3200; }
+.customer-nav-backdrop {
+  z-index: 3200;
+  background: rgba(126, 83, 82, 0.48);
+  backdrop-filter: blur(5px);
+}
 
 .customer-nav-card {
-  max-width: 580px;
+  max-width: 460px;
   max-height: min(86vh, 720px);
   overflow-y: auto;
 }
 
 .customer-nav-modal-header {
-  padding: 22px 26px 14px;
+  padding: 24px 28px 10px;
   border-bottom: 0;
 }
 
 .customer-nav-modal-header .modal-title {
-  font-size: 21px;
+  color: #3f3636;
+  font-size: 20px;
+}
+
+.customer-nav-modal-header .modal-close {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fdf3f3;
+  color: #3f3636;
+  font-size: 15px;
+  line-height: 1;
 }
 
 .customer-nav-modal-body {
-  padding: 0 26px 26px;
+  padding: 0 28px 28px;
 }
 
 .customer-offer-panel {
-  padding: 24px;
-  border-radius: 12px;
-  background: #fbe4e5;
-  color: #991b1b;
+  padding: 8px 0 0;
+  color: #756969;
 }
 
 .customer-offer-eyebrow {
-  margin: 0 0 18px;
+  margin: 0 0 16px;
+  color: #8a7c7c;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .customer-offer-panel h3 {
-  margin: 0 0 18px;
-  font-size: 24px;
+  margin: 0 0 16px;
+  color: #786b6b;
+  font-size: 23px;
+  font-weight: 600;
 }
 
-.customer-offer-code {
+.customer-offer-message {
   margin: 0;
+  color: #837575;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .customer-nav-note {
   margin: 14px 0 0;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 11.5px;
   line-height: 1.55;
 }
 
 .customer-support-intro {
-  margin: 0 0 18px;
-  color: var(--text-muted);
-  font-size: 16px;
+  margin: 0 0 16px;
+  color: #8a7c7c;
+  font-size: 14px;
 }
 
 .customer-support-row {
@@ -1384,16 +1493,18 @@ tr.has-selection .court-selected-dot {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border-light);
-  color: var(--text-muted);
+  padding: 14px 0;
+  border-bottom: 1px solid #e6dddd;
+  color: #8a7c7c;
+  font-size: 13px;
 }
 
 .customer-support-row a {
-  color: var(--text-primary);
+  color: #3f3636;
   text-align: right;
   text-decoration: none;
   overflow-wrap: anywhere;
+  font-size: 13px;
 }
 
 .customer-support-row a:hover { color: var(--brand-red); }
@@ -1401,8 +1512,8 @@ tr.has-selection .court-selected-dot {
 @media (max-width: 600px) {
   .customer-nav-modal-header { padding: 18px 18px 12px; }
   .customer-nav-modal-body { padding: 0 18px 20px; }
-  .customer-offer-panel { padding: 20px; }
-  .customer-offer-panel h3 { font-size: 21px; }
+  .customer-offer-panel { padding-top: 6px; }
+  .customer-offer-panel h3 { font-size: 20px; }
   .customer-support-row { align-items: flex-start; flex-direction: column; gap: 5px; }
   .customer-support-row a { text-align: left; }
 }
