@@ -21,7 +21,7 @@
   --rk-status-green-bg: #ecfdf5;
   --rk-status-amber: #92400e;
   --rk-status-amber-bg: #fffbeb;
-  --rk-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --rk-font: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --rk-font-mono: 'Roboto Mono', 'Courier New', monospace;
 }
 
@@ -222,59 +222,59 @@ body.rk-reception-body {
   font-weight: 500;
 }
 
-.user-profile {
+.reception-topbar .rk-user {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
 }
 
-.user-info {
-  text-align: right;
-}
-
-.user-name {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--rk-text-primary);
-  line-height: 1.2;
-}
-
-.user-role {
-  display: block;
-  font-size: 11px;
-  color: var(--rk-text-muted);
-  line-height: 1.2;
-  margin-top: 2px;
-}
-
-.user-avatar {
-  width: 36px;
-  height: 36px;
+.reception-topbar .rk-avatar {
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
-  background-color: #f1f5f9;
-  border: 1px solid var(--rk-border);
-  color: var(--rk-text-secondary);
+  background: var(--rk-surface-muted, #fee2e2);
+  color: var(--rk-red, #ba0000);
   font-size: 13px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-weight: 800;
+  flex-shrink: 0;
 }
 
-.reception-logout-btn {
-  background: transparent;
-  border: 1px solid var(--rk-border);
-  color: var(--rk-text-muted);
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  display: flex;
+.reception-topbar .rk-user strong {
+  font-size: 11px;
+  display: block;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: normal;
+}
+
+.reception-topbar .rk-user small {
+  display: block;
+  font-size: 9px;
+  color: #94a3b8;
+  margin-top: 5px;
+  line-height: normal;
+}
+
+.reception-topbar .rk-icon-button {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 7px;
+  padding: 6px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 10px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  margin-left: 2px;
+  transition: all 0.15s ease-in-out;
+}
+
+.reception-topbar .rk-icon-button:hover {
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 /* Page Body Container */
@@ -1527,4 +1527,33 @@ body.rk-reception-body {
 .status-tag-pending {
   background-color: #fef3c7;
   color: #92400e;
+}
+
+/* Badge thông báo khách đã chuyển khoản khi đặt sân */
+.booking-transfer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+  border-radius: 12px;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.booking-transfer-tag:hover {
+  background: #bae6fd;
+}
+
+.btn-view-receipt {
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-view-receipt:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }

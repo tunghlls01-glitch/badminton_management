@@ -152,6 +152,11 @@ class BookingOut(BaseModel):
     note: Optional[str] = None
     created_at: datetime
     slots: List[BookingSlotOut] = []
+    payment_method: Optional[str] = None
+    payment_status: Optional[str] = None
+    has_transferred: bool = False
+    receipt_url: Optional[str] = None
+    paid_amount: Optional[float] = None
 
 
 class BookingCheckoutRequest(BaseModel):

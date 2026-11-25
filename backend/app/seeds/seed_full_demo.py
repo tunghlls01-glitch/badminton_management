@@ -73,6 +73,16 @@ def migrate_columns_if_needed():
                 conn.execute(text("ALTER TABLE services MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'"))
             except Exception:
                 pass
+            try:
+                conn.execute(text("ALTER TABLE services MODIFY COLUMN category VARCHAR(50) NOT NULL DEFAULT 'KHAC'"))
+            except Exception:
+                pass
+
+        if "service_stock_logs" in insp.get_table_names():
+            try:
+                conn.execute(text("ALTER TABLE service_stock_logs MODIFY COLUMN change_type VARCHAR(50) NOT NULL DEFAULT 'Nhập hàng'"))
+            except Exception:
+                pass
 
         # 4. bookings
         if "bookings" in insp.get_table_names():

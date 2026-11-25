@@ -201,3 +201,7 @@ def root():
 frontend_dir = BASE_DIR.parent / "frontend"
 if frontend_dir.is_dir():
     app.mount("/web", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+
+static_dir = BASE_DIR / "static"
+if static_dir.is_dir():
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")

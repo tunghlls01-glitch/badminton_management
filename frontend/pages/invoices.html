@@ -53,7 +53,7 @@
                 </p>
               </div>
               <div class="inv-header-meta">
-                <div id="invCurrentDateText" class="inv-meta-date">Chủ nhật, 22/11/2026</div>
+                <div id="invCurrentDateText" class="inv-meta-date">—</div>
                 <div class="inv-meta-status"><span class="status-dot-green">●</span> Ca đang mở</div>
               </div>
             </div>
@@ -122,7 +122,7 @@
                   <div class="inv-table-card-header">
                     <div class="inv-table-title-group">
                       <h2 class="inv-table-title">Danh sách hóa đơn</h2>
-                      <span id="badgeTotalInvoices" class="inv-count-badge">26 hóa đơn</span>
+                      <span id="badgeTotalInvoices" class="inv-count-badge">0 hóa đơn</span>
                     </div>
                     <div class="inv-table-status-label">
                       <span class="status-dot-green">●</span> Đã thu tiền
@@ -182,7 +182,17 @@
                     <span class="inv-shift-open-badge"><span class="status-dot-green">●</span> Đang mở</span>
                   </div>
 
-                  <!-- Chọn lễ tân trong ca (Figma Frame 27:258) -->
+                  <!-- Chọn ca làm việc & Lễ tân trong ca (Figma Frame 27:258) -->
+                  <div class="inv-shift-staff-group" style="margin-bottom: 8px;">
+                    <select id="shiftTypeSelect" class="inv-shift-staff-select">
+                      <option value="ALL_DAY" selected>Toàn ngày (06:00 – 23:59)</option>
+                      <option value="MORNING">Ca Sáng (06:00 – 14:00)</option>
+                      <option value="AFTERNOON">Ca Chiều (14:00 – 22:00)</option>
+                      <option value="EVENING">Ca Tối (18:00 – 23:00)</option>
+                    </select>
+                    <span class="inv-chevron-icon">⌄</span>
+                  </div>
+
                   <div class="inv-shift-staff-group">
                     <select id="shiftStaffSelect" class="inv-shift-staff-select">
                       <!-- Dynamic receptionists -->
@@ -193,7 +203,7 @@
                   <!-- Số hóa đơn trong ca (Figma Frame 27:261) -->
                   <div class="inv-shift-metric-box">
                     <span class="inv-metric-label">Hóa đơn đã xuất trong ca</span>
-                    <span id="shiftCountVal" class="inv-metric-val">18</span>
+                    <span id="shiftCountVal" class="inv-metric-val">0</span>
                   </div>
 
                   <!-- Tổng tiền mặt thu được (Figma Frame 27:264) -->
@@ -203,7 +213,7 @@
                     </div>
                     <div class="inv-stat-text-group">
                       <span class="inv-stat-label">Tổng tiền mặt thu được</span>
-                      <span id="shiftCashVal" class="inv-stat-amount">4.320.000đ</span>
+                      <span id="shiftCashVal" class="inv-stat-amount">0đ</span>
                     </div>
                   </div>
 
@@ -214,14 +224,14 @@
                     </div>
                     <div class="inv-stat-text-group">
                       <span class="inv-stat-label">Tổng tiền chuyển khoản</span>
-                      <span id="shiftBankVal" class="inv-stat-amount">4.320.000đ</span>
+                      <span id="shiftBankVal" class="inv-stat-amount">0đ</span>
                     </div>
                   </div>
 
                   <!-- TỔNG DOANH THU TRONG CA (Figma Frame 27:274) -->
                   <div class="inv-shift-grand-box">
                     <span class="inv-grand-label">TỔNG DOANH THU TRONG CA</span>
-                    <span id="shiftTotalRevVal" class="inv-grand-amount">8.640.000đ</span>
+                    <span id="shiftTotalRevVal" class="inv-grand-amount">0đ</span>
                   </div>
 
                   <!-- Đối soát két tiền mặt (Figma Frame 27:277 .. 27:284) -->
@@ -233,7 +243,7 @@
                         type="text"
                         id="actualCashInput"
                         class="inv-cash-amount-input"
-                        value="4.320.000"
+                        value="0"
                         placeholder="Nhập số tiền két..."
                       />
                       <span class="inv-currency-tag">VND</span>
@@ -253,7 +263,8 @@
                       id="shiftNotesInput"
                       class="inv-notes-input"
                       rows="2"
-                    >Đã kiểm đếm đủ tiền mặt.&#10;Bàn giao quỹ và chứng từ cho ca sau.</textarea>
+                      placeholder="Ghi chú bàn giao quỹ và chứng từ cho ca sau..."
+                    ></textarea>
                   </div>
 
                   <!-- Nút hành động Chốt ca & In phiếu (Figma Frame 27:288 & 27:290) -->

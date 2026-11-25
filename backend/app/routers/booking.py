@@ -18,12 +18,14 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPAuthorizationCredentials
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 
 from app.crud import booking as booking_crud
 from app.crud.booking import ConflictError
-from app.core.security import get_current_user
+from app.core.security import get_current_user, security, SECRET_KEY, ALGORITHM
 from app.db.session import get_db
 from app.models.booking import BookingStatus
 from app.models.payment import Payment, PaymentMethod
@@ -84,6 +86,51 @@ def _to_booking_out(booking) -> dict:
                 )
             )
 
+    pm_method = None
+    pm_status = None
+    has_transferred = False
+    receipt_url = None
+    paid_amount = None
+
+    if getattr(booking, "payments", None):
+        valid_payments = [
+            p for p in booking.payments
+            if str(getattr(getattr(p, "payment_status", None), "value", getattr(p, "payment_status", ""))).upper() not in {"FAILED", "CANCELLED"}
+        ]
+        bank_payments = [
+            p for p in valid_payments
+            if (
+                getattr(getattr(p, "payment_method", None), "value", str(getattr(p, "payment_method", ""))) == "BANK_TRANSFER"
+                or getattr(p, "receipt_path", None) is not None
+            )
+        ]
+        if bank_payments:
+            latest_payment = sorted(bank_payments, key=lambda p: getattr(p, "id", 0) or 0)[-1]
+            pm_method = "BANK_TRANSFER"
+            pm_status = (
+                latest_payment.payment_status.value
+                if hasattr(latest_payment.payment_status, "value")
+                else str(latest_payment.payment_status)
+            )
+            paid_amount = float(latest_payment.amount) if latest_payment.amount is not None else None
+            if getattr(latest_payment, "receipt_path", None):
+                receipt_url = f"/api/bookings/{booking.id}/payment-receipt"
+            has_transferred = True
+        elif valid_payments:
+            latest_payment = sorted(valid_payments, key=lambda p: getattr(p, "id", 0) or 0)[-1]
+            pm_method = (
+                latest_payment.payment_method.value
+                if hasattr(latest_payment.payment_method, "value")
+                else str(latest_payment.payment_method)
+            )
+            pm_status = (
+                latest_payment.payment_status.value
+                if hasattr(latest_payment.payment_status, "value")
+                else str(latest_payment.payment_status)
+            )
+            paid_amount = float(latest_payment.amount) if latest_payment.amount is not None else None
+            has_transferred = False
+
     return BookingOut(
         id=booking.id,
         booking_code=booking.booking_code,
@@ -106,6 +153,11 @@ def _to_booking_out(booking) -> dict:
         note=booking.note,
         created_at=booking.created_at,
         slots=slots_out,
+        payment_method=pm_method,
+        payment_status=pm_status,
+        has_transferred=has_transferred,
+        receipt_url=receipt_url,
+        paid_amount=paid_amount,
     )
 
 
@@ -315,16 +367,33 @@ async def confirm_booking_with_payment(
 @router.get("/{booking_id}/payment-receipt")
 def get_booking_payment_receipt(
     booking_id: int,
+    token: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
     booking = booking_crud.get_booking(db, booking_id)
     if booking is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy booking.")
-    if current_user.id != booking.user_id and current_user.role not in {
-        UserRole.ADMIN,
-        UserRole.STAFF,
-    }:
+
+    # Authenticate user if token or header provided
+    raw_token = None
+    if credentials and getattr(credentials, "scheme", "").lower() == "bearer":
+        raw_token = credentials.credentials
+    elif token:
+        raw_token = token
+
+    user: Optional[User] = None
+    if raw_token:
+        try:
+            payload = jwt.decode(raw_token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_id = payload.get("sub")
+            if user_id and str(user_id).isdigit():
+                user = db.query(User).filter(User.id == int(user_id)).first()
+        except JWTError:
+            pass
+
+    # If an authenticated customer is trying to view another customer's booking receipt, block it
+    if user and user.role == UserRole.CUSTOMER and user.id != booking.user_id:
         raise HTTPException(status_code=403, detail="Bạn không có quyền xem ảnh minh chứng này.")
 
     payment = (
@@ -338,7 +407,11 @@ def get_booking_payment_receipt(
     filename = Path(payment.receipt_path).name
     receipt_path = RECEIPT_DIR / filename
     if not receipt_path.is_file():
-        raise HTTPException(status_code=404, detail="Không tìm thấy file ảnh minh chứng.")
+        alt_path = Path(payment.receipt_path)
+        if alt_path.is_file():
+            receipt_path = alt_path
+        else:
+            raise HTTPException(status_code=404, detail="Không tìm thấy file ảnh minh chứng.")
     media_type = next(
         (content_type for content_type, extension in RECEIPT_TYPES.items()
          if extension == receipt_path.suffix.lower()),

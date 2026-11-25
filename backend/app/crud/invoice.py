@@ -109,16 +109,27 @@ def get_invoices(
 
     # Tạo map invoice_id -> Payment
     matched_invoice_ids = [inv.id for inv in all_matched_invoices]
+    matched_booking_ids = [inv.booking_id for inv in all_matched_invoices if inv.booking_id]
     payment_map: Dict[int, Payment] = {}
-    if matched_invoice_ids:
+    if matched_invoice_ids or matched_booking_ids:
+        filter_conds = []
+        if matched_invoice_ids:
+            filter_conds.append(Payment.invoice_id.in_(matched_invoice_ids))
+        if matched_booking_ids:
+            filter_conds.append(Payment.booking_id.in_(matched_booking_ids))
         payments = (
             db.query(Payment)
-            .filter(Payment.invoice_id.in_(matched_invoice_ids))
+            .filter(or_(*filter_conds))
+            .order_by(Payment.id.desc())
             .all()
         )
         for p in payments:
-            if p.invoice_id not in payment_map:
+            if p.invoice_id and p.invoice_id not in payment_map:
                 payment_map[p.invoice_id] = p
+            elif p.booking_id:
+                for inv in all_matched_invoices:
+                    if inv.booking_id == p.booking_id and inv.id not in payment_map:
+                        payment_map[inv.id] = p
 
     # Lọc theo payment_method nếu có yêu cầu
     if payment_method and payment_method.strip():
@@ -195,6 +206,11 @@ def get_invoices(
         pm_method = (pm.payment_method.value if hasattr(pm.payment_method, "value") else str(pm.payment_method)) if pm else "CASH"
         pm_status = (pm.payment_status.value if hasattr(pm.payment_status, "value") else str(pm.payment_status)) if pm else "SUCCESS"
         tx_code = pm.transaction_code if pm else None
+        rc_url = (
+            f"/api/bookings/{inv.booking_id}/payment-receipt"
+            if (pm and getattr(pm, "receipt_path", None) and inv.booking_id)
+            else None
+        )
 
         items.append(
             InvoiceListItem(
@@ -215,6 +231,7 @@ def get_invoices(
                 payment_method=pm_method,
                 payment_status=pm_status,
                 transaction_code=tx_code,
+                receipt_url=rc_url,
                 created_at=inv.created_at or datetime.now(),
             )
         )
@@ -261,9 +278,21 @@ def get_invoice_detail(db: Session, invoice_id_or_code: str, is_reprint: bool = 
 
     # Payment info
     payment = db.query(Payment).filter(Payment.invoice_id == invoice.id).first()
+    if not payment and invoice.booking_id:
+        payment = (
+            db.query(Payment)
+            .filter(Payment.booking_id == invoice.booking_id)
+            .order_by(Payment.id.desc())
+            .first()
+        )
     pm_method = (payment.payment_method.value if hasattr(payment.payment_method, "value") else str(payment.payment_method)) if payment else "CASH"
     pm_status = (payment.payment_status.value if hasattr(payment.payment_status, "value") else str(payment.payment_status)) if payment else "SUCCESS"
     tx_code = payment.transaction_code if payment else None
+    rc_url = (
+        f"/api/bookings/{invoice.booking_id}/payment-receipt"
+        if (payment and getattr(payment, "receipt_path", None) and invoice.booking_id)
+        else None
+    )
 
     # Court slots info
     court_slots: List[InvoiceSlotItem] = []
@@ -338,6 +367,7 @@ def get_invoice_detail(db: Session, invoice_id_or_code: str, is_reprint: bool = 
         payment_method=pm_method,
         payment_status=pm_status,
         transaction_code=tx_code,
+        receipt_url=rc_url,
         is_reprint=is_reprint,
     )
 
@@ -408,12 +438,27 @@ def get_shift_closing_summary(
 
     # Map payment
     invoice_ids = [inv.id for inv in shift_invoices]
+    booking_ids = [inv.booking_id for inv in shift_invoices if inv.booking_id]
     payment_map: Dict[int, Payment] = {}
-    if invoice_ids:
-        payments = db.query(Payment).filter(Payment.invoice_id.in_(invoice_ids)).all()
+    if invoice_ids or booking_ids:
+        filter_conds = []
+        if invoice_ids:
+            filter_conds.append(Payment.invoice_id.in_(invoice_ids))
+        if booking_ids:
+            filter_conds.append(Payment.booking_id.in_(booking_ids))
+        payments = (
+            db.query(Payment)
+            .filter(or_(*filter_conds))
+            .order_by(Payment.id.desc())
+            .all()
+        )
         for p in payments:
-            if p.invoice_id not in payment_map:
+            if p.invoice_id and p.invoice_id not in payment_map:
                 payment_map[p.invoice_id] = p
+            elif p.booking_id:
+                for inv in shift_invoices:
+                    if inv.booking_id == p.booking_id and inv.id not in payment_map:
+                        payment_map[inv.id] = p
 
     # Map Customer
     cust_ids = {inv.customer_id for inv in shift_invoices if inv.customer_id}
@@ -448,6 +493,12 @@ def get_shift_closing_summary(
         cust = cust_map.get(inv.customer_id)
         cust_name = cust.full_name if cust else "Khách hàng"
 
+        rc_url = (
+            f"/api/bookings/{inv.booking_id}/payment-receipt"
+            if (pm and getattr(pm, "receipt_path", None) and inv.booking_id)
+            else None
+        )
+
         items.append(
             ShiftInvoiceItem(
                 id=inv.id,
@@ -455,6 +506,7 @@ def get_shift_closing_summary(
                 booking_code=inv.booking.booking_code if inv.booking else None,
                 customer_name=cust_name,
                 payment_method=pm_str,
+                receipt_url=rc_url,
                 total_court_amount=float(inv.total_court_amount or 0),
                 total_service_amount=float(inv.total_service_amount or 0),
                 discount_amount=float(inv.discount_amount or 0),
