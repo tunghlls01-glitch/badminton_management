@@ -19,6 +19,7 @@ from app.schemas.booking import (
     RecurringBookingCreate,
 )
 from app.models.court import Court, CourtStatus
+from app.models.maintenance_block import CourtMaintenanceBlock
 from app.models.price_rule import PriceRule, PriceRuleStatus
 from app.models.public_pricing import PublicPricing
 from app.models.promotion import Promotion
@@ -202,6 +203,20 @@ def is_slot_available(
 
     conflict_block = db.scalars(block_query.limit(1)).first()
     if conflict_block is not None:
+        return False
+
+    maintenance_query = (
+        select(CourtMaintenanceBlock.id)
+        .where(
+            CourtMaintenanceBlock.court_id == court_id,
+            CourtMaintenanceBlock.start_at < end_at,
+            CourtMaintenanceBlock.end_at > start_at,
+        )
+    )
+    if lock:
+        maintenance_query = maintenance_query.with_for_update()
+
+    if db.scalars(maintenance_query.limit(1)).first() is not None:
         return False
 
     return True

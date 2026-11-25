@@ -11,6 +11,7 @@ from app.models.booking import Booking, BookingStatus
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
 from app.models.court import Court, CourtStatus
 from app.models.court_block import CourtBlock
+from app.models.maintenance_block import CourtMaintenanceBlock
 from app.models.invoice import Invoice
 from app.models.payment import Payment, PaymentStatus
 from app.models.user import User
@@ -113,11 +114,17 @@ def get_overview(db: Session, day: date, now: datetime):
         (CourtBlock.start_at < end) & (CourtBlock.end_at > start),
         (CourtBlock.start_at <= now) & (CourtBlock.end_at > now),
     )))
+    maintenance_blocks = db.scalars(select(CourtMaintenanceBlock).where(or_(
+        (CourtMaintenanceBlock.start_at < end) & (CourtMaintenanceBlock.end_at > start),
+        (CourtMaintenanceBlock.start_at <= now) & (CourtMaintenanceBlock.end_at > now),
+    )))
     courts = list(db.scalars(select(Court).order_by(Court.id)))
     by_court = defaultdict(list)
     by_booking = defaultdict(list)
     blocks_by_court = defaultdict(list)
     for block in blocks:
+        blocks_by_court[block.court_id].append(block)
+    for block in maintenance_blocks:
         blocks_by_court[block.court_id].append(block)
     for slot, blocks_slot in slots:
         booking = slot.booking
