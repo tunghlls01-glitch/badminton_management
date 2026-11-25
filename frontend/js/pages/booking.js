@@ -147,8 +147,9 @@ function info(title, content) {
   closeMenu();
 }
 
-function detail(id) {
-  const b = bookings.find(x => x.id === Number(id));
+function detail(id, day) {
+  const b = bookings.find(x => x.id === Number(id) && (!day || x.date === day))
+    || bookings.find(x => x.id === Number(id));
   if (!b) return;
   const courtName = getCourtName(b);
   const row = (label, value) => `<div class="detail-row"><span>${label}</span><strong>${value}</strong></div>`;
@@ -987,17 +988,63 @@ function renderCourtFilterTabs() {
   });
 }
 
-loadCourtsFromBackend();
-fetchBookingsFromBackend().then(() => {
-  const requestedId = new URLSearchParams(location.search).get('booking');
-  const requested = bookings.find(b => String(b.id) === requestedId);
-  if (!requested) return;
+const entry = new URLSearchParams(location.search);
+const requestedDay = entry.get('day');
+const requestedId = entry.get('booking');
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+const minutesOf = time => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
 
-  const now = new Date();
-  const [year, month, day] = requested.date.split('-').map(Number);
-  const currentMonday = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
-  weekOffset = Math.floor((Date.UTC(year, month - 1, day) - currentMonday) / 604800000);
-  renderCalendar();
+loadCourtsFromBackend().then(() => {
+  if (entry.get('action') !== 'new') return;
+  initDefaultDateTime();
+  prefillCustomerFields();
+  const dateInput = $('#bookingDate');
+  if (datePattern.test(requestedDay || '') && requestedDay >= dateInput.min) {
+    dateInput.value = requestedDay;
+    const start = entry.get('start');
+    const end = entry.get('end');
+    if (timePattern.test(start || '') && timePattern.test(end || '') && end > start) {
+      const startField = $('#startTime');
+      const durationField = $('#duration');
+      const duration = (minutesOf(end) - minutesOf(start)) / 60;
+      if (!Array.from(startField.options).some(option => option.value === start)) {
+        startField.add(new Option(start, start));
+      }
+      if (!Array.from(durationField.options).some(option => Number(option.value) === duration)) {
+        durationField.add(new Option(duration + ' giờ', duration));
+      }
+      startField.value = start;
+      durationField.value = duration;
+    }
+    const court = $('#courtSelect');
+    const courtId = entry.get('court_id');
+    if (Array.from(court.options).some(option => option.value === courtId && !option.disabled)) {
+      court.value = courtId;
+    }
+  }
+  updatePrice();
+  if (!$('#bookingDialog').open) $('#bookingDialog').showModal();
+});
+fetchBookingsFromBackend().then(() => {
+  const requested = bookings.find(b => String(b.id) === requestedId && b.date === requestedDay)
+    || bookings.find(b => String(b.id) === requestedId);
+  const day = datePattern.test(requestedDay || '') ? requestedDay : requested?.date;
+  if (day) {
+    const now = new Date();
+    const [year, month, dayOfMonth] = day.split('-').map(Number);
+    const currentMonday = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
+    weekOffset = Math.floor((Date.UTC(year, month - 1, dayOfMonth) - currentMonday) / 604800000);
+    renderCalendar();
+  }
+  if (requestedId && entry.has('day')) {
+    if (requested) detail(requested.id, requested.date);
+    else toast('Không tìm thấy lượt đặt.');
+  } else if (location.hash === '#booking-list') {
+    const allBookings = document.querySelector('[data-filter="all"]');
+    allBookings.click();
+    $('#booking-list').scrollIntoView();
+  }
 });
 applyUserUI();
 
@@ -1016,9 +1063,10 @@ $('#bookingForm').onsubmit = async e => {
   const duration = Number($('#duration').value);
   const courtSelect = $('#courtSelect');
   const realCourtId = Number(courtSelect.value) || 1;
-  const startHour = Number(start.slice(0, 2));
+  const startMinutes = minutesOf(start);
+  const endMinutes = startMinutes + duration * 60;
 
-  if (startHour + duration > 23) {
+  if (endMinutes > 23 * 60) {
     const msg = 'Vui lòng chọn khung giờ kết thúc trước 23:00.';
     setDialogError(msg);
     toast(msg);
@@ -1034,8 +1082,6 @@ $('#bookingForm').onsubmit = async e => {
     return;
   }
 
-  const startMinutes = startHour * 60 + Number(start.slice(3, 5) || 0);
-  const endMinutes = startMinutes + duration * 60;
   const endStr = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}:00`;
   const startStr = `${start}:00`;
 
