@@ -37,9 +37,10 @@ async function apiRequest(path, options = {}) {
       ? data.detail
       : Array.isArray(data?.detail)
         ? data.detail.map((item) => item.msg).join("; ")
-        : `Yêu cầu thất bại (HTTP ${response.status}).`;
+        : data?.detail?.message || `Yêu cầu thất bại (HTTP ${response.status}).`;
     const error = new Error(detail);
     error.status = response.status;
+    error.code = data?.detail?.code;
     throw error;
   }
   return data;
@@ -49,9 +50,10 @@ function formatCurrencyVND(amount) {
   return Number(amount || 0).toLocaleString("vi-VN") + "đ";
 }
 
-function redirectToGrid(message) {
+function redirectToGrid(message, day) {
   if (message) sessionStorage.setItem("rk_grid_notice", message);
-  window.location.replace("./timeline_grid.html");
+  const query = day ? `?day=${encodeURIComponent(day)}` : "";
+  window.location.replace("./timeline_grid.html" + query);
 }
 
 function showExpiredModal() {
@@ -423,6 +425,7 @@ async function initConfirmPage() {
       formData.append("receipt", uploadedReceiptFile, uploadedReceiptFile.name);
     }
 
+    if (submitButton.disabled) return;
     submitButton.disabled = true;
     const originalText = submitButton.textContent;
     submitButton.textContent = "ĐANG GỬI YÊU CẦU…";
@@ -450,6 +453,12 @@ async function initConfirmPage() {
     } catch (error) {
       if (error.status === 410) {
         await expireCurrentHold();
+      } else if (error.code === "SLOT_UNAVAILABLE") {
+        if (confirmTimerInterval) clearInterval(confirmTimerInterval);
+        confirmTimerInterval = null;
+        sessionStorage.removeItem("rk_hold_session");
+        await releaseHold(holdSession.holdId);
+        redirectToGrid(error.message, holdSession.date?.dateStr);
       } else {
         showAppNotice(error.message, { type: "error", duration: 7000 });
         submitButton.disabled = false;
