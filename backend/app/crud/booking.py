@@ -20,6 +20,8 @@ from app.schemas.booking import (
 )
 from app.models.court import Court, CourtStatus
 from app.models.price_rule import PriceRule, PriceRuleStatus
+from app.models.public_pricing import PublicPricing
+from app.models.promotion import Promotion
 
 
 def generate_booking_code() -> str:
@@ -72,6 +74,19 @@ def get_price_per_hour(
     target_date: date,
     target_time: time,
 ) -> Decimal:
+    public_table = db.get(PublicPricing, 1)
+    if public_table and public_table.rules:
+        day_type = "WEEKEND" if target_date.weekday() >= 5 else "WEEKDAY"
+        for rule in public_table.rules:
+            if rule.get("day_type") not in (day_type, "ALL"):
+                continue
+            start_value = rule.get("start_time")
+            end_value = rule.get("end_time")
+            start_time = start_value if isinstance(start_value, time) else time.fromisoformat(str(start_value))
+            end_time = end_value if isinstance(end_value, time) else time.fromisoformat(str(end_value))
+            if start_time <= target_time < end_time:
+                return Decimal(str(rule.get("price", 0)))
+
     dow = target_date.weekday()  # 0=Mon, 6=Sun
 
     rule = db.scalars(
@@ -192,7 +207,12 @@ def is_slot_available(
     return True
 
 
-def create_booking(db: Session, data: BookingCreate) -> Booking:
+def create_booking(
+    db: Session,
+    data: BookingCreate,
+    *,
+    created_by: int | None = None,
+) -> Booking:
     # 1. Kiểm tra sân
     court = db.get(Court, data.court_id)
     if court is None:
@@ -237,6 +257,7 @@ def create_booking(db: Session, data: BookingCreate) -> Booking:
     booking = Booking(
         booking_code=generate_booking_code(),
         user_id=user_id,
+        created_by=created_by,
         booking_channel=data.booking_channel,
         total_price=amount,
         status=BookingStatus.Pending,
@@ -262,6 +283,84 @@ def create_booking(db: Session, data: BookingCreate) -> Booking:
     db.commit()
     db.refresh(booking)
     return booking
+
+
+def create_walk_in_booking(
+    db: Session,
+    data: BookingCreate,
+    *,
+    created_by: int,
+) -> Booking:
+    """Tạo một booking quầy gồm nhiều ô 30 phút liền nhau."""
+    court = db.get(Court, data.court_id)
+    if court is None:
+        raise ValueError(f"Sân id={data.court_id} không tồn tại")
+    if court.status not in (CourtStatus.Active, "Active", "HOẠT ĐỘNG"):
+        raise ValueError(f"Sân '{court.name}' đang không hoạt động")
+
+    start_at = datetime.combine(data.booking_date, data.start_time)
+    end_at = datetime.combine(data.booking_date, data.end_time)
+    duration_minutes = int((end_at - start_at).total_seconds() / 60)
+    if duration_minutes < 30 or duration_minutes % 30 != 0:
+        raise ValueError("Thời lượng đặt phải là bội số của 30 phút")
+    if not is_slot_available(db, data.court_id, start_at, end_at, lock=True):
+        raise ConflictError(
+            f"Khung giờ {data.start_time}–{data.end_time} ngày {data.booking_date} "
+            f"tại sân id={data.court_id} vừa có người đặt hoặc giữ chỗ."
+        )
+
+    try:
+        user = get_or_create_user(
+            db,
+            name=data.customer_name,
+            phone=data.customer_phone,
+        )
+        booking = Booking(
+            booking_code=generate_booking_code(),
+            user_id=user.id,
+            created_by=created_by,
+            booking_channel=BookingChannel.Counter,
+            total_price=Decimal("0"),
+            status=BookingStatus.Pending,
+            hold_expires_at=None,
+            note=data.note,
+        )
+        db.add(booking)
+        db.flush()
+
+        total_amount = Decimal("0")
+        cursor = start_at
+        while cursor < end_at:
+            segment_end = cursor + timedelta(minutes=30)
+            price_per_hour = get_price_per_hour(
+                db,
+                data.court_id,
+                data.booking_date,
+                cursor.time(),
+            )
+            amount = (
+                price_per_hour * Decimal("30") / Decimal("60")
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            db.add(BookingSlot(
+                booking_id=booking.id,
+                court_id=data.court_id,
+                start_at=cursor,
+                end_at=segment_end,
+                duration_minutes=30,
+                price_per_hour=price_per_hour,
+                amount=amount,
+                status=BookingSlotStatus.Active,
+            ))
+            total_amount += amount
+            cursor = segment_end
+
+        booking.total_price = total_amount
+        db.commit()
+        db.refresh(booking)
+        return booking
+    except Exception:
+        db.rollback()
+        raise
 
 
 def check_recurring_availability(db: Session, data: RecurringCheckRequest) -> dict:
@@ -443,6 +542,104 @@ def create_recurring_booking(
         raise
 
 
+FIRST_BOOKING_PROMOTION_CODE = "FIRST15"
+
+
+def _has_prior_submitted_booking(db: Session, user_id: int, exclude_booking_id: int) -> bool:
+    prior_booking = db.scalar(
+        select(Booking.id)
+        .where(
+            Booking.user_id == user_id,
+            Booking.id != exclude_booking_id,
+            Booking.hold_expires_at.is_(None),
+            Booking.status.notin_((BookingStatus.Cancelled, BookingStatus.Expired)),
+        )
+        .limit(1)
+    )
+    return prior_booking is not None
+
+
+def resolve_booking_promotion(
+    db: Session,
+    booking: Booking,
+    code: str | None,
+    *,
+    lock_user: bool = False,
+) -> dict:
+    """Validate a user-entered promotion or select the first-booking offer."""
+    if lock_user:
+        db.query(User).filter(User.id == booking.user_id).with_for_update().first()
+
+    has_prior_booking = _has_prior_submitted_booking(db, booking.user_id, booking.id)
+    requested_code = (code or "").strip().upper()
+    automatically_applied = False
+    if not requested_code:
+        if has_prior_booking:
+            return {"promotion": None, "automatically_applied": False}
+        requested_code = FIRST_BOOKING_PROMOTION_CODE
+        automatically_applied = True
+
+    query = select(Promotion).where(Promotion.code == requested_code)
+    if lock_user:
+        query = query.with_for_update()
+    promotion = db.scalar(query)
+    if promotion is None or not promotion.is_active:
+        raise ValueError("Mã ưu đãi không tồn tại hoặc đã ngừng áp dụng.")
+    if promotion.first_booking_only and has_prior_booking:
+        raise ValueError("Mã này chỉ áp dụng cho lần đặt sân đầu tiên của tài khoản.")
+    if promotion.discount_percent <= 0 or promotion.discount_percent > 100:
+        raise ValueError("Mã ưu đãi có mức giảm không hợp lệ.")
+
+    return {
+        "promotion": promotion,
+        "automatically_applied": automatically_applied,
+    }
+
+
+def preview_booking_promotion(
+    db: Session,
+    booking: Booking,
+    code: str | None,
+) -> dict:
+    """Calculate current booking prices without reserving or consuming a promotion."""
+    subtotal = Decimal("0")
+    for slot in booking.booking_slots:
+        if slot.status != BookingSlotStatus.Active:
+            continue
+        price_per_hour = get_price_per_hour(
+            db, slot.court_id, slot.start_at.date(), slot.start_at.time()
+        )
+        duration = int((slot.end_at - slot.start_at).total_seconds() / 60)
+        subtotal += (price_per_hour * Decimal(duration) / Decimal(60)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+
+    resolved = resolve_booking_promotion(db, booking, code)
+    promotion = resolved["promotion"]
+    percent = Decimal(str(promotion.discount_percent)) if promotion else Decimal("0")
+    discount = (subtotal * percent / Decimal("100")).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    discount = min(discount, subtotal)
+    return {
+        "booking_id": booking.id,
+        "subtotal_price": subtotal,
+        "discount_code": promotion.code if promotion else None,
+        "discount_name": promotion.name if promotion else None,
+        "discount_percent": percent,
+        "discount_amount": discount,
+        "total_price": subtotal - discount,
+        "automatically_applied": resolved["automatically_applied"],
+        "message": (
+            f"Đã tự động áp dụng {promotion.code}, giảm {percent.normalize()}% cho lần đặt đầu."
+            if promotion and resolved["automatically_applied"]
+            else f"Đã áp dụng {promotion.code}, giảm {percent.normalize()}%."
+            if promotion
+            else "Nhập mã ưu đãi nếu bạn có."
+        ),
+    }
+
+
 def confirm_booking(
     db: Session,
     booking_id: int,
@@ -450,16 +647,17 @@ def confirm_booking(
     payment_method: PaymentMethod | None = None,
     receipt_path: str | None = None,
     note: str | None = None,
+    promotion_code: str | None = None,
 ) -> Booking:
-    """Khách xác nhận booking đang Pending → Confirmed.
+    """Khách gửi booking đang giữ chỗ để lễ tân xác nhận.
 
 
     - Kiểm tra booking tồn tại, status=Pending
     - Re-check slot vẫn khả dụng (FOR UPDATE)
     - Tính lại tiền bằng hàm giá module Sân (đảm bảo đúng giá hiện tại)
-    - Cập nhật status → Confirmed
+    - Bỏ hạn giữ chỗ và giữ booking ở trạng thái Pending
     """
-    booking = db.get(Booking, booking_id)
+    booking = db.query(Booking).filter(Booking.id == booking_id).with_for_update().first()
     if booking is None:
         raise ValueError(f"Booking id={booking_id} không tồn tại")
     if booking.status != BookingStatus.Pending:
@@ -497,14 +695,33 @@ def confirm_booking(
         slot.amount = amount
         total += amount
 
-    booking.total_price = total
-    booking.status = BookingStatus.Confirmed
+    resolved_promotion = resolve_booking_promotion(
+        db,
+        booking,
+        promotion_code,
+        lock_user=True,
+    )
+    promotion = resolved_promotion["promotion"]
+    discount_percent = Decimal(str(promotion.discount_percent)) if promotion else Decimal("0")
+    discount_amount = (total * discount_percent / Decimal("100")).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    discount_amount = min(discount_amount, total)
+    booking.subtotal_price = total
+    booking.discount_code = promotion.code if promotion else None
+    booking.discount_percent = discount_percent
+    booking.discount_amount = discount_amount
+    booking.discount_reason = promotion.name if promotion else None
+    booking.total_price = total - discount_amount
+    booking.status = BookingStatus.Pending
+    booking.hold_expires_at = None
+    booking.booking_channel = BookingChannel.Online
     if note is not None:
         booking.note = note.strip() or None
     if payment_method is not None:
         db.add(Payment(
             booking_id=booking.id,
-            amount=total,
+            amount=booking.total_price,
             payment_method=payment_method,
             payment_status=PaymentStatus.PENDING,
             receipt_path=receipt_path,

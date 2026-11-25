@@ -6,7 +6,7 @@
 (function () {
   "use strict";
   const entry = new URLSearchParams(window.location.search);
-  const fromOverview = entry.get("source") === "overview";
+  const requestedDay = entry.get("day");
   let checkinPending = false;
 
   // --- Initial Fallback Mock Bookings (used only when backend is completely offline) ---
@@ -98,8 +98,8 @@
   // Application State
   const state = {
     bookings: [],
-    selectedId: fromOverview ? Number(entry.get("booking_id")) : null,
-    selectedDate: getLocalDateISO(),
+    selectedId: Number(entry.get("booking_id")) || null,
+    selectedDate: /^\d{4}-\d{2}-\d{2}$/.test(requestedDay || "") ? requestedDay : getLocalDateISO(),
     activeFilter: "all", // "all", "upcoming", "checkedin"
     searchQuery: "",
     paymentMethod: "CASH", // "CASH" | "BANK_TRANSFER"
@@ -196,27 +196,7 @@
   }
 
   // --- 1. User & Authentication Setup ---
-  function renderUserInfo() {
-    let user = null;
-    try {
-      if (window.RK_AUTH && typeof window.RK_AUTH.getState === "function") {
-        const auth = window.RK_AUTH.getState();
-        if (auth && auth.user) user = auth.user;
-      }
-      if (!user && window.authStorage && typeof window.authStorage.getUser === "function") {
-        user = window.authStorage.getUser();
-      }
-    } catch (e) {
-      console.warn("Could not read auth user:", e);
-    }
-
-    if (!user) {
-      user = {
-        full_name: "Lễ tân quầy",
-        role: "staff",
-        email: "letan@badminton.com",
-      };
-    }
+  function renderUserInfo(user) {
     state.currentUser = user;
 
     if (el.receptionUserName) {
@@ -462,13 +442,13 @@
 
         if (b.status === "CHECKED_IN") {
           statusBadge = `<span class="booking-status-tag status-tag-checkedin">Đã nhận sân</span>`;
-          if (!fromOverview) actionBtn = `<button type="button" class="booking-action-btn btn-checkout" data-action="checkout" data-id="${b.id}">Thanh toán</button>`;
+          actionBtn = `<button type="button" class="booking-action-btn btn-checkout" data-action="checkout" data-id="${b.id}">Thanh toán</button>`;
         } else if (b.status === "Completed") {
           statusBadge = `<span class="booking-status-tag status-tag-completed">Đã hoàn thành</span>`;
-          if (!fromOverview) actionBtn = `<button type="button" class="booking-action-btn btn-view-invoice" data-action="preview" data-id="${b.id}">Xem hóa đơn</button>`;
+          actionBtn = `<button type="button" class="booking-action-btn btn-view-invoice" data-action="preview" data-id="${b.id}">Xem hóa đơn</button>`;
         } else if (b.status === "NO_SHOW") {
           statusBadge = `<span class="booking-status-tag" style="background:#fee2e2;color:#991b1b;">Vắng mặt</span>`;
-          if (!fromOverview) actionBtn = `<button type="button" class="booking-action-btn" data-action="preview" data-id="${b.id}" style="background:#f1f5f9;color:#64748b;">Chi tiết</button>`;
+          actionBtn = `<button type="button" class="booking-action-btn" data-action="preview" data-id="${b.id}" style="background:#f1f5f9;color:#64748b;">Chi tiết</button>`;
         } else {
           statusBadge = `<span class="booking-status-tag status-tag-confirmed">Đã xác nhận</span>`;
           actionBtn = `<button type="button" class="booking-action-btn btn-checkin" data-action="checkin" data-id="${b.id}">Nhận sân</button>`;
@@ -500,7 +480,6 @@
 
   // --- 7. Render Checkout Panel ---
   function renderCheckoutPanel() {
-    if (fromOverview) return;
     const booking = getSelectedBooking();
 
     if (!booking) {
@@ -1114,44 +1093,13 @@
   }
 
   // --- Initialization ---
-  async function loadOverviewCheckin() {
-    if (!await window.ProtectedRoute(["admin", "staff"])) return;
-    const day = entry.get("day") || new Intl.DateTimeFormat("sv-SE", {
-      timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short",
-    }).format(new Date());
-    try {
-      const { data } = await window.axiosClient.get("/reception/bookings", { params: { booking_date: day } });
-      state.bookings = data.filter((row) => ["Confirmed", "CHECKED_IN"].includes(row.status)).map((row) => ({
-        id: row.id, booking_code: row.booking_code, status: row.status,
-        customer_name: row.user_name || "Khách vãng lai", customer_phone: row.user_phone || "",
-        court_name: row.court_name || row.slots?.[0]?.court_name || "—",
-        time_slot: (row.start_time || "").slice(0, 5) + "–" + (row.end_time || "").slice(0, 5),
-      }));
-      const selected = state.bookings.find((row) => row.id === state.selectedId);
-      if (selected) {
-        state.searchQuery = selected.booking_code;
-        el.searchInput.value = state.searchQuery;
-      }
-      renderBookingsList();
-      el.bookingsCountLabel.textContent = day.split("-").reverse().join("/") + " · " + state.bookings.length + " lượt đặt sân";
-    } catch (_) {
-      el.bookingsList.textContent = "Không tải được lượt đặt. Tải lại trang để thử lại.";
-    }
-  }
-
   document.addEventListener("DOMContentLoaded", async () => {
+    if (!await window.ProtectedRoute(["admin", "staff"])) return;
+    const { user } = window.RK_AUTH.getState();
+    window.RK_LAYOUT.dashboard(user);
     cacheDOMElements();
-    renderUserInfo();
+    renderUserInfo(user);
     initEventListeners();
-    if (fromOverview) {
-      const checkout = el.checkoutStatus.closest("section");
-      checkout.hidden = true;
-      checkout.parentElement.style.gridTemplateColumns = "minmax(0, 1fr)";
-      document.querySelector(".reception-content h1").textContent = "Check-in tại quầy";
-      el.bookingsList.textContent = "Đang tải lượt đặt…";
-      void loadOverviewCheckin();
-      return;
-    }
     await loadBookingsFromAPI();
   });
 })();

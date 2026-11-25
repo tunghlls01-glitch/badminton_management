@@ -94,10 +94,44 @@
     U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329,
     U+1EA0-1EF9, U+20AB;
 } /* Styles riêng T3D2096: các trang cũ không nạp file này. */
-/* Shared navigation geometry for every management page. */
+/* Management pages share the overview's layout dimensions. */
+[data-management-layout] {
+  --management-sidebar-width: 268px;
+  --management-header-height: 65px;
+  --management-gutter: 30px;
+  --management-content-top: 18px;
+  --management-title-size: clamp(24px, 2vw, 35px);
+}
+[data-management-layout] :is(.rk-dashboard-header, .reception-topbar, .pos-topbar, .topbar) {
+  min-height: var(--management-header-height);
+  height: var(--management-header-height);
+  padding-inline: var(--management-gutter);
+  padding-block: 0;
+  box-sizing: border-box;
+}
+[data-management-layout] :is(.rk-dashboard-content, .reception-content, .content-container, .content) {
+  padding: var(--management-content-top) var(--management-gutter) 32px;
+  max-width: none;
+  box-sizing: border-box;
+}
+[data-management-layout] :is(.rk-dashboard-content, .reception-content, .content-container, .content) h1 {
+  font-size: var(--management-title-size);
+  line-height: 1.18;
+}
+@media (max-width: 1200px) {
+  [data-management-layout] { --management-gutter: 20px; }
+}
+@media (max-width: 760px) {
+  [data-management-layout] { --management-gutter: 16px; }
+}
+@media (max-width: 420px) {
+  [data-management-layout] { --management-gutter: 12px; }
+}
+
+/* Shared management navigation. */
 #rk-sidebar {
   position: fixed; inset: 0 auto 0 0; z-index: 45;
-  box-sizing: border-box; width: 260px; min-width: 260px;
+  box-sizing: border-box; width: var(--management-sidebar-width, 260px); min-width: var(--management-sidebar-width, 260px);
   height: 100dvh; padding: 28px 20px;
   display: flex; flex-direction: column; gap: 0;
   overflow-y: auto; scrollbar-gutter: stable;
@@ -132,22 +166,22 @@
 }
 #rk-sidebar .rk-sidebar-bottom button { color: #b91c1c; }
 #rk-sidebar .rk-sidebar-close { display: none; }
-body[data-admin-sidebar] .main-wrapper,
-body[data-admin-sidebar] .reception-main,
-body[data-admin-sidebar] .rk-dashboard-body { margin-left: 260px; min-width: 0; flex: 1; }
-@media (max-width: 900px) {
-  #rk-sidebar { width: 210px; min-width: 210px; padding: 20px 12px; }
-  .rk-dashboard-body, body[data-admin-sidebar] .main-wrapper,
-  body[data-admin-sidebar] .reception-main, body[data-admin-sidebar] .rk-dashboard-body { margin-left: 210px; }
+[data-management-layout] :is(.main-wrapper, .reception-main, .rk-dashboard-body) {
+  margin-left: var(--management-sidebar-width);
+  min-width: 0;
+  flex: 1;
 }
-@media print { #rk-sidebar { display: none; } body[data-admin-sidebar] .reception-main { margin-left: 0; } }
+@media print {
+  #rk-sidebar { display: none; }
+  [data-management-layout] :is(.main-wrapper, .reception-main, .rk-dashboard-body) { margin-left: 0; }
+}
 
 .au-sidebar-toggle { display: none; }
 @media (max-width: 900px) {
-  #rk-sidebar { width: 260px; min-width: 260px; transform: translateX(-100%); }
+  #rk-sidebar { width: var(--management-sidebar-width, 260px); min-width: var(--management-sidebar-width, 260px); transform: translateX(-100%); }
   #rk-sidebar.is-open { transform: translateX(0); }
   #rk-sidebar .rk-sidebar-close { display: inline-flex; margin-left: auto; background: transparent; padding: 4px; }
-  .rk-dashboard-body, body[data-admin-sidebar] .main-wrapper,
-  body[data-admin-sidebar] .reception-main, body[data-admin-sidebar] .rk-dashboard-body { margin-left: 0; }
+  [data-management-layout] :is(.main-wrapper, .reception-main, .rk-dashboard-body) { margin-left: 0; }
+  [data-management-layout] .rk-dashboard-toggle { display: inline-flex; }
   .au-sidebar-toggle { display: block; position: fixed; right: 16px; bottom: 16px; z-index: 44; border: 1px solid #e2e8f0; background: white; color: #b91c1c; border-radius: 8px; padding: 12px; }
 }

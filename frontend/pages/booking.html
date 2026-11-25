@@ -118,7 +118,7 @@
         </aside>
       </div>
 
-      <section class="bookings-section" aria-labelledby="bookings-title">
+      <section id="booking-list" class="bookings-section" aria-labelledby="bookings-title">
         <div class="section-head">
           <h2 id="bookings-title">Các lượt đặt của bạn <span id="listCount"></span></h2>
           <div class="tabs" aria-label="Lọc lượt đặt">
@@ -224,12 +224,6 @@
     <div class="dialog-head">
       <h2 id="recurring-title">Đặt sân cố định hàng tuần</h2>
       <button type="button" class="close-dialog" aria-label="Đóng">×</button>
-    </div>
-    <div class="booking-type-toggle">
-      <button type="button" class="type-btn" id="rcBtnTypeSingle" onclick="window.location.href='timeline_grid.html'">Đặt theo lượt</button>
-      <button type="button" class="type-btn active" id="rcBtnTypeRecurring">
-        <svg style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px"><use href="#i-calendar"/></svg>Đặt cố định hàng tuần (4–8 tuần)
-      </button>
     </div>
     <p class="form-note">Đặt cùng sân, cùng giờ, cùng thứ trong 4–8 tuần liên tiếp. Hệ thống sẽ kiểm tra từng tuần và cho bạn chọn bỏ qua tuần bị trùng.</p>
 

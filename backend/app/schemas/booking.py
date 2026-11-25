@@ -147,11 +147,34 @@ class BookingOut(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     booking_channel: BookingChannel
+    subtotal_price: float = 0
     total_price: float
+    discount_code: Optional[str] = None
+    discount_percent: float = 0
+    discount_amount: float = 0
+    discount_reason: Optional[str] = None
     status: BookingStatus
+    payment_method: Optional[str] = None
+    payment_status: Optional[str] = None
     note: Optional[str] = None
     created_at: datetime
     slots: List[BookingSlotOut] = []
+
+
+class PromotionPreviewRequest(BaseModel):
+    code: Optional[str] = Field(default=None, max_length=40)
+
+
+class PromotionPreviewResponse(BaseModel):
+    booking_id: int
+    subtotal_price: float
+    discount_code: Optional[str] = None
+    discount_name: Optional[str] = None
+    discount_percent: float = 0
+    discount_amount: float = 0
+    total_price: float
+    automatically_applied: bool = False
+    message: str
 
 
 class BookingCheckoutRequest(BaseModel):

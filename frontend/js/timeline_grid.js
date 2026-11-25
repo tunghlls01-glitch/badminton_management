@@ -210,6 +210,7 @@ function groupConsecutiveSlots() {
       currentGroup.lastSlotIndex = slot.slotIndex;
       currentGroup.slotCount += 1;
       currentGroup.totalPrice += slot.price;
+      currentGroup.slotIds.push(slot.id);
     } else {
       currentGroup = {
         courtId: slot.courtId,
@@ -218,13 +219,31 @@ function groupConsecutiveSlots() {
         endTime: slot.endTime,
         lastSlotIndex: slot.slotIndex,
         slotCount: 1,
-        totalPrice: slot.price
+        totalPrice: slot.price,
+        slotIds: [slot.id],
       };
       groups.push(currentGroup);
     }
   }
 
   return groups;
+}
+
+function hasContiguousSelectionsPerCourt() {
+  const slotsByCourt = new Map();
+  for (const slot of appState.selectedSlots.values()) {
+    if (!slotsByCourt.has(slot.courtId)) slotsByCourt.set(slot.courtId, []);
+    slotsByCourt.get(slot.courtId).push(slot);
+  }
+
+  return Array.from(slotsByCourt.values()).every((slots) => {
+    slots.sort((a, b) => a.slotIndex - b.slotIndex);
+    return slots.every((slot, index) => {
+      if (index === 0) return true;
+      const previous = slots[index - 1];
+      return previous.slotIndex + 1 === slot.slotIndex && previous.endAt.getTime() === slot.startAt.getTime();
+    });
+  });
 }
 
 // 5. RENDER GIAO DIỆN
@@ -271,8 +290,9 @@ function renderDateCards() {
 function renderGridHeader() {
   const thead = document.getElementById('bookingTableHead');
   const timeHeadersHtml = TIME_SLOTS.map((slot) => `
-    <th class="time-header-cell ${slot.isHourMark ? 'hour-mark' : ''}" title="${slot.startTime} - ${slot.endTime}">
-      ${slot.startTime}
+    <th class="time-header-cell ${slot.isHourMark ? 'hour-mark' : ''}" data-time="${slot.startTime}" title="${slot.startTime} - ${slot.endTime}">
+      <span>${slot.startTime}</span>
+      <small class="range-boundary-label" aria-hidden="true"></small>
     </th>
   `).join('');
 
@@ -289,6 +309,45 @@ function renderGridHeader() {
       ${timeHeadersHtml}
     </tr>
   `;
+  updateTimeHeaderSelection();
+}
+
+function updateTimeHeaderSelection() {
+  const groups = groupConsecutiveSlots();
+  const startTimes = new Set(groups.map((group) => group.startTime));
+  const endTimes = new Set(groups.map((group) => group.endTime));
+  const selectedStartTimes = new Set(
+    Array.from(appState.selectedSlots.values()).map((slot) => slot.startTime)
+  );
+  const headerTimes = new Set(
+    Array.from(document.querySelectorAll('#bookingTableHead .time-header-cell')).map((header) => header.dataset.time)
+  );
+  document.querySelectorAll('#bookingTableHead .time-header-cell').forEach((header) => {
+    const time = header.dataset.time;
+    const isStart = startTimes.has(time);
+    const isEnd = endTimes.has(time);
+    const isSelected = selectedStartTimes.has(time);
+    const endsAtClosing = groups.some((group) => {
+      if (headerTimes.has(group.endTime) || group.endTime !== '23:00') return false;
+      const lastSlotId = group.slotIds[group.slotIds.length - 1];
+      return findGridSlot(lastSlotId)?.startTime === time;
+    });
+    const marker = isStart && (isEnd || endsAtClosing)
+      ? (endsAtClosing ? 'Từ · đến 23:00' : 'Từ / đến')
+      : isStart
+        ? 'Từ'
+        : isEnd || endsAtClosing
+          ? 'Đến'
+          : '';
+    header.classList.toggle('range-selected', isSelected);
+    header.classList.toggle('range-boundary-start', isStart);
+    header.classList.toggle('range-boundary-end', isEnd || endsAtClosing);
+    const label = header.querySelector('.range-boundary-label');
+    if (label) label.textContent = marker;
+    header.title = marker
+      ? `${isStart && (isEnd || endsAtClosing) ? 'Bắt đầu và kết thúc' : isStart ? 'Bắt đầu' : 'Kết thúc'} khoảng đặt lúc ${time}${endsAtClosing ? ' (kết thúc 23:00)' : ''}`
+      : `${time} - ${TIME_SLOTS.find((slot) => slot.startTime === time)?.endTime || ''}`;
+  });
 }
 
 function renderGridBody() {
@@ -296,6 +355,19 @@ function renderGridBody() {
   const selectedCourtIds = new Set(
     Array.from(appState.selectedSlots.values()).map((s) => s.courtId)
   );
+  const selectionBySlotId = new Map();
+  for (const group of groupConsecutiveSlots()) {
+    group.slotIds.forEach((slotId, index) => {
+      const position = group.slotIds.length === 1
+        ? 'single'
+        : index === 0
+          ? 'start'
+          : index === group.slotIds.length - 1
+            ? 'end'
+            : 'middle';
+      selectionBySlotId.set(slotId, { ...group, position });
+    });
+  }
   const isHolding = Boolean(appState.holdSession);
 
   const rowsHtml = appState.gridData.map((courtRow) => {
@@ -310,18 +382,27 @@ function renderGridBody() {
       if (slot.status === 'available' || isOwnHeldSlot) {
         const isSelected = appState.selectedSlots.has(slot.id);
         const stateClass = isSelected ? (isHolding ? 'holding' : 'selected') : 'available';
+        const selection = isSelected ? selectionBySlotId.get(slot.id) : null;
+        const rangeClass = selection ? ` range-cell range-${selection.position}` : '';
+        const title = selection
+          ? `${slot.courtName} • ${selection.startTime} - ${selection.endTime} (${formatCurrencyVND(selection.totalPrice)})`
+          : `${slot.courtName} • ${slot.startTime} - ${slot.endTime} (${formatCurrencyVND(slot.price)})`;
+        const label = selection
+          ? `${slot.courtName}, đã chọn từ ${selection.startTime} đến ${selection.endTime}, ${formatCurrencyVND(selection.totalPrice)}`
+          : `${slot.courtName} lúc ${slot.startTime} đến ${slot.endTime}`;
+        const showCheck = isSelected && (!selection || selection.position === 'start' || selection.position === 'single');
         cells.push(`
-          <td class="slot-cell">
+          <td class="slot-cell${rangeClass}">
             <button
               type="button"
-              class="slot-btn ${stateClass}"
+              class="slot-btn ${stateClass}${selection ? ` range-${selection.position}` : ''}"
               data-slot-id="${slot.id}"
               data-court-id="${slot.courtId}"
               data-slot-index="${slot.slotIndex}"
-              aria-label="${slot.courtName} lúc ${slot.startTime} đến ${slot.endTime}"
-              title="${slot.courtName} • ${slot.startTime} - ${slot.endTime} (${formatCurrencyVND(slot.price)})"
+              aria-label="${label}"
+              title="${title}"
             >
-              ${isSelected ? '✓' : ''}
+              ${showCheck ? '✓' : ''}
             </button>
           </td>
         `);
@@ -371,6 +452,7 @@ function renderGridBody() {
   }).join('');
 
   tbody.innerHTML = rowsHtml;
+  updateTimeHeaderSelection();
 }
 
 function updateSummaryBar() {
@@ -451,27 +533,13 @@ function handleSlotClick(event) {
 
   if (appState.selectedSlots.has(slotId)) {
     appState.selectedSlots.delete(slotId);
-    btn.classList.remove('selected');
-    btn.classList.add('available');
-    btn.innerHTML = '';
   } else {
     const courtObj = appState.gridData.find((c) => c.courtId === courtId);
     const slotObj = courtObj.slots[slotIndex];
     appState.selectedSlots.set(slotId, slotObj);
-
-    btn.classList.remove('available');
-    btn.classList.add('selected');
-    btn.innerHTML = '✓';
   }
 
-  const rowEl = document.querySelector(`tr[data-court-row="${courtId}"]`);
-  if (rowEl) {
-    const courtStillHasSelection = Array.from(appState.selectedSlots.values()).some(
-      (s) => s.courtId === courtId
-    );
-    rowEl.classList.toggle('has-selection', courtStillHasSelection);
-  }
-
+  renderGridBody();
   updateSummaryBar();
 }
 
@@ -891,6 +959,11 @@ async function initApp() {
     void refreshGridImmediately();
     startAutoRefresh();
   });
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'rk:pricing-updated' && document.visibilityState === 'visible') {
+      void refreshGridImmediately();
+    }
+  });
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeSlotSuggestions();
   });
@@ -911,8 +984,8 @@ async function initApp() {
   document.getElementById('btnConfirmSubmit').addEventListener('click', async (event) => {
     if (appState.isSubmittingHold || appState.selectedSlots.size === 0) return;
     const groups = groupConsecutiveSlots();
-    if (groups.length !== 1) {
-      showAppNotice("Hãy chọn các khung giờ liền nhau trên cùng một sân để tiếp tục.", { type: "warning" });
+    if (!hasContiguousSelectionsPerCourt()) {
+      showAppNotice("Trên mỗi sân, hãy chọn các khung giờ liền nhau. Bạn có thể đặt nhiều sân cùng lúc.", { type: "warning" });
       return;
     }
     const user = getLoggedInUser();
@@ -922,7 +995,7 @@ async function initApp() {
     }
 
     const slots = Array.from(appState.selectedSlots.values()).sort(
-      (a, b) => a.startAt - b.startAt
+      (a, b) => Number(a.courtId) - Number(b.courtId) || a.startAt - b.startAt
     );
     const button = event.currentTarget;
     appState.isSubmittingHold = true;
@@ -934,6 +1007,7 @@ async function initApp() {
           court_id: Number(slots[0].courtId),
           user_id: user.id,
           slots: slots.map((slot) => ({
+            court_id: Number(slot.courtId),
             start_at: formatLocalDateTime(slot.startAt),
             end_at: formatLocalDateTime(slot.endAt),
           })),
@@ -952,15 +1026,29 @@ async function initApp() {
       closeConfirmModal();
       startHoldCountdown(holdSession);
     } catch (error) {
-      const lostSlot = slots[0];
       await loadAndRenderGrid({ silent: true });
 
-      const conflict = error.status === 409 || /conflict|unavailable|not available|đã được|đã có người|không còn|hết chỗ|giữ chỗ|đang bị khóa|đã bắt đầu|đã qua/i.test(error.message);
+      const conflict = error.status === 409 || /conflict|unavailable|not available|đã được|đã có người|không còn|hết chỗ|giữ chỗ|đang bị khóa|bảo trì|ngưng hoạt động|đã bắt đầu|đã qua/i.test(error.message);
+      const latestSlots = new Map(appState.gridData.flatMap((court) => court.slots).map((slot) => [slot.id, slot]));
+      const lostSlots = slots.filter((slot) => {
+        const current = latestSlots.get(slot.id);
+        return current && current.status !== "available";
+      });
+      const lostSlot = lostSlots[0] || slots[0];
       if (conflict && lostSlot) {
-        appState.selectedSlots.clear();
+        for (const slot of slots) {
+          const current = latestSlots.get(slot.id);
+          if (current?.status === "available") appState.selectedSlots.set(slot.id, current);
+          else if (current) appState.selectedSlots.delete(slot.id);
+        }
         renderGridBody();
         updateSummaryBar();
-        showAppNotice(error.message || 'Khung giờ vừa được người khác giữ hoặc đặt.', { type: 'warning' });
+        showAppNotice(
+          lostSlots.length > 1
+            ? `${lostSlots.length} khung giờ vừa hết chỗ. Các ô đó đã được bỏ chọn.`
+            : (error.message || "Khung giờ vừa được người khác giữ hoặc đặt."),
+          { type: 'warning' },
+        );
         showSlotSuggestions(lostSlot, { excludedSlotId: lostSlot.id });
       } else {
         showAppNotice(error.message, { type: "error" });
