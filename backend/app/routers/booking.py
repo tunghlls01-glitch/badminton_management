@@ -26,7 +26,7 @@ from app.crud.booking import ConflictError
 from app.core.security import get_current_user, require_roles
 from app.db.session import get_db
 from app.models.booking import BookingChannel, BookingStatus
-from app.models.payment import Payment, PaymentMethod
+from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.user import User, UserRole
 from app.schemas.booking import (
     BookingCreate,
@@ -90,6 +90,18 @@ def _to_booking_out(booking) -> dict:
     latest_payment = max(payments, key=lambda payment: payment.id or 0, default=None)
     payment_method = getattr(latest_payment, "payment_method", None)
     payment_status = getattr(latest_payment, "payment_status", None)
+    receipt_url = (
+        f"/api/bookings/{booking.id}/payment-receipt"
+        if any(payment.receipt_path for payment in payments) else None
+    )
+    prepaid = max(
+        (payment for payment in payments
+         if payment.payment_method == PaymentMethod.BANK_TRANSFER
+         and payment.payment_status == PaymentStatus.SUCCESS
+         and payment.invoice_id is None),
+        key=lambda payment: payment.id or 0,
+        default=None,
+    )
 
     return BookingOut(
         id=booking.id,
@@ -120,6 +132,9 @@ def _to_booking_out(booking) -> dict:
         note=booking.note,
         created_at=booking.created_at,
         slots=slots_out,
+        has_transferred=prepaid is not None,
+        receipt_url=receipt_url,
+        paid_amount=float(prepaid.amount) if prepaid else None,
     )
 
 
@@ -427,7 +442,11 @@ def get_booking_payment_receipt(
     filename = Path(payment.receipt_path).name
     receipt_path = RECEIPT_DIR / filename
     if not receipt_path.is_file():
-        raise HTTPException(status_code=404, detail="Không tìm thấy file ảnh minh chứng.")
+        alt_path = Path(payment.receipt_path)
+        if alt_path.is_file():
+            receipt_path = alt_path
+        else:
+            raise HTTPException(status_code=404, detail="Không tìm thấy file ảnh minh chứng.")
     media_type = next(
         (content_type for content_type, extension in RECEIPT_TYPES.items()
          if extension == receipt_path.suffix.lower()),

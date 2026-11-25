@@ -71,7 +71,7 @@ def seed_analytics():
 
         # Khoảng thời gian seed: từ 01/10/2026 đến 19/11/2026 (50 ngày)
         start_date = date(2026, 10, 15)
-        end_date = date(2026, 11, 19)
+        end_date = date.today()
         current_date = start_date
 
         random.seed(42)  # Để dữ liệu mẫu ổn định và tái lặp được
@@ -114,7 +114,7 @@ def seed_analytics():
 
                 # Quyết định trạng thái của booking
                 status_roll = random.random()
-                if current_date < date(2026, 11, 19):
+                if current_date < end_date:
                     if status_roll < 0.78:
                         b_status = BookingStatus.Completed
                     elif status_roll < 0.88:

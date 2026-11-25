@@ -154,11 +154,14 @@ class BookingOut(BaseModel):
     discount_amount: float = 0
     discount_reason: Optional[str] = None
     status: BookingStatus
-    payment_method: Optional[str] = None
-    payment_status: Optional[str] = None
     note: Optional[str] = None
     created_at: datetime
     slots: List[BookingSlotOut] = []
+    payment_method: Optional[str] = None
+    payment_status: Optional[str] = None
+    has_transferred: bool = False
+    receipt_url: Optional[str] = None
+    paid_amount: Optional[float] = None
 
 
 class PromotionPreviewRequest(BaseModel):

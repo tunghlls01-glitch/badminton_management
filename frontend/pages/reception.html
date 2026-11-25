@@ -6,7 +6,7 @@
   <title>Nhận sân & Thanh toán quầy | RK BADMINTON</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/reception.css">
   <link rel="stylesheet" href="../css/admin-sidebar.css">
 </head>
@@ -14,6 +14,7 @@
   <div id="receptionApp" class="reception-app">
     
     <!-- Sidebar Navigation -->
+    <button type="button" id="rk-backdrop" class="rk-backdrop" data-rk-action="sidebar-close" aria-label="Đóng menu" hidden></button>
     <button class="au-sidebar-toggle" type="button" data-rk-action="sidebar" aria-controls="rk-sidebar" aria-expanded="false">Menu quản lý</button>
     <aside id="rk-sidebar" class="rk-sidebar" aria-label="Thanh bên quản lý"></aside>
 
@@ -22,7 +23,18 @@
       
       <!-- Top Navigation Bar (Figma node 2:4) -->
       <header class="reception-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left" style="display: flex; align-items: center; gap: 12px;">
+          <button 
+            type="button" 
+            class="rk-icon-button rk-dashboard-toggle" 
+            data-rk-action="sidebar" 
+            aria-label="Mở menu quản lý" 
+            aria-expanded="false" 
+            aria-controls="rk-sidebar"
+            title="Mở menu quản lý"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
           <span class="topbar-title">Quầy lễ tân</span>
         </div>
 
@@ -32,15 +44,15 @@
             <span>Đang mở cửa</span>
           </div>
 
-          <div class="user-profile" style="display: flex; align-items: center; gap: 12px;">
-            <div class="user-info" style="text-align: right;">
-              <span id="receptionUserName" class="user-name">Lễ tân</span>
-              <span id="receptionUserRole" class="user-role">Nhân viên quầy</span>
-            </div>
-            <div id="receptionUserAvatar" class="user-avatar" aria-hidden="true">LT</div>
+          <div class="rk-user" id="receptionUserProfile" style="display: flex; align-items: center; gap: 9px;">
+            <span id="receptionUserAvatar" class="rk-avatar" aria-hidden="true" style="width: 35px; height: 35px; border-radius: 50%; background: #fee2e2; color: #ba0000; font-weight: 800; font-size: 13px; display: grid; place-items: center; flex-shrink: 0; overflow: hidden;">D</span>
+            <span style="display: block;">
+              <strong id="receptionUserName" style="font-size: 11px; font-weight: 700; color: #0f172a; display: block; line-height: normal;">Do Hieu</strong>
+              <small id="receptionUserRole" style="font-size: 9px; color: #94a3b8; display: block; margin-top: 5px; line-height: normal;">Quản trị viên</small>
+            </span>
             <button
               type="button"
-              class="reception-logout-btn"
+              class="rk-icon-button"
               data-rk-action="logout"
               title="Đăng xuất"
               aria-label="Đăng xuất"
@@ -131,18 +143,21 @@
               </div>
             </div>
 
-            <div id="checkoutBookingCode" class="checkout-booking-code">#BK-20261113</div>
+            <div id="checkoutBookingCode" class="checkout-booking-code">---</div>
 
             <div class="checkout-customer-meta">
               <div>
-                <div id="checkoutCustName" class="checkout-cust-name">Minh Anh Nguyen</div>
-                <div id="checkoutCustPhone" class="checkout-cust-phone">090 123 4567</div>
+                <div id="checkoutCustName" class="checkout-cust-name">---</div>
+                <div id="checkoutCustPhone" class="checkout-cust-phone">---</div>
               </div>
               <div>
-                <div id="checkoutCourtName" class="checkout-court-name">Sân 2</div>
-                <div id="checkoutCheckinTime" class="checkout-checkin-time">Đã nhận sân lúc 14:02</div>
+                <div id="checkoutCourtName" class="checkout-court-name">---</div>
+                <div id="checkoutCheckinTime" class="checkout-checkin-time">---</div>
               </div>
             </div>
+
+            <!-- Khung thông báo Khách đã chuyển khoản khi đặt sân -->
+            <div id="checkoutTransferAlertBox" style="display:none; margin: 12px 0 4px;"></div>
 
             <div class="checkout-divider"></div>
 
@@ -154,10 +169,10 @@
 
             <div class="court-fee-row">
               <div>
-                <div id="courtFeeDesc" class="court-fee-desc">Sân 2 · Sân tiêu chuẩn</div>
-                <div id="courtFeeFormula" class="court-fee-formula">14:00–15:00  ·  1 giờ × 180,000</div>
+                <div id="courtFeeDesc" class="court-fee-desc">---</div>
+                <div id="courtFeeFormula" class="court-fee-formula">---</div>
               </div>
-              <div id="courtFeePrice" class="court-fee-price">180,000</div>
+              <div id="courtFeePrice" class="court-fee-price">0</div>
             </div>
 
             <div class="checkout-divider"></div>
@@ -208,7 +223,7 @@
                   <span class="grand-total-label">Tổng cộng</span>
                   <span class="grand-total-currency">VND</span>
                 </div>
-                <div id="grandTotal" class="grand-total-amount">370,000</div>
+                <div id="grandTotal" class="grand-total-amount">0</div>
               </div>
 
               <!-- Payment Method Toggle -->
@@ -222,7 +237,7 @@
                 <label for="cashInput" class="cash-received-label">Tiền khách đưa</label>
                 <div class="cash-received-controls">
                   <div class="cash-input-wrap">
-                    <input type="text" id="cashInput" class="cash-input" value="500,000" inputmode="numeric">
+                    <input type="text" id="cashInput" class="cash-input" value="0" inputmode="numeric">
                     <span class="cash-input-currency">VND</span>
                   </div>
                   <button type="button" id="btnQuick200k" class="cash-quick-btn">200k</button>
@@ -238,12 +253,9 @@
 
               <!-- Bank Transfer Info Box (Hidden by default) -->
               <div id="bankTransferBox" style="display:none;padding:12px;text-align:center;background:#fff;border-radius:6px;border:1px solid #cbd5e1;margin-top:10px;">
-                <p style="font-size:12px;font-weight:600;color:#1e293b;">Quét mã VietQR thanh toán</p>
+                <p style="font-size:12px;font-weight:700;color:#1e293b;">Thông tin chuyển khoản ngân hàng</p>
                 <p style="font-size:11px;color:#64748b;margin-top:2px;">MB Bank · 0901234567 · RK BADMINTON</p>
-                <div style="margin:10px auto;width:140px;height:140px;background:#f1f5f9;border:1px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;font-size:11px;color:#64748b;">
-                  Mã QR chuyển khoản
-                </div>
-                <p style="font-size:11px;color:#047857;font-weight:500;">Hệ thống tự động đối soát giao dịch</p>
+                <p style="font-size:11px;color:#047857;font-weight:500;margin-top:6px;">Hệ thống tự động đối soát giao dịch</p>
               </div>
             </div>
 
@@ -295,27 +307,27 @@
           <div class="receipt-meta-grid">
             <div class="receipt-meta-row">
               <span>Mã đặt sân</span>
-              <strong id="receiptBookingCode">#BK-20261113</strong>
+              <strong id="receiptBookingCode">---</strong>
             </div>
             <div class="receipt-meta-row">
               <span>Ngày</span>
-              <span id="receiptDate">13/11/2026</span>
+              <span id="receiptDate">---</span>
             </div>
             <div class="receipt-meta-row">
               <span>Giờ</span>
-              <span id="receiptTime">14:42</span>
+              <span id="receiptTime">---</span>
             </div>
             <div class="receipt-meta-row">
               <span>Khách hàng</span>
-              <span id="receiptCustomer">Minh Anh Nguyen</span>
+              <span id="receiptCustomer">---</span>
             </div>
             <div class="receipt-meta-row">
               <span>Sân</span>
-              <span id="receiptCourt">Sân 2</span>
+              <span id="receiptCourt">---</span>
             </div>
             <div class="receipt-meta-row">
               <span>Nhận sân</span>
-              <span id="receiptCheckin">14:02</span>
+              <span id="receiptCheckin">---</span>
             </div>
           </div>
 
@@ -335,7 +347,7 @@
 
           <div class="receipt-total-row">
             <span>TỔNG CỘNG</span>
-            <span id="receiptTotal">370,000</span>
+            <span id="receiptTotal">0</span>
           </div>
 
           <div class="receipt-tender-row">
@@ -378,6 +390,35 @@
   <!-- Toast notification -->
   <div id="rkToast" class="rk-toast" role="status" aria-live="polite">
     <span id="rkToastText">Thông báo</span>
+  </div>
+
+  <!-- Modal Xem ảnh biên lai chuyển khoản -->
+  <div id="receiptViewerModal" class="receipt-viewer-modal" style="display:none; position:fixed; inset:0; z-index:1200; background:rgba(15,23,42,0.65); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#fff; border-radius:12px; max-width:540px; width:100%; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.25);">
+      <div style="padding:14px 18px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
+        <h3 style="margin:0; font-size:15px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:6px;">
+          <span>🧾</span> Biên lai chuyển khoản ngân hàng
+        </h3>
+        <button type="button" id="btnCloseReceiptViewer" style="background:transparent; border:none; font-size:20px; line-height:1; color:#64748b; cursor:pointer; padding:4px;">✕</button>
+      </div>
+      <div style="padding:16px; overflow-y:auto; text-align:center; background:#f1f5f9; flex:1;">
+        <img id="receiptViewerImg" src="" alt="Biên lai chuyển khoản" style="max-width:100%; max-height:60vh; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 2px 8px rgba(0,0,0,0.08); object-fit:contain;">
+        <div id="receiptViewerEmpty" style="display:none; padding:40px 16px; color:#64748b; font-size:13px;">
+          Không tìm thấy file ảnh biên lai chuyển khoản.
+        </div>
+      </div>
+      <div style="padding:12px 18px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#fff;">
+        <span id="receiptViewerNote" style="font-size:12px; color:#64748b; font-weight:500;">Đối soát chuyển khoản đặt sân</span>
+        <div style="display:flex; gap:10px;">
+          <a id="receiptViewerDownload" href="#" target="_blank" download style="display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid #cbd5e1; border-radius:6px; color:#334155; font-size:13px; font-weight:600; text-decoration:none; background:#fff;">
+            Tải ảnh về
+          </a>
+          <button type="button" id="btnCloseReceiptViewerBtn" style="padding:6px 16px; background:#BA0000; color:#fff; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;">
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->
