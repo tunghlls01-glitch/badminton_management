@@ -34,6 +34,7 @@ class Service(Base):
     price = Column(Numeric(12, 2), default=0, nullable=False)
     stock_quantity = Column(Integer, default=0, nullable=False)
     status = Column(String(50), default="ACTIVE", nullable=False, index=True)
+    image_url = Column(String(500), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -44,10 +45,6 @@ class Service(Base):
     @unit_price.setter
     def unit_price(self, val):
         self.price = val
-
-    @property
-    def image_url(self):
-        return None
 
     # Relationships
     order_items = relationship("ServiceOrderItem", back_populates="service")

@@ -67,7 +67,6 @@ def create_service(db: Session, data: ServiceCreate) -> Service:
     service_dict = data.model_dump()
     if "unit_price" in service_dict:
         service_dict["price"] = service_dict.pop("unit_price")
-    service_dict.pop("image_url", None)
 
     if "category" in service_dict:
         service_dict["category"] = map_category(service_dict["category"])
@@ -100,7 +99,6 @@ def update_service(db: Session, service: Service, data: ServiceUpdate) -> Servic
     update_data = data.model_dump(exclude_unset=True)
     if "unit_price" in update_data:
         update_data["price"] = update_data.pop("unit_price")
-    update_data.pop("image_url", None)
 
     if "category" in update_data:
         update_data["category"] = map_category(update_data["category"])

@@ -110,6 +110,10 @@ async def lifespan(app: FastAPI):
         with engine.begin() as conn:
             insp = inspect(conn)
             # services
+            if "services" in insp.get_table_names():
+                svc_cols = {c["name"] for c in insp.get_columns("services")}
+                if "image_url" not in svc_cols:
+                    conn.execute(text("ALTER TABLE services ADD COLUMN image_url VARCHAR(500) NULL"))
             try:
                 conn.execute(text("ALTER TABLE services MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'"))
             except Exception:
@@ -172,6 +176,15 @@ def court_image(filename: str):
     image = court_service.UPLOAD_DIR / filename
     if not media_type or image.name != filename or not image.is_file():
         raise HTTPException(status_code=404, detail="Không tìm thấy ảnh sân.")
+    return FileResponse(image, media_type=media_type, headers={"X-Content-Type-Options": "nosniff"})
+
+@app.get("/static/uploads/services/{filename}", include_in_schema=False)
+def service_image(filename: str):
+    from app.routers import services as services_router
+    media_type = services_router.IMAGE_TYPES.get(Path(filename).suffix.lower())
+    image = services_router.SERVICE_UPLOAD_DIR / filename
+    if not media_type or image.name != filename or not image.is_file():
+        raise HTTPException(status_code=404, detail="Không tìm thấy ảnh dịch vụ.")
     return FileResponse(image, media_type=media_type, headers={"X-Content-Type-Options": "nosniff"})
 
 @app.exception_handler(SQLAlchemyError)

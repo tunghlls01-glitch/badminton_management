@@ -69,6 +69,9 @@ def migrate_columns_if_needed():
 
         # 3. services
         if "services" in insp.get_table_names():
+            cols = {c["name"] for c in insp.get_columns("services")}
+            if "image_url" not in cols:
+                conn.execute(text("ALTER TABLE services ADD COLUMN image_url VARCHAR(500) NULL"))
             try:
                 conn.execute(text("ALTER TABLE services MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'"))
             except Exception:

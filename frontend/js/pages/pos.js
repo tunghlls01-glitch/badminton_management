@@ -256,9 +256,7 @@ function renderServiceGrid(list) {
            onclick="handleCardClick(${s.id})" 
            title="${isOut ? "Mặt hàng này đã hết kho" : "Bấm để thêm vào giỏ order"}">
         <div class="item-card-top">
-          <div class="item-avatar-box ${avatarClass}">
-            ${avatarIcon}
-          </div>
+          ${s.image_url ? `<img src="${s.image_url}" alt="${escapeHtml(s.name)}" class="item-avatar-box" style="object-fit:cover; padding:0; width:44px; height:44px; border-radius:8px; border:1px solid #e5e7eb;">` : `<div class="item-avatar-box ${avatarClass}">${avatarIcon}</div>`}
           <span class="stock-badge ${stockClass}">${stockText}</span>
         </div>
         <div class="item-info-mid">
