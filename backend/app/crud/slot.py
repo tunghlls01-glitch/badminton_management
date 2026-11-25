@@ -7,6 +7,7 @@ from sqlalchemy import or_, and_
 
 from app.models.court import Court, CourtStatus
 from app.models.court_block import CourtBlock
+from app.models.maintenance_block import CourtMaintenanceBlock
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
 from app.models.booking import Booking, BookingChannel, BookingStatus
 from app.crud.booking import booking_blocks_slot, generate_booking_code, get_price_per_hour, vietnam_now
@@ -27,11 +28,15 @@ def is_slot_free(db: Session, court_id: int, start_at: datetime, end_at: datetim
     """
     now = vietnam_now()
 
-    # 1. Kiểm tra khoá sân (CourtBlock)
+    # 1. Kiểm tra khoá sân (CourtBlock & CourtMaintenanceBlock)
     has_lock = db.query(CourtBlock).filter(
         CourtBlock.court_id == court_id,
         CourtBlock.start_at < end_at,
         CourtBlock.end_at > start_at
+    ).first() or db.query(CourtMaintenanceBlock).filter(
+        CourtMaintenanceBlock.court_id == court_id,
+        CourtMaintenanceBlock.start_at < end_at,
+        CourtMaintenanceBlock.end_at > start_at
     ).first()
 
     if has_lock:
@@ -100,11 +105,15 @@ def get_slot_grid_by_date(
                 ))
                 continue
 
-            # 2. Kiểm tra Lịch khoá sân theo khung giờ (CourtBlock)
+            # 2. Kiểm tra Lịch khoá sân theo khung giờ (CourtBlock & CourtMaintenanceBlock)
             lock = db.query(CourtBlock).filter(
                 CourtBlock.court_id == court.id,
                 CourtBlock.start_at < end_dt,
                 CourtBlock.end_at > start_dt
+            ).first() or db.query(CourtMaintenanceBlock).filter(
+                CourtMaintenanceBlock.court_id == court.id,
+                CourtMaintenanceBlock.start_at < end_dt,
+                CourtMaintenanceBlock.end_at > start_dt
             ).first()
 
             if lock:
@@ -220,9 +229,18 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
                 and_(CourtBlock.start_at < item.end_at, CourtBlock.end_at > item.start_at)
                 for item in court_slots
             ]
+            maintenance_conditions = [
+                and_(CourtMaintenanceBlock.start_at < item.end_at, CourtMaintenanceBlock.end_at > item.start_at)
+                for item in court_slots
+            ]
             has_lock = (
                 db.query(CourtBlock)
                 .filter(CourtBlock.court_id == court_id, or_(*block_conditions))
+                .with_for_update()
+                .first()
+            ) or (
+                db.query(CourtMaintenanceBlock)
+                .filter(CourtMaintenanceBlock.court_id == court_id, or_(*maintenance_conditions))
                 .with_for_update()
                 .first()
             )
