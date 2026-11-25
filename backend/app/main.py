@@ -160,6 +160,14 @@ async def lifespan(app: FastAPI):
                     conn.execute(text("ALTER TABLE payments ADD COLUMN invoice_id INT NULL"))
                 if "service_order_id" not in pm_cols:
                     conn.execute(text("ALTER TABLE payments ADD COLUMN service_order_id INT NULL"))
+
+        # Tự động nạp toàn bộ dữ liệu mẫu demo phong phú (Sân, Đặt sân, Dịch vụ & Kho, Hóa đơn)
+        try:
+            from app.seeds.seed_full_demo import seed_all
+            seed_all()
+            print("[SEED] >>> Đã tự động nạp toàn bộ dữ liệu mẫu (seed_full_demo) thành công!")
+        except Exception as seed_err:
+            print(f"[SEED ERROR] Không thể nạp dữ liệu mẫu: {seed_err}")
     except OperationalError as error:
         print("[DB] KHÔNG kết nối được MySQL! Kiểm tra MySQL đã bật chưa và file .env.")
         if "Unknown database" in str(error.orig):
@@ -189,8 +197,10 @@ def service_image(filename: str):
 
 @app.exception_handler(SQLAlchemyError)
 async def database_error(request: Request, exc: SQLAlchemyError):
-    print(f"[DB] {request.method} {request.url.path}: {type(exc).__name__}")
-    return JSONResponse(status_code=500, content={"detail": "Máy chủ không xử lý được dữ liệu. Vui lòng thử lại."})
+    import traceback
+    print(f"\n[DB ERROR] {request.method} {request.url.path}: {exc}")
+    traceback.print_exc()
+    return JSONResponse(status_code=500, content={"detail": f"Database error: {str(exc)}"})
 
 # Global Exception Handler: in toàn bộ traceback ra terminal và trả về JSON
 @app.exception_handler(Exception)
@@ -241,6 +251,16 @@ app.include_router(maintenance_blocks.router, prefix="/api")
 app.include_router(notification.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(invoice.router, prefix="/api")
+@app.post("/api/seed-demo-data", include_in_schema=False)
+@app.get("/api/seed-demo-data", include_in_schema=False)
+def seed_demo_data():
+    try:
+        from app.seeds.seed_full_demo import seed_all
+        seed_all()
+        return {"status": "success", "message": "Đã nạp toàn bộ dữ liệu mẫu demo thành công!"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} đang chạy. Xem tài liệu API tại /docs"}
