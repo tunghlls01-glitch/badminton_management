@@ -141,6 +141,8 @@ def vietnam_now() -> datetime:
 def booking_blocks_slot(now: datetime):
     return or_(
         Booking.status.in_([BookingStatus.Confirmed, BookingStatus.CHECKED_IN]),
+        # Checkout tại quầy có thể xong trước giờ kết thúc của lượt đặt.
+        and_(Booking.status == BookingStatus.Completed, BookingSlot.end_at > now),
         and_(
             Booking.status == BookingStatus.Pending,
             or_(Booking.hold_expires_at.is_(None), Booking.hold_expires_at > now),
@@ -692,8 +694,8 @@ def confirm_booking(
             exclude_booking_id=booking.id, lock=True,
         ):
             raise ConflictError(
-                f"Slot {slot.start_at} – {slot.end_at} tại sân id={slot.court_id} "
-                f"đã bị đặt bởi người khác!"
+                f"{slot.court.name} lúc {slot.start_at:%H:%M}–{slot.end_at:%H:%M} "
+                "không còn khả dụng. Vui lòng chọn lại khung giờ."
             )
 
         # Tính lại giá theo PriceRule hiện tại

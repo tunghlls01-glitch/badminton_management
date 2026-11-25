@@ -148,37 +148,31 @@ const appState = {
 };
 
 async function fetchSlotsGrid(dateStr) {
-  const result = await apiRequest(`/v1/slots/grid?date=${encodeURIComponent(dateStr)}`);
+  const result = await apiRequest(`/v1/slots/grid?date=${encodeURIComponent(dateStr)}&slot_minutes=30`);
   const statusMap = { FREE: "available", BOOKED: "booked", HOLD: "booked", LOCKED: "locked" };
   const now = Date.now();
+  const timeLabel = (value) => `${value.getHours()}:${String(value.getMinutes()).padStart(2, "0")}`;
 
-  return result.courts.map((court) => {
-    const slots = [];
-    court.slots.forEach((item) => {
-      // Chuỗi datetime từ API không có múi giờ; giữ nguyên giờ địa phương.
-      const start = new Date(item.start_at);
-      for (let part = 0; part < 2; part++) {
-        const slotStart = new Date(start.getTime() + part * 30 * 60 * 1000);
-        const slotEnd = new Date(slotStart.getTime() + 30 * 60 * 1000);
-        const timeLabel = (value) => `${value.getHours()}:${String(value.getMinutes()).padStart(2, "0")}`;
-        let status = statusMap[item.status] || "locked";
-        if (slotStart.getTime() <= now) status = "locked";
-        slots.push({
-          id: `${court.court_id}_${slotStart.getTime()}`,
-          courtId: String(court.court_id),
-          courtName: court.court_name,
-          slotIndex: slots.length,
-          startTime: timeLabel(slotStart),
-          endTime: timeLabel(slotEnd),
-          startAt: slotStart,
-          endAt: slotEnd,
-          status,
-          price: Number(item.price) / 2,
-        });
-      }
-    });
-    return { courtId: String(court.court_id), courtName: court.court_name, slots };
-  });
+  return result.courts.map((court) => ({
+    courtId: String(court.court_id),
+    courtName: court.court_name,
+    slots: court.slots.map((item, index) => {
+      const slotStart = new Date(item.start_at);
+      const slotEnd = new Date(item.end_at);
+      return {
+        id: `${court.court_id}_${slotStart.getTime()}`,
+        courtId: String(court.court_id),
+        courtName: court.court_name,
+        slotIndex: index,
+        startTime: timeLabel(slotStart),
+        endTime: timeLabel(slotEnd),
+        startAt: slotStart,
+        endAt: slotEnd,
+        status: slotStart.getTime() <= now ? "locked" : (statusMap[item.status] || "locked"),
+        price: Number(item.price),
+      };
+    }),
+  }));
 }
 
 // 4. HÀM XỬ LÝ NGHIỆP VỤ

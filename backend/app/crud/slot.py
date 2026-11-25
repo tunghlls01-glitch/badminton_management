@@ -139,14 +139,11 @@ def get_slot_grid_by_date(
 
             if slot_record:
                 booking = slot_record.booking
-                if booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN) or (
-                    booking.status == BookingStatus.Pending and booking.hold_expires_at is None
-                ):
-                    status_display = SlotDisplayStatus.BOOKED
-                elif booking.status == BookingStatus.Pending and getattr(booking, 'hold_expires_at', None) and booking.hold_expires_at > now:
-                    status_display = SlotDisplayStatus.HOLD
-                else:
-                    status_display = SlotDisplayStatus.FREE
+                status_display = (
+                    SlotDisplayStatus.HOLD
+                    if booking.status == BookingStatus.Pending and booking.hold_expires_at is not None
+                    else SlotDisplayStatus.BOOKED
+                )
 
                 slots.append(SlotGridItem(
                     court_id=court.id,
@@ -255,7 +252,7 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
                 for item in court_slots
             ]
             existing_slots = (
-                db.query(BookingSlot)
+                db.query(BookingSlot, booking_blocks_slot(now).label("blocks_slot"))
                 .join(Booking, BookingSlot.booking_id == Booking.id)
                 .filter(
                     BookingSlot.court_id == court_id,
@@ -266,18 +263,9 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
                 .all()
             )
 
-            for slot in existing_slots:
+            for slot, blocks_slot in existing_slots:
                 booking = slot.booking
-                is_booked = booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN) or (
-                    booking.status == BookingStatus.Pending and booking.hold_expires_at is None
-                )
-                is_holding = (
-                    booking.status == BookingStatus.Pending
-                    and booking.hold_expires_at is not None
-                    and booking.hold_expires_at > now
-                )
-
-                if is_booked or is_holding:
+                if blocks_slot:
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
                         detail=f"Khung giờ {slot.start_at.strftime('%H:%M')} - {slot.end_at.strftime('%H:%M')} tại {court.name} đã có người đặt hoặc đang được giữ.",

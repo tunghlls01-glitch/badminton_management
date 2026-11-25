@@ -390,7 +390,10 @@ async def confirm_booking_with_payment(
         db.rollback()
         if saved_receipt:
             saved_receipt.unlink(missing_ok=True)
-        raise HTTPException(status_code=409, detail=str(error)) from error
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "SLOT_UNAVAILABLE", "message": str(error)},
+        ) from error
     except ValueError as error:
         db.rollback()
         if saved_receipt:
