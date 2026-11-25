@@ -58,7 +58,12 @@ class Booking(Base):
     booking_channel: Mapped[BookingChannel] = mapped_column(
         Enum(BookingChannel), default=BookingChannel.Counter, server_default="Counter", nullable=False
     )
+    subtotal_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0, nullable=False)
     total_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0, nullable=False)
+    discount_code: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    discount_percent: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=0, nullable=False)
+    discount_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0, nullable=False)
+    discount_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     status: Mapped[BookingStatus] = mapped_column(
         Enum(BookingStatus), default=BookingStatus.Pending, server_default="Pending", nullable=False
     )

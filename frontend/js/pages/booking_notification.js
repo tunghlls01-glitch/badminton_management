@@ -36,6 +36,38 @@
     return `${mins} phút`;
   }
 
+  function groupBookingSlots(slots) {
+    const ordered = [...slots].sort((a, b) =>
+      Number(a.court_id) - Number(b.court_id) || String(a.start_at).localeCompare(String(b.start_at))
+    );
+    const groups = [];
+
+    for (const slot of ordered) {
+      const startTime = String(slot.start_at || "").slice(11, 16);
+      const endTime = String(slot.end_at || "").slice(11, 16);
+      const duration = Number(slot.duration_minutes) || 30;
+      const amount = Number(slot.amount) || 0;
+      const previous = groups[groups.length - 1];
+
+      if (previous && String(previous.courtId) === String(slot.court_id) && previous.endTime === startTime) {
+        previous.endTime = endTime;
+        previous.durationMinutes += duration;
+        previous.amount += amount;
+      } else {
+        groups.push({
+          courtId: slot.court_id,
+          courtName: slot.court_name || `Sân ${slot.court_id}`,
+          startTime,
+          endTime,
+          durationMinutes: duration,
+          amount,
+        });
+      }
+    }
+
+    return groups;
+  }
+
   function formatVietnameseDate(dateStr) {
     if (!dateStr) return "Hôm nay";
     try {
@@ -67,6 +99,15 @@
       } catch (err) {
         console.warn("Không tìm thấy booking theo ID trực tiếp, thử tìm trong danh sách:", err);
       }
+    }
+
+    try {
+      const cached = JSON.parse(sessionStorage.getItem("rk_booking_success") || "null");
+      if (cached && (!queryId || String(cached.id) === String(queryId) || cached.booking_code === queryId)) {
+        return cached;
+      }
+    } catch (err) {
+      console.warn("Không thể khôi phục thông tin booking vừa gửi:", err);
     }
 
     // 2. Tìm trong danh sách booking từ API
@@ -130,36 +171,34 @@
 
   function renderBooking(b) {
     const reference = b.booking_code || ("BK-" + b.id);
-    const courtName = b.court_name || (b.slots && b.slots[0] && b.slots[0].court_name) || "Sân cầu lông";
     const venueName = "RK Badminton Club";
     const venueAddress = "Sân Cầu Lông RK · Cơ sở chính";
-
-    // Thời gian
-    let startTime = b.start_time ? b.start_time.slice(0, 5) : "--:--";
-    let endTime = b.end_time ? b.end_time.slice(0, 5) : "--:--";
-    let durationMins = 60;
-
-    if (b.slots && b.slots.length > 0) {
-      const firstSlot = b.slots[0];
-      const lastSlot = b.slots[b.slots.length - 1];
-      if (firstSlot.start_at) {
-        startTime = firstSlot.start_at.slice(11, 16);
-      }
-      if (lastSlot.end_at) {
-        endTime = lastSlot.end_at.slice(11, 16);
-      }
-      durationMins = b.slots.reduce((sum, s) => sum + (Number(s.duration_minutes) || 30), 0);
-    } else if (startTime !== "--:--" && endTime !== "--:--") {
-      const [sh, sm] = startTime.split(":").map(Number);
-      const [eh, em] = endTime.split(":").map(Number);
-      const diff = (eh * 60 + em) - (sh * 60 + sm);
-      if (diff > 0) durationMins = diff;
+    const slots = Array.isArray(b.slots) ? b.slots : [];
+    const groups = groupBookingSlots(slots);
+    const fallbackStart = String(b.start_time || "--:--").slice(0, 5);
+    const fallbackEnd = String(b.end_time || "--:--").slice(0, 5);
+    if (!groups.length) {
+      groups.push({
+        courtId: b.court_id,
+        courtName: b.court_name || "Sân cầu lông",
+        startTime: fallbackStart,
+        endTime: fallbackEnd,
+        durationMinutes: 60,
+        amount: Number(b.total_price) || 0,
+      });
     }
 
+    const courtNames = [...new Set(groups.map((group) => group.courtName))];
+    const courtName = courtNames.length === 1 ? courtNames[0] : `${courtNames.length} sân đã chọn`;
+    const timeRanges = [...new Set(groups.map((group) => `${group.startTime} – ${group.endTime}`))];
+    const startTime = timeRanges.length === 1 ? timeRanges[0] : `${groups.length} khung giờ đã chọn`;
+    const durationMins = slots.length
+      ? slots.reduce((sum, slot) => sum + (Number(slot.duration_minutes) || 30), 0)
+      : groups[0].durationMinutes;
     const durationLabel = formatDuration(durationMins);
     const dateLabel = formatVietnameseDate(b.booking_date);
     const totalPrice = Number(b.total_price) || 0;
-    const pricePerHour = durationMins > 0 ? Math.round(totalPrice / (durationMins / 60)) : totalPrice;
+    const slotCount = slots.length || groups.length;
 
     // Trạng thái
     let statusText = "Đã xác nhận";
@@ -168,11 +207,27 @@
     else if (b.status === "Completed") statusText = "Hoàn thành";
 
     // Thanh toán
-    const isOnline = b.booking_channel === "Online";
+    const isOnline = b.payment_method === "BANK_TRANSFER" || b.booking_channel === "Online";
     const paymentMethodText = isOnline ? "Chuyển khoản ngân hàng" : "Thanh toán tại sân";
-    const paymentNoteText = b.status === "Confirmed"
-      ? "Lịch đã được lưu vào hệ thống · Vui lòng đến trước 15 phút"
-      : "Chưa thanh toán · Thanh toán tại quầy khi nhận sân";
+    let paymentNoteText = "Đặt sân đang chờ lễ tân xác nhận.";
+    if (b.payment_status === "SUCCESS") {
+      paymentNoteText = "Thanh toán đã được xác nhận.";
+    } else if (b.payment_status === "PENDING" && isOnline) {
+      paymentNoteText = "Đã gửi ảnh chuyển khoản · Chờ lễ tân kiểm tra và xác nhận.";
+    } else if (b.status === "Pending") {
+      paymentNoteText = "Chờ lễ tân xác nhận · Thanh toán tại sân khi đến chơi.";
+    } else if (b.status === "Confirmed") {
+      paymentNoteText = "Lịch đã được lưu vào hệ thống · Vui lòng đến trước 15 phút.";
+    }
+
+    const title = document.getElementById("confirmation-title");
+    if (title) title.textContent = b.status === "Pending" ? "Đặt sân thành công!" : "Thông tin đặt sân";
+    setText(
+      "confirmation-message",
+      b.status === "Pending"
+        ? "Yêu cầu đặt sân đã được gửi. Lễ tân sẽ kiểm tra thông tin và xác nhận lịch của bạn."
+        : "Thông tin lịch đặt sân của bạn đã được cập nhật."
+    );
 
     // Cập nhật giao diện
     setText("reference-code", reference);
@@ -180,11 +235,31 @@
     setText("confirmation-venue", `${venueName} · ${venueAddress}`);
     setText("confirmation-status", statusText);
     setText("confirmation-date", dateLabel);
-    setText("confirmation-time", `${startTime} – ${endTime}`);
+    setText("confirmation-time", startTime);
     setText("confirmation-duration", `Thời lượng: ${durationLabel}`);
     setText("confirmation-customer-name", b.user_name || "Khách hàng");
     setText("confirmation-customer-phone", b.user_phone || "Không có");
     setText("confirmation-payment-method", paymentMethodText);
+
+    const slotList = document.getElementById("confirmation-slot-list");
+    if (slotList) {
+      slotList.replaceChildren();
+      if (groups.length > 1) {
+        for (const group of groups) {
+          const row = document.createElement("li");
+          row.className = "confirmation-slot-row";
+          const description = document.createElement("span");
+          description.textContent = `${group.courtName} · ${group.startTime} – ${group.endTime}`;
+          const amount = document.createElement("strong");
+          amount.textContent = formatMoney(group.amount);
+          row.append(description, amount);
+          slotList.appendChild(row);
+        }
+        slotList.hidden = false;
+      } else {
+        slotList.hidden = true;
+      }
+    }
 
     if (b.note && b.note.trim()) {
       const noteRow = document.getElementById("confirmation-note-row");
@@ -194,24 +269,43 @@
       }
     }
 
-    setText("confirmation-price-per-hour", formatMoney(pricePerHour) + (durationMins > 0 ? "/giờ" : ""));
+    setText("confirmation-slot-count", String(slotCount));
     setText("confirmation-price-duration", durationLabel);
+    const discountAmount = Number(b.discount_amount) || 0;
+    const subtotalPrice = Number(b.subtotal_price || totalPrice) || 0;
+    const subtotalRow = document.getElementById("confirmation-subtotal-row");
+    const discountRow = document.getElementById("confirmation-discount-row");
+    if (discountAmount > 0) {
+      if (subtotalRow) {
+        subtotalRow.style.display = "";
+        setText("confirmation-subtotal", formatMoney(subtotalPrice));
+      }
+      if (discountRow) {
+        discountRow.style.display = "";
+        const codePart = b.discount_code ? ` (${b.discount_code}${b.discount_percent ? ` -${Number(b.discount_percent)}%` : ""})` : "";
+        setText("confirmation-discount-label", `Ưu đãi${codePart}`);
+        setText("confirmation-discount", `-${formatMoney(discountAmount)}`);
+      }
+    } else {
+      if (subtotalRow) subtotalRow.style.display = "none";
+      if (discountRow) discountRow.style.display = "none";
+    }
     setText("confirmation-total", formatMoney(totalPrice));
     setText("confirmation-payment-note-text", paymentNoteText);
 
     // Cập nhật dialog in / xem chi tiết
     setText("dialog-reference", reference);
-    setText("dialog-court", `${venueName} · ${courtName}`);
+    setText("dialog-court", `${venueName} · ${courtNames.join(", ")}`);
     setText("dialog-venue", venueAddress);
     setText("dialog-date", b.booking_date || dateLabel);
-    setText("dialog-time", `${startTime} – ${endTime}`);
+    setText("dialog-time", timeRanges.join(", "));
     setText("dialog-total", `${formatMoney(totalPrice)} · ${paymentMethodText}`);
 
     // Gắn sự kiện các nút
-    setupEvents(b, reference, courtName, venueAddress, dateLabel, startTime, endTime, durationMins, totalPrice);
+    setupEvents(b, reference, venueAddress, groups);
   }
 
-  function setupEvents(booking, reference, courtName, venueAddress, dateLabel, startTime, endTime, durationMins, totalPrice) {
+  function setupEvents(booking, reference, venueAddress, groups) {
     // 1. Sao chép mã đặt sân
     const copyBtn = document.getElementById("copy-reference");
     if (copyBtn) {
@@ -275,34 +369,36 @@
     if (addCalendarBtn) {
       addCalendarBtn.onclick = () => {
         try {
-          const dateStr = booking.booking_date || new Date().toISOString().split("T")[0];
+          const dateStr = String(booking.booking_date || new Date().toISOString()).slice(0, 10);
           const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-          const localStart = new Date(`${dateStr}T${startTime}:00+07:00`);
-          const localEnd = new Date(localStart.getTime() + durationMins * 60 * 1000);
-
           const toUtc = d => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-          const calStart = toUtc(localStart);
-          const calEnd = toUtc(localEnd);
+          const events = groups.map((group, index) => {
+            const localStart = new Date(`${dateStr}T${group.startTime}:00+07:00`);
+            const localEnd = new Date(`${dateStr}T${group.endTime}:00+07:00`);
+            return [
+              "BEGIN:VEVENT",
+              `UID:${reference}-${index + 1}@rkbadminton.vn`,
+              `DTSTAMP:${stamp}`,
+              `DTSTART:${toUtc(localStart)}`,
+              `DTEND:${toUtc(localEnd)}`,
+              `SUMMARY:Chơi cầu lông - ${group.courtName}`,
+              `LOCATION:${venueAddress}`,
+              `DESCRIPTION:Mã đặt sân: ${reference}\\n${group.courtName} · ${group.startTime} – ${group.endTime}\\nTổng tiền: ${formatMoney(group.amount)}.`,
+              "BEGIN:VALARM",
+              "TRIGGER:-PT30M",
+              "ACTION:DISPLAY",
+              "DESCRIPTION:Chuẩn bị đến sân cầu lông",
+              "END:VALARM",
+              "END:VEVENT",
+            ].join("\r\n");
+          });
 
           const icsContent = [
             "BEGIN:VCALENDAR",
             "VERSION:2.0",
             "PRODID:-//RK Badminton//Booking Notification//VI",
             "CALSCALE:GREGORIAN",
-            "BEGIN:VEVENT",
-            `UID:${reference}@rkbadminton.vn`,
-            `DTSTAMP:${stamp}`,
-            `DTSTART:${calStart}`,
-            `DTEND:${calEnd}`,
-            `SUMMARY:Chơi cầu lông - ${courtName}`,
-            `LOCATION:${venueAddress}`,
-            `DESCRIPTION:Mã đặt sân: ${reference}\\nVui lòng có mặt trước 15 phút. Tổng tiền: ${formatMoney(totalPrice)}.`,
-            "BEGIN:VALARM",
-            "TRIGGER:-PT30M",
-            "ACTION:DISPLAY",
-            "DESCRIPTION:Chuẩn bị đến sân cầu lông",
-            "END:VALARM",
-            "END:VEVENT",
+            ...events,
             "END:VCALENDAR",
             ""
           ].join("\r\n");

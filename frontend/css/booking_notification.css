@@ -295,6 +295,30 @@ h1 {
 .schedule-item strong { font-size: 12px; font-weight: 600; }
 .schedule-item p { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
+.confirmation-slot-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: -5px 0 16px;
+  padding: 0;
+}
+
+.confirmation-slot-list[hidden] { display: none; }
+
+.confirmation-slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.confirmation-slot-row strong { text-align: right; white-space: nowrap; }
+
 .customer {
   display: flex;
   justify-content: space-between;
@@ -344,6 +368,11 @@ h1 {
 }
 
 .payment-line span:first-child { color: var(--muted); }
+
+.payment-line.payment-discount span {
+  color: #15803d;
+  font-weight: 600;
+}
 
 .total {
   padding-top: 14px;

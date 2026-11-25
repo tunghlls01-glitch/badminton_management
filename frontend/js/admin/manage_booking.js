@@ -15,6 +15,40 @@ const labels = {
 const currency = n => Number(n || 0).toLocaleString('vi-VN') + ' ₫';
 const dateText = d => d ? d.split('-').reverse().join('/') : 'Tất cả ngày';
 
+function groupBookingSlots(slots, fallback = {}) {
+  const sorted = [...slots].sort((a, b) =>
+    Number(a.court_id) - Number(b.court_id) || String(a.start_at).localeCompare(String(b.start_at))
+  );
+  const groups = [];
+  for (const slot of sorted) {
+    const start = String(slot.start_at || '').slice(11, 16);
+    const end = String(slot.end_at || '').slice(11, 16);
+    const date = String(slot.start_at || fallback.date || '').slice(0, 10);
+    const previous = groups[groups.length - 1];
+    if (previous && String(previous.courtId) === String(slot.court_id) && previous.date === date && previous.end === start) {
+      previous.end = end;
+    } else {
+      groups.push({
+        courtId: slot.court_id,
+        courtName: slot.court_name || `Sân ${slot.court_id || fallback.courtId || ''}`,
+        date,
+        start,
+        end,
+      });
+    }
+  }
+  if (!groups.length) {
+    groups.push({
+      courtId: fallback.courtId,
+      courtName: fallback.courtName || 'Sân cầu lông',
+      date: fallback.date || today,
+      start: fallback.start || '08:00',
+      end: fallback.end || '10:00',
+    });
+  }
+  return groups;
+}
+
 let dbCourts = [];
 let bookings = [];
 let page = 1, toastTimer;
@@ -118,7 +152,6 @@ async function loadBookingsFromBackend() {
         const firstSlot = (b.slots && b.slots.length > 0) ? b.slots[0] : null;
         const courtId = b.court_id || (firstSlot ? firstSlot.court_id : 1);
         const courtObj = dbCourts.find(c => Number(c.id) === Number(courtId));
-        const courtName = b.court_name || (firstSlot ? firstSlot.court_name : null) || (courtObj ? (courtObj.name || courtObj.court_name) : `Sân ${courtId}`);
 
         let bDate = b.booking_date;
         let bStart = b.start_time ? b.start_time.slice(0, 5) : '';
@@ -135,6 +168,15 @@ async function loadBookingsFromBackend() {
         if (!bStart) bStart = '08:00';
         if (!bEnd) bEnd = '10:00';
 
+        const slotGroups = groupBookingSlots(b.slots || [], {
+          courtId,
+          courtName: b.court_name || (firstSlot ? firstSlot.court_name : null) || (courtObj ? (courtObj.name || courtObj.court_name) : `Sân ${courtId}`),
+          date: bDate,
+          start: bStart,
+          end: bEnd,
+        });
+        const courtNames = [...new Set(slotGroups.map(slot => slot.courtName))];
+
         const totalAmt = Number(b.total_price) || 0;
         return {
           id: b.booking_code || ('RK' + String(b.id)),
@@ -142,12 +184,20 @@ async function loadBookingsFromBackend() {
           name: b.user_name || 'Khách vãng lai',
           phone: b.user_phone || '—',
           court: String(courtId),
-          courtName: courtName,
-          date: bDate,
-          start: bStart,
-          end: bEnd,
+          courts: [...new Set(slotGroups.map(slot => String(slot.courtId)))],
+          courtName: courtNames.length > 1 ? `${courtNames.length} sân đã chọn` : courtNames[0],
+          date: slotGroups[0].date || bDate,
+          start: slotGroups[0].start || bStart,
+          end: slotGroups[0].end || bEnd,
+          slotGroups,
+          subtotalPrice: Number(b.subtotal_price || totalAmt) || 0,
+          discountCode: b.discount_code || '',
+          discountPercent: Number(b.discount_percent) || 0,
+          discountAmount: Number(b.discount_amount) || 0,
           amount: totalAmt,
           deposit: totalAmt,
+          paymentMethod: b.payment_method || '',
+          paymentStatus: b.payment_status || '',
           status: mapStatusFromBackend(b.status),
           rawStatus: b.status,
           created: b.created_at ? new Date(b.created_at).toLocaleString('vi-VN') : today,
@@ -167,7 +217,7 @@ function baseRows() {
   let query = $('#search').value.trim().toLowerCase().replace(/\s/g, '');
   return bookings.filter(b =>
     (!$('#dateFilter').value || b.date === $('#dateFilter').value) &&
-    (!$('#courtFilter').value || b.court === $('#courtFilter').value) &&
+    (!$('#courtFilter').value || (b.courts || [b.court]).includes($('#courtFilter').value)) &&
     (!query || b.id.toLowerCase().includes(query) || b.phone.includes(query) || b.name.toLowerCase().includes(query))
   );
 }
@@ -188,7 +238,14 @@ function actionable(b) {
 }
 
 function overdue(b) {
-  return new Date(`${b.date}T${b.start}:00`).getTime() < Date.now();
+  return (b.slotGroups || [{ date: b.date, start: b.start }])
+    .every(slot => new Date(`${slot.date}T${slot.start}:00`).getTime() < Date.now());
+}
+
+function bookingSlotSummary(b) {
+  return (b.slotGroups || []).map(slot =>
+    `${slot.courtName} ${slot.start}–${slot.end} (${dateText(slot.date)})`
+  ).join(' · ');
 }
 
 function render() {
@@ -214,19 +271,17 @@ function render() {
   });
 
   $('#bookingBody').innerHTML = rows.slice((page - 1) * size, page * size).map(b => {
-    let durationHours = 1;
-    try {
-      const startMin = parseInt(b.start) * 60 + Number(b.start.slice(3) || 0);
-      const endMin = parseInt(b.end) * 60 + Number(b.end.slice(3) || 0);
-      durationHours = Math.max(0.5, (endMin - startMin) / 60);
-    } catch (_) {}
-
     return `
     <tr>
       <td><button class="booking-code" data-action="detail" data-id="${esc(b.id)}">#${esc(b.id)}</button><span class="secondary">${dateText(b.date)}</span></td>
       <td><div class="customer"><span class="customer-avatar">${esc(initials(b.name))}</span><div><strong>${esc(b.name)}</strong><span class="secondary">${esc(b.phone)}</span></div></div></td>
       <td><span class="court">${icon('court')}${esc(b.courtName)}</span></td>
-      <td><strong style="font-weight:500">${esc(b.start)} – ${esc(b.end)}</strong><span class="secondary">${durationHours} giờ chơi</span></td>
+      <td>${b.slotGroups.map(slot => {
+        const start = Number(slot.start.slice(0, 2)) * 60 + Number(slot.start.slice(3, 5));
+        const end = Number(slot.end.slice(0, 2)) * 60 + Number(slot.end.slice(3, 5));
+        const hours = Math.max(0.5, (end - start) / 60);
+        return `<div><strong style="font-weight:500">${esc(slot.start)} – ${esc(slot.end)}</strong><span class="secondary">${hours} giờ · ${esc(slot.courtName)}</span></div>`;
+      }).join('')}</td>
       <td><span class="money">${currency(b.amount)}</span><span class="secondary">Tổng tiền</span></td>
       <td><span class="status ${esc(b.status)}">${labels[b.status] || b.status}</span></td>
       <td>
@@ -284,14 +339,16 @@ function details(id) {
       </div>
       <div class="detail-title">Lịch đặt sân</div>
       <div class="detail-grid">
-        <div><small>Sân / Ngày</small><strong>${esc(b.courtName)} · ${dateText(b.date)}</strong></div>
-        <div><small>Khung giờ</small><strong>${esc(b.start)} – ${esc(b.end)}</strong></div>
+        ${b.slotGroups.map(slot => `<div><small>Sân / Ngày</small><strong>${esc(slot.courtName)} · ${dateText(slot.date)}</strong><small>Khung giờ</small><strong>${esc(slot.start)} – ${esc(slot.end)}</strong></div>`).join('')}
         <div><small>Trạng thái</small><span class="status ${b.status}">${labels[b.status] || b.status}</span></div>
         <div><small>Mã booking</small><strong>#${esc(b.id)}</strong></div>
       </div>
       <div class="detail-title">Thanh toán</div>
       <div class="detail-grid">
+        ${b.discountAmount > 0 ? `<div><small>Tiền sân gốc</small><strong>${currency(b.subtotalPrice)}</strong></div><div><small>Ưu đãi (${b.discountCode || 'Giảm giá'})</small><strong>-${currency(b.discountAmount)}</strong></div>` : ''}
         <div><small>Tổng tiền</small><strong>${currency(b.amount)}</strong></div>
+        <div><small>Phương thức</small><strong>${b.paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản' : b.paymentMethod === 'CASH' ? 'Tiền mặt tại quầy' : 'Chưa chọn'}</strong></div>
+        <div><small>Trạng thái thanh toán</small><strong>${b.paymentStatus === 'SUCCESS' ? 'Đã thanh toán' : b.paymentStatus === 'PENDING' ? 'Chờ lễ tân kiểm tra' : b.paymentStatus || 'Chưa ghi nhận'}</strong></div>
         <div><small>Ghi chú</small><strong>${esc(b.note || '—')}</strong></div>
       </div>
       <div class="detail-title">Lịch sử booking</div>
@@ -326,7 +383,7 @@ function cancelBooking(id) {
   openModal('Huỷ booking #' + b.id, `
     <form id="cancelForm">
       <div class="dialog-body">
-        <p style="line-height:1.8;margin-top:0">Bạn muốn huỷ lịch của <strong>${esc(b.name)}</strong>, ${esc(b.courtName)}, ${b.start} – ${b.end} ngày ${dateText(b.date)}?</p>
+        <p style="line-height:1.8;margin-top:0">Bạn muốn huỷ lịch của <strong>${esc(b.name)}</strong>: ${esc(bookingSlotSummary(b))}?</p>
         <div class="notice">Quản trị viên huỷ sân bắt buộc phải nhập lý do. Hệ thống sẽ tự động gửi thông báo đến khách hàng.</div>
         <div class="field"><label for="cancelReason">Lý do huỷ <span style="color:var(--red)">*</span></label><textarea id="cancelReason" required maxlength="500" placeholder="Ví dụ: Sân cần bảo trì đột xuất, khách báo hủy..."></textarea></div>
       </div>
@@ -377,7 +434,7 @@ function noShow(id) {
   openModal('Xác nhận khách không đến', `
     <div class="dialog-body">
       <p style="line-height:1.8">Đánh dấu <strong>${esc(b.name)}</strong> không đến nhận sân cho booking <strong>#${b.id}</strong>?</p>
-      <div class="notice">${icon('clock')} Đã quá giờ nhận sân <strong>${minutes < 60 ? minutes + ' phút' : Math.floor(minutes / 60) + ' giờ ' + minutes % 60 + ' phút'}</strong>.<br>Lịch ${esc(b.courtName)} · ${b.start} – ${b.end} · ${dateText(b.date)}</div>
+      <div class="notice">${icon('clock')} Đã quá giờ nhận sân <strong>${minutes < 60 ? minutes + ' phút' : Math.floor(minutes / 60) + ' giờ ' + minutes % 60 + ' phút'}</strong>.<br>${esc(bookingSlotSummary(b))}</div>
     </div>
     ${footer('<button class="btn" data-close>Quay lại</button><button class="btn danger" id="confirmNoShow">Đánh dấu không đến</button>')}
   `);
@@ -488,8 +545,8 @@ $('#exportButton').onclick = () => {
   }
   const safe = v => '"' + String(v).replace(/^[=+\-@]/, "'$&").replace(/"/g, '""') + '"';
   const csv = '\uFEFF' + [
-    ['Mã booking', 'Khách hàng', 'SĐT', 'Sân', 'Ngày', 'Bắt đầu', 'Kết thúc', 'Tổng tiền', 'Trạng thái'],
-    ...rows.map(b => [b.id, b.name, b.phone, b.courtName, b.date, b.start, b.end, b.amount, labels[b.status] || b.status])
+    ['Mã booking', 'Khách hàng', 'SĐT', 'Sân', 'Ngày', 'Các khung giờ', 'Tổng tiền', 'Trạng thái'],
+    ...rows.map(b => [b.id, b.name, b.phone, b.courtName, b.date, bookingSlotSummary(b), b.amount, labels[b.status] || b.status])
   ].map(r => r.map(safe).join(',')).join('\r\n');
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
   const a = document.createElement('a');
@@ -607,7 +664,7 @@ $('#helpButton').onclick = () => openModal('Hướng dẫn quản lý booking', 
 
 $('#notificationButton').onclick = () => {
   const pending = bookings.filter(b => b.status === 'pending');
-  openModal('Thông báo quản trị', `<div class="dialog-body"><p>Có <strong>${pending.length} booking</strong> đang chờ xác nhận từ khách hàng.</p>${pending.slice(0, 10).map(b => `<div style="padding:13px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px"><div><strong>${esc(b.name)}</strong><span class="secondary">${esc(b.courtName)} · ${dateText(b.date)} · ${b.start}</span></div><button class="btn" data-action="detail" data-id="${b.id}">Xem</button></div>`).join('')}</div>${footer('<button class="btn" data-close>Đóng</button>')}`);
+  openModal('Thông báo quản trị', `<div class="dialog-body"><p>Có <strong>${pending.length} booking</strong> đang chờ lễ tân xác nhận.</p>${pending.slice(0, 10).map(b => `<div style="padding:13px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px"><div><strong>${esc(b.name)}</strong><span class="secondary">${esc(bookingSlotSummary(b))}</span></div><button class="btn" data-action="detail" data-id="${b.id}">Xem</button></div>`).join('')}</div>${footer('<button class="btn" data-close>Đóng</button>')}`);
 };
 
 // ── Khởi động trang ───────────────────────────────────────────────────────
