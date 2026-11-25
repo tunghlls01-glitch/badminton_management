@@ -9,6 +9,19 @@ let filteredServices = [];
 let currentTab = "services";
 let editingServiceId = null;
 
+// Hàm chuẩn hóa đường dẫn ảnh từ backend (tránh lỗi 404 khi frontend chạy port khác backend)
+function resolveImageUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
+  const baseUrl = typeof CONFIG !== "undefined" && CONFIG.API_BASE_URL ? CONFIG.API_BASE_URL : "http://127.0.0.1:8000/api";
+  try {
+    const origin = new URL(baseUrl).origin;
+    return `${origin}${url.startsWith("/") ? "" : "/"}${url}`;
+  } catch (_) {
+    return `http://127.0.0.1:8000${url.startsWith("/") ? "" : "/"}${url}`;
+  }
+}
+
 // Khởi chạy khi DOM sẵn sàng
 document.addEventListener("DOMContentLoaded", async () => {
   await ensureAuth();
@@ -231,6 +244,13 @@ function openServiceForm(service = null) {
     document.getElementById("form-stock").value = service.stock_quantity || 0;
     document.getElementById("form-min-stock").value = 10;
     document.getElementById("form-status").value = (service.status || "").toUpperCase().includes("INACTIVE") ? "INACTIVE" : "ACTIVE";
+    if (service.image_url) {
+      const imgUrl = document.getElementById("form-image-url");
+      if (imgUrl) imgUrl.value = service.image_url;
+      showImagePreview(resolveImageUrl(service.image_url), service.name);
+    } else {
+      resetImageUpload();
+    }
   } else {
     subText.textContent = "Thêm dịch vụ mới";
     titleText.textContent = "Thêm dịch vụ mới";
@@ -242,6 +262,7 @@ function openServiceForm(service = null) {
     document.getElementById("form-price").value = 10000;
     document.getElementById("form-stock").value = 50;
     document.getElementById("form-min-stock").value = 10;
+    resetImageUpload();
   }
 
   updateFormLivePreview();
@@ -332,12 +353,18 @@ function renderServicesTable(list) {
       statusText = "Sắp hết";
     }
 
+    const resolvedImg = resolveImageUrl(s.image_url);
+    const avatarContent = `
+      ${resolvedImg ? `<img src="${escapeHtml(resolvedImg)}" alt="${escapeHtml(s.name)}"
+        onerror="this.nextElementSibling.style.removeProperty('display'); this.remove();"
+        style="width:40px; height:40px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb; display:block;">` : ""}
+      <div class="service-avatar ${avatarType}"${resolvedImg ? ' style="display:none"' : ""}>${avatarIcon}</div>
+    `;
+
     return `
       <tr>
         <td>
-          <div class="service-avatar ${avatarType}">
-            ${avatarIcon}
-          </div>
+          ${avatarContent}
         </td>
         <td>
           <div class="service-name-text">${escapeHtml(s.name)}</div>
@@ -420,6 +447,9 @@ function setupEventListeners() {
   if (adjustForm) {
     adjustForm.addEventListener("submit", handleAdjustStock);
   }
+
+  // Khởi tạo trình chọn & kéo thả ảnh dịch vụ
+  setupImageUploadHandlers();
 
   // Bộ lọc lịch sử
   const historyService = document.getElementById("history-filter-service");
@@ -590,11 +620,17 @@ window.viewServiceDetail = function(id) {
   const priceFormatted = Number(service.unit_price || service.price || 0).toLocaleString("vi-VN") + " VNĐ";
   const code = `SVC-${String(service.id).padStart(3, "0")}`;
 
+  const resolvedDetailImg = resolveImageUrl(service.image_url);
+  const detailAvatar = `
+    ${resolvedDetailImg ? `<img src="${escapeHtml(resolvedDetailImg)}" alt="${escapeHtml(service.name)}"
+      onerror="this.nextElementSibling.style.removeProperty('display'); this.remove();"
+      style="width:56px; height:56px; object-fit:cover; border-radius:10px; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.1);">` : ""}
+    <div class="service-avatar ${getAvatarClass(service.category)}" style="width:50px; height:50px; font-size:24px;${resolvedDetailImg ? " display:none;" : ""}">${getCategoryIcon(service.category)}</div>
+  `;
+
   modalBody.innerHTML = `
     <div style="display:flex; gap:16px; align-items:center; margin-bottom:20px;">
-      <div class="service-avatar ${getAvatarClass(service.category)}" style="width:50px; height:50px; font-size:24px;">
-        ${getCategoryIcon(service.category)}
-      </div>
+      ${detailAvatar}
       <div>
         <h3 style="font-size:17px; margin-bottom:4px;">${escapeHtml(service.name)}</h3>
         <span style="font-size:12px; color:var(--text-muted);">${code} · Danh mục: ${getCategoryLabel(service.category)}</span>
@@ -712,6 +748,110 @@ window.toggleServiceStatus = function(id) {
   openConfirmStatusModal(id);
 };
 
+function getAuthToken() {
+  if (typeof RK_SESSION !== "undefined" && RK_SESSION.read) {
+    const s = RK_SESSION.read();
+    if (s && s.token) return s.token;
+  }
+  return (
+    localStorage.getItem("access_token") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("access_token") ||
+    sessionStorage.getItem("token") ||
+    ""
+  );
+}
+
+let currentUploadedFile = null;
+
+function setupImageUploadHandlers() {
+  const dropzone = document.getElementById("upload-dropzone");
+  const fileInput = document.getElementById("form-image-file");
+  const removeBtn = document.getElementById("btn-remove-image");
+
+  if (!dropzone || !fileInput) return;
+
+  dropzone.addEventListener("click", (e) => {
+    if (e.target.closest("#btn-remove-image")) return;
+    fileInput.click();
+  });
+
+  dropzone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropzone.style.borderColor = "#dc2626";
+    dropzone.style.background = "#fff5f5";
+  });
+
+  dropzone.addEventListener("dragleave", () => {
+    dropzone.style.borderColor = "#e5e7eb";
+    dropzone.style.background = "#fafafa";
+  });
+
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.style.borderColor = "#e5e7eb";
+    dropzone.style.background = "#fafafa";
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelection(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files && fileInput.files.length > 0) {
+      handleFileSelection(fileInput.files[0]);
+    }
+  });
+
+  if (removeBtn) {
+    removeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      resetImageUpload();
+    });
+  }
+}
+
+function handleFileSelection(file) {
+  if (!file) return;
+  const validTypes = ["image/png", "image/jpeg", "image/webp"];
+  if (!validTypes.includes(file.type)) {
+    showToast("Ảnh phải có định dạng PNG, JPG hoặc WebP!", "error");
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast("Dung lượng ảnh vượt quá 5MB!", "error");
+    return;
+  }
+
+  currentUploadedFile = file;
+  const previewUrl = URL.createObjectURL(file);
+  showImagePreview(previewUrl, file.name);
+}
+
+function showImagePreview(url, name) {
+  const promptEl = document.getElementById("upload-prompt");
+  const container = document.getElementById("upload-preview-container");
+  const imgEl = document.getElementById("upload-preview-img");
+  const nameEl = document.getElementById("upload-filename");
+  if (promptEl) promptEl.style.display = "none";
+  if (container) container.style.display = "flex";
+  if (imgEl) imgEl.src = url;
+  if (nameEl) nameEl.textContent = name || "anh-dich-vu.jpg";
+}
+
+function resetImageUpload() {
+  currentUploadedFile = null;
+  const fileInput = document.getElementById("form-image-file");
+  if (fileInput) fileInput.value = "";
+  const hiddenUrl = document.getElementById("form-image-url");
+  if (hiddenUrl) hiddenUrl.value = "";
+  const promptEl = document.getElementById("upload-prompt");
+  const container = document.getElementById("upload-preview-container");
+  const imgEl = document.getElementById("upload-preview-img");
+  if (promptEl) promptEl.style.display = "block";
+  if (container) container.style.display = "none";
+  if (imgEl) imgEl.src = "";
+}
+
 async function handleSaveService(e) {
   e.preventDefault();
 
@@ -733,17 +873,50 @@ async function handleSaveService(e) {
     return;
   }
 
-  const payload = {
-    name,
-    category,
-    unit,
-    description: description || null,
-    unit_price: price,
-    stock_quantity: stock,
-    status,
-  };
+  const btnSave = document.getElementById("btn-save-service");
+  const originalBtnText = btnSave ? btnSave.textContent : "Lưu dịch vụ";
 
   try {
+    if (btnSave) {
+      btnSave.disabled = true;
+      btnSave.textContent = "Đang lưu...";
+    }
+
+    let finalImageUrl = document.getElementById("form-image-url")?.value || null;
+
+    // Nếu người dùng vừa chọn file ảnh mới -> tải lên API /upload-image trước
+    if (currentUploadedFile) {
+      if (btnSave) btnSave.textContent = "Đang tải ảnh lên...";
+      const formData = new FormData();
+      formData.append("file", currentUploadedFile);
+      const token = getAuthToken();
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const uploadRes = await fetch(`${CONFIG.API_BASE_URL}/services/upload-image`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const errJson = await uploadRes.json().catch(() => ({}));
+        throw new Error(errJson.detail || "Không thể tải ảnh dịch vụ lên server!");
+      }
+      const uploadData = await uploadRes.json();
+      finalImageUrl = uploadData.image_url;
+    }
+
+    const payload = {
+      name,
+      category,
+      unit,
+      description: description || null,
+      unit_price: price,
+      stock_quantity: stock,
+      status,
+      image_url: finalImageUrl,
+    };
+
     if (id) {
       await api.put(`/services/${id}`, payload);
       showToast("Đã lưu dịch vụ thành công - Thay đổi đã được cập nhật.", "success");
@@ -751,10 +924,16 @@ async function handleSaveService(e) {
       await api.post("/services", payload);
       showToast("Đã thêm dịch vụ mới thành công!", "success");
     }
+    resetImageUpload();
     closeServiceForm();
     await loadData();
   } catch (err) {
     showToast("Không thể lưu dịch vụ: " + err.message, "error");
+  } finally {
+    if (btnSave) {
+      btnSave.disabled = false;
+      btnSave.textContent = originalBtnText;
+    }
   }
 }
 

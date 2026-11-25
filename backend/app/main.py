@@ -14,7 +14,6 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect, select, text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
-from sqlalchemy import text
 from app import models  # noqa: F401 - import để SQLAlchemy biết các bảng
 from app.models import maintenance_block  # noqa: F401 - đăng ký bảng court_maintenance_blocks
 from app.core.config import BASE_DIR, settings
@@ -100,16 +99,15 @@ async def lifespan(app: FastAPI):
         added_courts = seed_courts()
         if added_courts:
             print(f"[SEED] Đã thêm {added_courts} sân mẫu vào database")
-        try:
-            with engine.begin() as conn:
-                conn.execute(text("ALTER TABLE invoices ADD COLUMN staff_id INT NULL;"))
-        except Exception:
-            pass
         print(f"[DB] Đã kết nối MySQL {settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
         # Đảm bảo cấu trúc cột cho các bảng booking_slots, bookings, invoices, payments, services
         with engine.begin() as conn:
             insp = inspect(conn)
             # services
+            if "services" in insp.get_table_names():
+                svc_cols = {c["name"] for c in insp.get_columns("services")}
+                if "image_url" not in svc_cols:
+                    conn.execute(text("ALTER TABLE services ADD COLUMN image_url VARCHAR(500) NULL"))
             try:
                 conn.execute(text("ALTER TABLE services MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'"))
             except Exception:
@@ -139,6 +137,8 @@ async def lifespan(app: FastAPI):
             # invoices
             if "invoices" in insp.get_table_names():
                 inv_cols = {c["name"] for c in insp.get_columns("invoices")}
+                if "staff_id" not in inv_cols:
+                    conn.execute(text("ALTER TABLE invoices ADD COLUMN staff_id INT NULL"))
                 if "discount_amount" not in inv_cols:
                     conn.execute(text("ALTER TABLE invoices ADD COLUMN discount_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00"))
                 if "discount_reason" not in inv_cols:
@@ -154,6 +154,7 @@ async def lifespan(app: FastAPI):
                     conn.execute(text("ALTER TABLE payments ADD COLUMN invoice_id INT NULL"))
                 if "service_order_id" not in pm_cols:
                     conn.execute(text("ALTER TABLE payments ADD COLUMN service_order_id INT NULL"))
+
     except OperationalError as error:
         print("[DB] KHÔNG kết nối được MySQL! Kiểm tra MySQL đã bật chưa và file .env.")
         if "Unknown database" in str(error.orig):
@@ -172,10 +173,19 @@ def court_image(filename: str):
         raise HTTPException(status_code=404, detail="Không tìm thấy ảnh sân.")
     return FileResponse(image, media_type=media_type, headers={"X-Content-Type-Options": "nosniff"})
 
+@app.get(services.SERVICE_IMAGE_URL + "/{filename}", include_in_schema=False)
+def service_image(filename: str):
+    media_type = services.IMAGE_TYPES.get(Path(filename).suffix.lower())
+    image = services.SERVICE_UPLOAD_DIR / filename
+    if not media_type or image.name != filename or not image.is_file():
+        raise HTTPException(status_code=404, detail="Không tìm thấy ảnh dịch vụ.")
+    return FileResponse(image, media_type=media_type, headers={"X-Content-Type-Options": "nosniff"})
+
 @app.exception_handler(SQLAlchemyError)
 async def database_error(request: Request, exc: SQLAlchemyError):
     print(f"[DB] {request.method} {request.url.path}: {type(exc).__name__}")
     return JSONResponse(status_code=500, content={"detail": "Máy chủ không xử lý được dữ liệu. Vui lòng thử lại."})
+
 
 # Global Exception Handler: in toàn bộ traceback ra terminal và trả về JSON
 @app.exception_handler(Exception)
@@ -226,6 +236,8 @@ app.include_router(maintenance_blocks.router, prefix="/api")
 app.include_router(notification.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(invoice.router, prefix="/api")
+
+
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} đang chạy. Xem tài liệu API tại /docs"}

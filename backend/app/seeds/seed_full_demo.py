@@ -69,6 +69,9 @@ def migrate_columns_if_needed():
 
         # 3. services
         if "services" in insp.get_table_names():
+            cols = {c["name"] for c in insp.get_columns("services")}
+            if "image_url" not in cols:
+                conn.execute(text("ALTER TABLE services ADD COLUMN image_url VARCHAR(500) NULL"))
             try:
                 conn.execute(text("ALTER TABLE services MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'"))
             except Exception:
@@ -97,6 +100,8 @@ def migrate_columns_if_needed():
         # 5. invoices
         if "invoices" in insp.get_table_names():
             cols = {c["name"] for c in insp.get_columns("invoices")}
+            if "staff_id" not in cols:
+                conn.execute(text("ALTER TABLE invoices ADD COLUMN staff_id INT NULL"))
             if "discount_amount" not in cols:
                 conn.execute(text("ALTER TABLE invoices ADD COLUMN discount_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00"))
             if "discount_reason" not in cols:

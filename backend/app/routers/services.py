@@ -15,10 +15,12 @@
 """
 from datetime import date, datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.core.config import BASE_DIR
 from app.core.security import get_current_user, require_roles
 from app.crud import service as service_crud
 from app.db.session import get_db
@@ -31,7 +33,34 @@ from app.schemas.service_stock_log import (
     StockImportRequest,
 )
 
+SERVICE_IMAGE_URL = "/static/uploads/services"
+SERVICE_UPLOAD_DIR = BASE_DIR / "static" / "uploads" / "services"
+IMAGE_EXTENSIONS = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+IMAGE_TYPES = {extension: mime for mime, extension in IMAGE_EXTENSIONS.items()}
+IMAGE_TYPES[".jpeg"] = "image/jpeg"
+
 router = APIRouter(prefix="/services", tags=["Services"])
+
+@router.post("/upload-image")
+async def upload_service_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+):
+    """Upload ảnh dịch vụ thực tế. Hỗ trợ PNG, JPG, WebP (tối đa 5MB). Yêu cầu quyền ADMIN hoặc STAFF."""
+    extension = IMAGE_EXTENSIONS.get(file.content_type)
+    if extension is None:
+        raise HTTPException(status_code=400, detail="Ảnh dịch vụ phải có định dạng PNG, JPEG hoặc WebP.")
+    max_size = 5 * 1024 * 1024
+    content = await file.read(max_size + 1)
+    if not content or len(content) > max_size:
+        raise HTTPException(status_code=400, detail="Dung lượng ảnh không được vượt quá 5 MB.")
+
+    SERVICE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    unique_filename = f"service_{uuid.uuid4().hex[:12]}{extension}"
+    file_path = SERVICE_UPLOAD_DIR / unique_filename
+    file_path.write_bytes(content)
+
+    return {"image_url": f"{SERVICE_IMAGE_URL}/{unique_filename}"}
 
 
 def get_service_or_404(service_id: int, db: Session = Depends(get_db)):

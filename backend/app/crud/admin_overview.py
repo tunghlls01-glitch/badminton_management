@@ -49,19 +49,23 @@ def slot_state(court, slots, blocks, start, end, now):
 
 def read_revenue(db: Session, day: date):
     first_day = day - timedelta(days=6)
-    # Checkout may promote an old Pending payment. Its invoice records the checkout date.
-    paid_at = func.coalesce(Invoice.created_at, Payment.created_at)
-    rows = db.execute(
-        select(func.date(paid_at), func.sum(Payment.amount))
-        .outerjoin(Invoice, Invoice.id == Payment.invoice_id)
-        .where(
-            Payment.payment_status == PaymentStatus.SUCCESS,
-            paid_at >= datetime.combine(first_day, time.min),
-            paid_at < datetime.combine(day + timedelta(days=1), time.min),
+    amounts = {}
+    try:
+        # Checkout may promote an old Pending payment. Its invoice records the checkout date.
+        paid_at = func.coalesce(Invoice.created_at, Payment.created_at)
+        rows = db.execute(
+            select(func.date(paid_at), func.sum(Payment.amount))
+            .outerjoin(Invoice, Invoice.id == Payment.invoice_id)
+            .where(
+                Payment.payment_status == PaymentStatus.SUCCESS,
+                paid_at >= datetime.combine(first_day, time.min),
+                paid_at < datetime.combine(day + timedelta(days=1), time.min),
+            )
+            .group_by(func.date(paid_at))
         )
-        .group_by(func.date(paid_at))
-    )
-    amounts = {str(period): value for period, value in rows}
+        amounts = {str(period): value for period, value in rows}
+    except Exception as e:
+        print(f"[WARN] read_revenue query failed: {e}")
     return [
         {"date": current, "amount": amounts.get(current.isoformat(), Decimal(0))}
         for current in (first_day + timedelta(days=i) for i in range(7))
@@ -141,11 +145,15 @@ def get_overview(db: Session, day: date, now: datetime):
     pending = [rows[0].booking for rows in scheduled if rows[0].booking.status == BookingStatus.Pending
                and any(row.status == BookingSlotStatus.Active and row.end_at > now for row in rows)]
     candidates = [rows[0].booking.id for rows in scheduled if rows[0].booking.status == BookingStatus.Confirmed]
-    earliest_by_id = dict(db.execute(
-        select(BookingSlot.booking_id, func.min(BookingSlot.start_at))
-        .where(BookingSlot.booking_id.in_(candidates), BookingSlot.status == BookingSlotStatus.Active)
-        .group_by(BookingSlot.booking_id)
-    ).all()) if candidates and day == now.date() else {}
+    try:
+        earliest_by_id = dict(db.execute(
+            select(BookingSlot.booking_id, func.min(BookingSlot.start_at))
+            .where(BookingSlot.booking_id.in_(candidates), BookingSlot.status == BookingSlotStatus.Active)
+            .group_by(BookingSlot.booking_id)
+        ).all()) if candidates and day == now.date() else {}
+    except Exception as e:
+        print(f"[WARN] earliest_by_id failed: {e}")
+        earliest_by_id = {}
     checkin = [booking_id for booking_id, earliest in earliest_by_id.items()
                if earliest - timedelta(minutes=CHECKIN_EARLY_MINUTES) <= now
                <= earliest + timedelta(minutes=NO_SHOW_GRACE_MINUTES)]

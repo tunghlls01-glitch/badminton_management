@@ -15,6 +15,7 @@ from app.models.booking_slot import BookingSlot
 from app.models.court import Court, CourtStatus
 from app.models.court_block import CourtBlock
 from app.models.invoice import Invoice
+from app.models.maintenance_block import CourtMaintenanceBlock
 from app.models.payment import Payment, PaymentStatus
 from app.models.user import User
 
@@ -35,6 +36,25 @@ class OverviewTest(TestCase):
         self.assertEqual(result["booking_count"], 0)
         self.assertEqual(result["booked_court_value"], Decimal(0))
         self.assertEqual([item["amount"] for item in result["revenue"]], [Decimal(0)] * 7)
+
+    def test_maintenance_block_locks_grid_and_excludes_court_from_free_count(self):
+        self.db.add(Court(id=1, name="Sân 1"))
+        self.db.flush()
+        self.db.add(CourtMaintenanceBlock(
+            court_id=1,
+            start_at=self.now.replace(minute=0),
+            end_at=self.now.replace(minute=30),
+            reason="Bảo trì định kỳ",
+        ))
+        self.db.commit()
+
+        result = get_overview(self.db, self.day, self.now)
+
+        self.assertEqual(result["courts_free"], 0)
+        cells = {cell["start"]: cell for cell in result["courts"][0]["cells"]}
+        self.assertEqual(cells["14:00"]["state"], "locked")
+        self.assertEqual(cells["14:00"]["reason"], "Bảo trì định kỳ")
+        self.assertEqual(cells["14:30"]["state"], "free")
 
     def test_occupancy_revenue_recurring_and_expired_hold(self):
         self.db.add_all([
