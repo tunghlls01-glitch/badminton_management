@@ -9,6 +9,19 @@ let filteredServices = [];
 let currentTab = "services";
 let editingServiceId = null;
 
+// Hàm chuẩn hóa đường dẫn ảnh từ backend (tránh lỗi 404 khi frontend chạy port khác backend)
+function resolveImageUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
+  const baseUrl = typeof CONFIG !== "undefined" && CONFIG.API_BASE_URL ? CONFIG.API_BASE_URL : "http://127.0.0.1:8000/api";
+  try {
+    const origin = new URL(baseUrl).origin;
+    return `${origin}${url.startsWith("/") ? "" : "/"}${url}`;
+  } catch (_) {
+    return `http://127.0.0.1:8000${url.startsWith("/") ? "" : "/"}${url}`;
+  }
+}
+
 // Khởi chạy khi DOM sẵn sàng
 document.addEventListener("DOMContentLoaded", async () => {
   await ensureAuth();
@@ -234,7 +247,7 @@ function openServiceForm(service = null) {
     if (service.image_url) {
       const imgUrl = document.getElementById("form-image-url");
       if (imgUrl) imgUrl.value = service.image_url;
-      showImagePreview(service.image_url, service.name);
+      showImagePreview(resolveImageUrl(service.image_url), service.name);
     } else {
       resetImageUpload();
     }
@@ -340,8 +353,9 @@ function renderServicesTable(list) {
       statusText = "Sắp hết";
     }
 
-    const avatarContent = s.image_url
-      ? `<img src="${s.image_url}" alt="${escapeHtml(s.name)}" style="width:40px; height:40px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb; display:block;">`
+    const resolvedImg = resolveImageUrl(s.image_url);
+    const avatarContent = resolvedImg
+      ? `<img src="${resolvedImg}" alt="${escapeHtml(s.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'service-avatar ${avatarType}\\\'>${avatarIcon}</div>';" style="width:40px; height:40px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb; display:block;">`
       : `<div class="service-avatar ${avatarType}">${avatarIcon}</div>`;
 
     return `
@@ -603,8 +617,9 @@ window.viewServiceDetail = function(id) {
   const priceFormatted = Number(service.unit_price || service.price || 0).toLocaleString("vi-VN") + " VNĐ";
   const code = `SVC-${String(service.id).padStart(3, "0")}`;
 
-  const detailAvatar = service.image_url
-    ? `<img src="${service.image_url}" alt="${escapeHtml(service.name)}" style="width:56px; height:56px; object-fit:cover; border-radius:10px; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.1);">`
+  const resolvedDetailImg = resolveImageUrl(service.image_url);
+  const detailAvatar = resolvedDetailImg
+    ? `<img src="${resolvedDetailImg}" alt="${escapeHtml(service.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'service-avatar ${getAvatarClass(service.category)}\\\' style=\\\'width:50px; height:50px; font-size:24px;\\\'>${getCategoryIcon(service.category)}</div>';" style="width:56px; height:56px; object-fit:cover; border-radius:10px; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.1);">`
     : `<div class="service-avatar ${getAvatarClass(service.category)}" style="width:50px; height:50px; font-size:24px;">${getCategoryIcon(service.category)}</div>`;
 
   modalBody.innerHTML = `

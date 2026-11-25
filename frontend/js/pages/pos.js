@@ -12,6 +12,19 @@ let targetMode = "RETAIL"; // 'RETAIL' (vãng lai) hoặc 'BOOKING' (gắn vào 
 let activeBookings = [];
 let currentOrderResult = null;
 
+// Hàm chuẩn hóa đường dẫn ảnh từ backend (tránh lỗi 404 khi frontend chạy qua Live Server)
+function resolveImageUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
+  const baseUrl = typeof CONFIG !== "undefined" && CONFIG.API_BASE_URL ? CONFIG.API_BASE_URL : "http://127.0.0.1:8000/api";
+  try {
+    const origin = new URL(baseUrl).origin;
+    return `${origin}${url.startsWith("/") ? "" : "/"}${url}`;
+  } catch (_) {
+    return `http://127.0.0.1:8000${url.startsWith("/") ? "" : "/"}${url}`;
+  }
+}
+
 // Khởi chạy khi DOM sẵn sàng
 document.addEventListener("DOMContentLoaded", async () => {
   if (!await ProtectedRoute(["admin", "staff"])) {
@@ -256,7 +269,7 @@ function renderServiceGrid(list) {
            onclick="handleCardClick(${s.id})" 
            title="${isOut ? "Mặt hàng này đã hết kho" : "Bấm để thêm vào giỏ order"}">
         <div class="item-card-top">
-          ${s.image_url ? `<img src="${s.image_url}" alt="${escapeHtml(s.name)}" class="item-avatar-box" style="object-fit:cover; padding:0; width:44px; height:44px; border-radius:8px; border:1px solid #e5e7eb;">` : `<div class="item-avatar-box ${avatarClass}">${avatarIcon}</div>`}
+          ${s.image_url ? `<img src="${resolveImageUrl(s.image_url)}" alt="${escapeHtml(s.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'item-avatar-box ${avatarClass}\\\'>${avatarIcon}</div>';" class="item-avatar-box" style="object-fit:cover; padding:0; width:44px; height:44px; border-radius:8px; border:1px solid #e5e7eb;">` : `<div class="item-avatar-box ${avatarClass}">${avatarIcon}</div>`}
           <span class="stock-badge ${stockClass}">${stockText}</span>
         </div>
         <div class="item-info-mid">
