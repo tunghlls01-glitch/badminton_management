@@ -1,5 +1,9 @@
 """Seed 15 dịch vụ mẫu và ghi nhận tồn kho ban đầu."""
+import os
+import sys
 from decimal import Decimal
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from sqlalchemy import func, select
 

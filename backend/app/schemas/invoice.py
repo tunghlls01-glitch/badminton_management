@@ -84,6 +84,7 @@ class InvoiceListItem(BaseModel):
     payment_method: Optional[str] = None
     payment_status: Optional[str] = None
     transaction_code: Optional[str] = None
+    receipt_url: Optional[str] = None
     created_at: datetime
 
 
@@ -152,6 +153,7 @@ class InvoiceDetailResponse(BaseModel):
     payment_method: str
     payment_status: str
     transaction_code: Optional[str] = None
+    receipt_url: Optional[str] = None
     is_reprint: bool = False
     club_info: Dict[str, str] = {
         "name": "RK BADMINTON",
@@ -167,6 +169,7 @@ class ShiftInvoiceItem(BaseModel):
     booking_code: Optional[str] = None
     customer_name: str
     payment_method: str
+    receipt_url: Optional[str] = None
     total_court_amount: float
     total_service_amount: float
     discount_amount: float

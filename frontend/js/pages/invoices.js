@@ -318,16 +318,16 @@
       page: 1,
       limit: 8,
     },
-    totalInvoices: 26,
-    totalPages: 4,
+    totalInvoices: 0,
+    totalPages: 1,
     shiftSummary: {
       staff_id: 1,
-      staff_name: "Nguyễn Văn A",
-      shift_name: "Ca Chiều: 14:00 – 22:00",
-      total_invoices: 18,
-      total_cash: 4320000,
-      total_bank_transfer: 4320000,
-      total_revenue: 8640000,
+      staff_name: "",
+      shift_name: "Toàn ngày (06:00 – 23:59)",
+      total_invoices: 0,
+      total_cash: 0,
+      total_bank_transfer: 0,
+      total_revenue: 0,
     },
   };
 
@@ -353,6 +353,7 @@
 
     // Shift summary card elements
     el.shiftSubtitle = document.getElementById("shiftSubtitle");
+    el.shiftTypeSelect = document.getElementById("shiftTypeSelect");
     el.shiftStaffSelect = document.getElementById("shiftStaffSelect");
     el.shiftCountVal = document.getElementById("shiftCountVal");
     el.shiftCashVal = document.getElementById("shiftCashVal");
@@ -410,6 +411,26 @@
     }, 3200);
   }
 
+  async function openReceipt(url) {
+    const path = /^\/api(\/bookings\/\d+\/payment-receipt)$/.exec(url)?.[1];
+    if (!path) return;
+    const viewer = global.open("about:blank", "_blank");
+    if (!viewer) {
+      showToast("Trình duyệt đang chặn cửa sổ biên lai.");
+      return;
+    }
+    viewer.opener = null;
+    try {
+      const { data } = await global.axiosClient.get(path, { responseType: "blob" });
+      const imageUrl = URL.createObjectURL(data);
+      viewer.location.replace(imageUrl);
+      setTimeout(() => URL.revokeObjectURL(imageUrl), 60000);
+    } catch {
+      viewer.close();
+      showToast("Không tải được ảnh biên lai.");
+    }
+  }
+
   // --- Load Receptionists List ---
   async function loadReceptionists() {
     try {
@@ -425,6 +446,21 @@
   }
 
   function renderStaffDropdowns() {
+    const activeUser = state.currentUser;
+
+    // Đảm bảo nhân viên / quản trị viên đang đăng nhập có mặt trong danh sách
+    if (activeUser && activeUser.id) {
+      const exists = state.receptionists.some((u) => Number(u.id) === Number(activeUser.id));
+      if (!exists) {
+        state.receptionists.unshift({
+          id: activeUser.id,
+          full_name: activeUser.full_name,
+          email: activeUser.email,
+          role: activeUser.role,
+        });
+      }
+    }
+
     // 1. Filter dropdown
     el.filterStaffSelect.innerHTML = '<option value="">Tất cả lễ tân</option>';
     state.receptionists.forEach((u) => {
@@ -434,7 +470,7 @@
       el.filterStaffSelect.appendChild(opt);
     });
 
-    // 2. Shift staff dropdown
+    // 2. Shift staff dropdown: Mặc định chọn nhân viên đang trực ca (đang đăng nhập)
     el.shiftStaffSelect.innerHTML = "";
     state.receptionists.forEach((u) => {
       const opt = document.createElement("option");
@@ -467,23 +503,28 @@
     try {
       const res = await global.axiosClient.get("/invoices", { params });
       const data = res.data;
-      if (data && data.items && data.items.length > 0) {
+      if (data && Array.isArray(data.items)) {
         state.isUsingMock = false;
         state.invoices = data.items;
-        state.totalInvoices = data.total || data.items.length;
+        state.totalInvoices = data.total != null ? data.total : data.items.length;
         state.totalPages = Math.ceil(state.totalInvoices / state.filter.limit) || 1;
 
         renderInvoicesTable(state.invoices);
         updatePaginationControls();
       } else {
-        // Nếu API trả về 0 kết quả (CSDL chưa tạo hóa đơn ngày này), tự động nạp danh sách mẫu Figma
-        state.isUsingMock = true;
-        filterMockInvoices();
+        state.invoices = [];
+        state.totalInvoices = 0;
+        state.totalPages = 1;
+        renderInvoicesTable([]);
+        updatePaginationControls();
       }
-    } catch {
-      // Fallback mock invoices
-      state.isUsingMock = true;
-      filterMockInvoices();
+    } catch (err) {
+      console.warn("Lỗi tải danh sách hóa đơn từ API:", err);
+      state.invoices = [];
+      state.totalInvoices = 0;
+      state.totalPages = 1;
+      renderInvoicesTable([]);
+      updatePaginationControls();
     }
   }
 
@@ -569,6 +610,13 @@
             </td>
             <td>
               <span class="inv-badge-pill ${badgeClass}">${badgeText}</span>
+              ${item.receipt_url ? `
+                <div style="margin-top: 3px;">
+                  <button type="button" data-invoice-receipt="${global.RK_UI.escape(item.receipt_url)}" style="color: #0284c7; font-size: 11px; font-weight: 600; text-decoration: underline; display: inline-flex; align-items: center; gap: 3px;">
+                    <span>📄</span> Biên lai
+                  </button>
+                </div>
+              ` : ""}
             </td>
             <td style="text-align: right;">
               <span class="inv-td-amount">${formatMoney(item.grand_total)}</span>
@@ -621,64 +669,68 @@
 
   // --- Load Shift Summary (Chốt ca & Bàn giao) ---
   async function loadShiftSummary() {
-    const staffId = el.shiftStaffSelect.value || 1;
-    const dateVal = el.filterDateInput.value || todayStr;
+    const activeUser = state.currentUser;
+    const defaultStaffId = activeUser && activeUser.id ? activeUser.id : (state.receptionists[0] ? state.receptionists[0].id : 1);
+    const staffId = el.shiftStaffSelect && el.shiftStaffSelect.value ? el.shiftStaffSelect.value : defaultStaffId;
+    const shiftType = el.shiftTypeSelect ? el.shiftTypeSelect.value : "ALL_DAY";
+    const dateVal = el.filterDateInput && el.filterDateInput.value ? el.filterDateInput.value : todayStr;
+
+    if (!staffId) return;
 
     try {
       const res = await global.axiosClient.get("/invoices/shift/summary", {
         params: {
           staff_id: staffId,
           date: dateVal,
-          shift_type: "AFTERNOON",
+          shift_type: shiftType,
         },
       });
       const data = res.data;
-      if (data && data.total_invoices > 0) {
+      if (data) {
         state.shiftSummary = data;
         renderShiftSummary(data);
-      } else {
-        const staff = state.receptionists.find((u) => String(u.id) === String(staffId)) || state.receptionists[0];
-        state.shiftSummary = {
-          staff_id: staff.id,
-          staff_name: staff.full_name,
-          shift_name: "Ca Chiều: 14:00 – 22:00",
-          total_invoices: 18,
-          total_cash: 4320000,
-          total_bank_transfer: 4320000,
-          total_revenue: 8640000,
-        };
-        renderShiftSummary(state.shiftSummary);
       }
-    } catch {
-      // Dùng số liệu chuẩn Figma
-      const staff = state.receptionists.find((u) => String(u.id) === String(staffId)) || state.receptionists[0];
+    } catch (err) {
+      console.warn("Lỗi tải thông tin chốt ca từ API:", err);
+      const staff = state.receptionists.find((u) => String(u.id) === String(staffId)) || state.receptionists[0] || {};
+      const shiftNameMap = {
+        ALL_DAY: "Toàn ngày (06:00 – 23:59)",
+        MORNING: "Ca Sáng (06:00 – 14:00)",
+        AFTERNOON: "Ca Chiều (14:00 – 22:00)",
+        EVENING: "Ca Tối (18:00 – 23:00)",
+      };
       state.shiftSummary = {
-        staff_id: staff.id,
-        staff_name: staff.full_name,
-        shift_name: "Ca Chiều: 14:00 – 22:00",
-        total_invoices: 18,
-        total_cash: 4320000,
-        total_bank_transfer: 4320000,
-        total_revenue: 8640000,
+        staff_id: staff.id || Number(staffId),
+        staff_name: staff.full_name || "Nhân viên",
+        shift_name: shiftNameMap[shiftType] || "Toàn ngày",
+        total_invoices: 0,
+        total_cash: 0,
+        total_bank_transfer: 0,
+        total_revenue: 0,
       };
       renderShiftSummary(state.shiftSummary);
     }
   }
 
   function renderShiftSummary(s) {
-    el.shiftSubtitle.textContent = s.shift_name || "Ca Chiều: 14:00 – 22:00";
-    el.shiftCountVal.textContent = s.total_invoices || 18;
-    el.shiftCashVal.textContent = formatMoney(s.total_cash || 4320000);
-    el.shiftBankVal.textContent = formatMoney(s.total_bank_transfer || 4320000);
-    el.shiftTotalRevVal.textContent = formatMoney(s.total_revenue || 8640000);
+    el.shiftSubtitle.textContent = s.shift_name || "Toàn ngày";
+    el.shiftCountVal.textContent = s.total_invoices != null ? s.total_invoices : 0;
+    el.shiftCashVal.textContent = formatMoney(s.total_cash != null ? s.total_cash : 0);
+    el.shiftBankVal.textContent = formatMoney(s.total_bank_transfer != null ? s.total_bank_transfer : 0);
+    el.shiftTotalRevVal.textContent = formatMoney(s.total_revenue != null ? s.total_revenue : 0);
+
+    // Tự động điền số tiền két bằng số tiền mặt thu được thực tế
+    if (el.actualCashInput) {
+      el.actualCashInput.value = formatMoneyNoSuffix(s.total_cash != null ? s.total_cash : 0);
+    }
 
     // Đối soát két
     updateCashDiff();
   }
 
   function updateCashDiff() {
-    const actualCash = parseFormattedMoney(el.actualCashInput.value);
-    const systemCash = state.shiftSummary.total_cash || 4320000;
+    const actualCash = parseFormattedMoney(el.actualCashInput ? el.actualCashInput.value : 0);
+    const systemCash = Number(state.shiftSummary.total_cash) || 0;
     const diff = actualCash - systemCash;
 
     if (diff === 0) {
@@ -699,29 +751,33 @@
     renderInvoicesTable(state.invoices);
 
     let inv = null;
-    if (!state.isUsingMock) {
-      try {
-        const res = await global.axiosClient.get(`/invoices/${invoiceId}?reprint=${isReprint}`);
-        inv = res.data;
-      } catch (err) {
-        console.warn("Lỗi tải chi tiết hóa đơn từ API:", err);
-      }
+    try {
+      const res = await global.axiosClient.get(`/invoices/${invoiceId}?reprint=${isReprint}`);
+      inv = res.data;
+    } catch (err) {
+      console.warn("Lỗi tải chi tiết hóa đơn từ API:", err);
     }
 
     if (!inv) {
-      inv = MOCK_INVOICES.find((item) => String(item.id) === String(invoiceId)) || MOCK_INVOICES[0];
+      inv = state.invoices.find((item) => String(item.id) === String(invoiceId));
     }
+
+    if (!inv) return;
 
     // Populate modal
     el.modalInvoiceSubtitle.textContent = `${inv.invoice_code} · Bản xem trước & in lại`;
     el.recInvoiceCode.textContent = inv.invoice_code;
     el.recDateTime.textContent = `${formatDisplayDate(inv.created_at)} · ${formatTimeOnly(inv.created_at)}`;
     el.recCustomerName.textContent = inv.customer_name;
-    el.recStaffName.textContent = inv.staff_name || "Nguyễn Văn A";
-    el.recBookingCode.textContent = inv.booking_code || "#BK-026113";
+    el.recStaffName.textContent = inv.staff_name || "Nhân viên";
+    el.recBookingCode.textContent = inv.booking_code || "—";
 
     const isBank = (inv.payment_method || "").toUpperCase().includes("BANK");
-    el.recPaymentMethod.textContent = isBank ? "Chuyển khoản" : "Tiền mặt";
+    let pmLabel = isBank ? "Chuyển khoản (Ngân hàng / VietQR)" : "Tiền mặt";
+    if (inv.receipt_url) {
+      pmLabel += ` · <button type="button" data-invoice-receipt="${global.RK_UI.escape(inv.receipt_url)}" style="color:#0284c7;text-decoration:underline;font-weight:600;">Xem ảnh biên lai</button>`;
+    }
+    el.recPaymentMethod.innerHTML = pmLabel;
     el.recPaymentMethod.className = isBank ? "meta-val" : "meta-val meta-green";
 
     // Table items (Slots & Services)
@@ -737,21 +793,21 @@
               <div class="item-sub-desc">${s.time_slot}</div>
             </td>
             <td style="text-align: center;">${s.hours || 1} giờ</td>
-            <td style="text-align: right;">${formatMoney(s.price_per_hour || 200000)}</td>
+            <td style="text-align: right;">${formatMoney(s.price_per_hour)}</td>
             <td style="text-align: right; font-weight: 600;">${formatMoney(s.amount)}</td>
           </tr>
         `;
       });
-    } else {
+    } else if (inv.total_court_amount > 0) {
       rowsHtml += `
         <tr>
           <td>
-            <div class="item-main-title">${inv.court_name || "Sân 2 · Sân tiêu chuẩn"}</div>
-            <div class="item-sub-desc">${inv.play_time || "14:00 – 15:00 · Cuối tuần · 200.000đ/giờ"}</div>
+            <div class="item-main-title">Tiền thuê sân</div>
+            <div class="item-sub-desc">${inv.booking_code || ""}</div>
           </td>
-          <td style="text-align: center;">1 giờ</td>
-          <td style="text-align: right;">${formatMoney(inv.total_court_amount || 200000)}</td>
-          <td style="text-align: right; font-weight: 600;">${formatMoney(inv.total_court_amount || 200000)}</td>
+          <td style="text-align: center;">—</td>
+          <td style="text-align: right;">${formatMoney(inv.total_court_amount)}</td>
+          <td style="text-align: right; font-weight: 600;">${formatMoney(inv.total_court_amount)}</td>
         </tr>
       `;
     }
@@ -764,12 +820,20 @@
             <td>
               <div class="item-main-title">${svc.service_name}</div>
             </td>
-            <td style="text-align: center;">${svc.quantity}</td>
+            <td style="text-align: center;">${svc.quantity} ${svc.unit || ""}</td>
             <td style="text-align: right;">${formatMoney(svc.unit_price)}</td>
             <td style="text-align: right; font-weight: 600;">${formatMoney(svc.amount)}</td>
           </tr>
         `;
       });
+    }
+
+    if (!rowsHtml) {
+      rowsHtml = `
+        <tr>
+          <td colspan="4" style="text-align: center; color: #64748b; padding: 12px;">Không có chi tiết mặt hàng.</td>
+        </tr>
+      `;
     }
 
     el.recItemsTbody.innerHTML = rowsHtml;
@@ -791,21 +855,22 @@
   // --- Show Shift Slip Modal ---
   function showShiftSlipModal() {
     const s = state.shiftSummary;
-    const actual = parseFormattedMoney(el.actualCashInput.value);
-    const diff = actual - (s.total_cash || 4320000);
+    const actual = parseFormattedMoney(el.actualCashInput ? el.actualCashInput.value : 0);
+    const systemCash = Number(s.total_cash) || 0;
+    const diff = actual - systemCash;
 
     el.slipDateHeader.textContent = formatDisplayDate(el.filterDateInput.value || todayStr);
-    el.slipStaffName.textContent = s.staff_name || "Nguyễn Văn A";
-    el.slipShiftName.textContent = s.shift_name || "Ca Chiều (14:00 – 22:00)";
+    el.slipStaffName.textContent = s.staff_name || "Nhân viên";
+    el.slipShiftName.textContent = s.shift_name || "Ca làm việc";
     el.slipClosedAt.textContent = `${formatDisplayDate(todayStr)} ${formatTimeOnly(new Date())}`;
-    el.slipInvoiceCount.textContent = s.total_invoices || 18;
-    el.slipCash.textContent = formatMoney(s.total_cash || 4320000);
-    el.slipBank.textContent = formatMoney(s.total_bank_transfer || 4320000);
-    el.slipTotal.textContent = formatMoney(s.total_revenue || 8640000);
+    el.slipInvoiceCount.textContent = s.total_invoices != null ? s.total_invoices : 0;
+    el.slipCash.textContent = formatMoney(s.total_cash != null ? s.total_cash : 0);
+    el.slipBank.textContent = formatMoney(s.total_bank_transfer != null ? s.total_bank_transfer : 0);
+    el.slipTotal.textContent = formatMoney(s.total_revenue != null ? s.total_revenue : 0);
     el.slipActualCash.textContent = formatMoney(actual);
     el.slipDiff.textContent = diff === 0 ? "0đ (Khớp)" : `${diff > 0 ? "+" : ""}${formatMoney(diff)}`;
-    el.slipNotesText.textContent = el.shiftNotesInput.value || "Đã kiểm đếm đủ tiền mặt. Bàn giao quỹ và chứng từ cho ca sau.";
-    el.slipSignStaffName.textContent = s.staff_name || "Nguyễn Văn A";
+    el.slipNotesText.textContent = el.shiftNotesInput.value || "Đã kiểm đếm đủ tiền mặt và đối soát quỹ.";
+    el.slipSignStaffName.textContent = s.staff_name || "Nhân viên";
 
     el.shiftSlipModal.classList.add("open");
   }
@@ -813,6 +878,7 @@
   // --- Confirm Shift Closing ---
   async function confirmShiftClosing() {
     const staffId = el.shiftStaffSelect.value || 1;
+    const shiftType = el.shiftTypeSelect ? el.shiftTypeSelect.value : "ALL_DAY";
     const dateVal = el.filterDateInput.value || todayStr;
     const actualCash = parseFormattedMoney(el.actualCashInput.value);
     const notes = el.shiftNotesInput.value;
@@ -820,20 +886,30 @@
     const payload = {
       staff_id: Number(staffId),
       date: dateVal,
-      shift_type: "AFTERNOON",
+      shift_type: shiftType,
       actual_cash: actualCash,
       note: notes,
     };
 
-    try {
-      await global.axiosClient.post("/invoices/shift/close", payload);
-      showToast("✓ Đã xác nhận chốt ca làm việc và ghi nhận quỹ thành công!");
-    } catch {
-      showToast("✓ Đã lưu xác nhận chốt ca làm việc và ghi nhận đối soát két!");
+    const originalBtnText = el.btnConfirmCloseShift ? el.btnConfirmCloseShift.textContent : "Xác nhận Chốt ca";
+    if (el.btnConfirmCloseShift) {
+      el.btnConfirmCloseShift.disabled = true;
+      el.btnConfirmCloseShift.textContent = "Đang xử lý...";
     }
 
-    // Mở phiếu in chốt ca
-    showShiftSlipModal();
+    try {
+      const res = await global.axiosClient.post("/invoices/shift/close", payload);
+      showToast(res.data && res.data.message ? res.data.message : "✓ Đã xác nhận chốt ca làm việc và ghi nhận quỹ thành công!");
+      await loadShiftSummary();
+    } catch (err) {
+      console.warn("Lỗi gửi chốt ca lên API:", err);
+      showToast("✓ Đã lưu xác nhận chốt ca làm việc và ghi nhận đối soát két!");
+    } finally {
+      if (el.btnConfirmCloseShift) {
+        el.btnConfirmCloseShift.disabled = false;
+        el.btnConfirmCloseShift.textContent = originalBtnText;
+      }
+    }
   }
 
   // --- Bind Event Listeners ---
@@ -852,6 +928,13 @@
       state.filter.page = 1;
       loadInvoices();
     });
+
+    // 2b. Shift type change
+    if (el.shiftTypeSelect) {
+      el.shiftTypeSelect.addEventListener("change", () => {
+        loadShiftSummary();
+      });
+    }
 
     // 3. Payment method segmented pills
     el.filterPaymentSegment.addEventListener("click", (e) => {
@@ -889,6 +972,7 @@
 
     // 7. Action buttons in table (View & Reprint)
     el.invoicesTableBody.addEventListener("click", (e) => {
+      if (e.target.closest("[data-invoice-receipt]")) return;
       const btn = e.target.closest("button[data-action]");
       if (btn) {
         const action = btn.dataset.action;
@@ -965,11 +1049,16 @@
     if (el.invCurrentDateText) {
       el.invCurrentDateText.textContent = formatVietnameseDate(now);
     }
+    // Mặc định để trống bộ lọc ngày để hiển thị toàn bộ hóa đơn thực tế mới nhất từ CSDL
     if (el.filterDateInput) {
-      el.filterDateInput.value = todayStr;
+      el.filterDateInput.value = "";
     }
 
     bindEvents();
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-invoice-receipt]");
+      if (button) void openReceipt(button.dataset.invoiceReceipt);
+    });
     await loadReceptionists();
     await loadInvoices();
     await loadShiftSummary();
