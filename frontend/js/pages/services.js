@@ -727,6 +727,20 @@ window.toggleServiceStatus = function(id) {
   openConfirmStatusModal(id);
 };
 
+function getAuthToken() {
+  if (typeof RK_SESSION !== "undefined" && RK_SESSION.read) {
+    const s = RK_SESSION.read();
+    if (s && s.token) return s.token;
+  }
+  return (
+    localStorage.getItem("access_token") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("access_token") ||
+    sessionStorage.getItem("token") ||
+    ""
+  );
+}
+
 let currentUploadedFile = null;
 
 function setupImageUploadHandlers() {
@@ -854,10 +868,12 @@ async function handleSaveService(e) {
       if (btnSave) btnSave.textContent = "Đang tải ảnh lên...";
       const formData = new FormData();
       formData.append("file", currentUploadedFile);
-      const token = (window.RK_AUTH && window.RK_AUTH.getToken()) || localStorage.getItem("token") || sessionStorage.getItem("token");
+      const token = getAuthToken();
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const uploadRes = await fetch(`${CONFIG.API_BASE_URL}/services/upload-image`, {
         method: "POST",
-        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        headers,
         body: formData,
       });
 
