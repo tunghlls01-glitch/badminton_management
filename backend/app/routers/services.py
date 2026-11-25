@@ -15,10 +15,9 @@
 """
 from datetime import date, datetime
 from typing import Optional
-from pathlib import Path
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile
-from fastapi.responses import Response, FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.config import BASE_DIR

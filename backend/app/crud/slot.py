@@ -7,6 +7,7 @@ from sqlalchemy import or_, and_
 
 from app.models.court import Court, CourtStatus
 from app.models.court_block import CourtBlock
+from app.models.maintenance_block import CourtMaintenanceBlock
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
 from app.models.booking import Booking, BookingChannel, BookingStatus
 from app.crud.booking import booking_blocks_slot, generate_booking_code, get_price_per_hour, vietnam_now
@@ -27,11 +28,15 @@ def is_slot_free(db: Session, court_id: int, start_at: datetime, end_at: datetim
     """
     now = vietnam_now()
 
-    # 1. Kiểm tra khoá sân (CourtBlock)
+    # 1. Kiểm tra khoá sân (CourtBlock & CourtMaintenanceBlock)
     has_lock = db.query(CourtBlock).filter(
         CourtBlock.court_id == court_id,
         CourtBlock.start_at < end_at,
         CourtBlock.end_at > start_at
+    ).first() or db.query(CourtMaintenanceBlock).filter(
+        CourtMaintenanceBlock.court_id == court_id,
+        CourtMaintenanceBlock.start_at < end_at,
+        CourtMaintenanceBlock.end_at > start_at
     ).first()
 
     if has_lock:
@@ -100,11 +105,15 @@ def get_slot_grid_by_date(
                 ))
                 continue
 
-            # 2. Kiểm tra Lịch khoá sân theo khung giờ (CourtBlock)
+            # 2. Kiểm tra Lịch khoá sân theo khung giờ (CourtBlock & CourtMaintenanceBlock)
             lock = db.query(CourtBlock).filter(
                 CourtBlock.court_id == court.id,
                 CourtBlock.start_at < end_dt,
                 CourtBlock.end_at > start_dt
+            ).first() or db.query(CourtMaintenanceBlock).filter(
+                CourtMaintenanceBlock.court_id == court.id,
+                CourtMaintenanceBlock.start_at < end_dt,
+                CourtMaintenanceBlock.end_at > start_dt
             ).first()
 
             if lock:
@@ -130,14 +139,11 @@ def get_slot_grid_by_date(
 
             if slot_record:
                 booking = slot_record.booking
-                if booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN) or (
-                    booking.status == BookingStatus.Pending and booking.hold_expires_at is None
-                ):
-                    status_display = SlotDisplayStatus.BOOKED
-                elif booking.status == BookingStatus.Pending and getattr(booking, 'hold_expires_at', None) and booking.hold_expires_at > now:
-                    status_display = SlotDisplayStatus.HOLD
-                else:
-                    status_display = SlotDisplayStatus.FREE
+                status_display = (
+                    SlotDisplayStatus.HOLD
+                    if booking.status == BookingStatus.Pending and booking.hold_expires_at is not None
+                    else SlotDisplayStatus.BOOKED
+                )
 
                 slots.append(SlotGridItem(
                     court_id=court.id,
@@ -220,9 +226,18 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
                 and_(CourtBlock.start_at < item.end_at, CourtBlock.end_at > item.start_at)
                 for item in court_slots
             ]
+            maintenance_conditions = [
+                and_(CourtMaintenanceBlock.start_at < item.end_at, CourtMaintenanceBlock.end_at > item.start_at)
+                for item in court_slots
+            ]
             has_lock = (
                 db.query(CourtBlock)
                 .filter(CourtBlock.court_id == court_id, or_(*block_conditions))
+                .with_for_update()
+                .first()
+            ) or (
+                db.query(CourtMaintenanceBlock)
+                .filter(CourtMaintenanceBlock.court_id == court_id, or_(*maintenance_conditions))
                 .with_for_update()
                 .first()
             )
@@ -237,7 +252,7 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
                 for item in court_slots
             ]
             existing_slots = (
-                db.query(BookingSlot)
+                db.query(BookingSlot, booking_blocks_slot(now).label("blocks_slot"))
                 .join(Booking, BookingSlot.booking_id == Booking.id)
                 .filter(
                     BookingSlot.court_id == court_id,
@@ -248,18 +263,9 @@ def hold_slots(db: Session, payload: SlotHoldRequest) -> SlotHoldResponse:
                 .all()
             )
 
-            for slot in existing_slots:
+            for slot, blocks_slot in existing_slots:
                 booking = slot.booking
-                is_booked = booking.status in (BookingStatus.Confirmed, BookingStatus.CHECKED_IN) or (
-                    booking.status == BookingStatus.Pending and booking.hold_expires_at is None
-                )
-                is_holding = (
-                    booking.status == BookingStatus.Pending
-                    and booking.hold_expires_at is not None
-                    and booking.hold_expires_at > now
-                )
-
-                if is_booked or is_holding:
+                if blocks_slot:
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
                         detail=f"Khung giờ {slot.start_at.strftime('%H:%M')} - {slot.end_at.strftime('%H:%M')} tại {court.name} đã có người đặt hoặc đang được giữ.",

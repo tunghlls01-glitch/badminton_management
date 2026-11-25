@@ -11,6 +11,7 @@ from app.models.booking import Booking, BookingStatus
 from app.models.booking_slot import BookingSlot, BookingSlotStatus
 from app.models.court import Court, CourtStatus
 from app.models.court_block import CourtBlock
+from app.models.maintenance_block import CourtMaintenanceBlock
 from app.models.invoice import Invoice
 from app.models.payment import Payment, PaymentStatus
 from app.models.user import User
@@ -109,34 +110,25 @@ def get_overview(db: Session, day: date, now: datetime):
         (BookingSlot.start_at < end) & (BookingSlot.end_at > start),
         (BookingSlot.start_at <= now) & (BookingSlot.end_at > now),
     )
-    try:
-        slots = list(db.execute(
-            select(BookingSlot, booking_blocks_slot(now).label("blocks_slot")).join(Booking).where(periods)
-            .options(selectinload(BookingSlot.booking).selectinload(Booking.user), selectinload(BookingSlot.court))
-        ))
-    except Exception as e:
-        print(f"[WARN] slots query failed: {e}")
-        slots = []
-
-    try:
-        blocks = list(db.scalars(select(CourtBlock).where(or_(
-            (CourtBlock.start_at < end) & (CourtBlock.end_at > start),
-            (CourtBlock.start_at <= now) & (CourtBlock.end_at > now),
-        ))))
-    except Exception as e:
-        print(f"[WARN] blocks query failed: {e}")
-        blocks = []
-
-    try:
-        courts = list(db.scalars(select(Court).order_by(Court.id)))
-    except Exception as e:
-        print(f"[WARN] courts query failed: {e}")
-        courts = []
-
+    slots = list(db.execute(
+        select(BookingSlot, booking_blocks_slot(now).label("blocks_slot")).join(Booking).where(periods)
+        .options(selectinload(BookingSlot.booking).selectinload(Booking.user), selectinload(BookingSlot.court))
+    ))
+    blocks = db.scalars(select(CourtBlock).where(or_(
+        (CourtBlock.start_at < end) & (CourtBlock.end_at > start),
+        (CourtBlock.start_at <= now) & (CourtBlock.end_at > now),
+    )))
+    maintenance_blocks = db.scalars(select(CourtMaintenanceBlock).where(or_(
+        (CourtMaintenanceBlock.start_at < end) & (CourtMaintenanceBlock.end_at > start),
+        (CourtMaintenanceBlock.start_at <= now) & (CourtMaintenanceBlock.end_at > now),
+    )))
+    courts = list(db.scalars(select(Court).order_by(Court.id)))
     by_court = defaultdict(list)
     by_booking = defaultdict(list)
     blocks_by_court = defaultdict(list)
     for block in blocks:
+        blocks_by_court[block.court_id].append(block)
+    for block in maintenance_blocks:
         blocks_by_court[block.court_id].append(block)
     for slot, blocks_slot in slots:
         booking = slot.booking

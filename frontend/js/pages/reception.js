@@ -104,6 +104,8 @@
     searchQuery: "",
     paymentMethod: "CASH", // "CASH" | "BANK_TRANSFER"
     cashReceived: 0,
+    checkoutSelection: null,
+    isCheckingOut: false,
     isReceiptOpen: false,
     isLoading: false,
     currentUser: null,
@@ -158,6 +160,7 @@
     el.btnCloseReceipt = document.getElementById("btnCloseReceipt");
     el.btnBackCheckout = document.getElementById("btnBackCheckout");
     el.btnPrintReceipt = document.getElementById("btnPrintReceipt");
+    el.receiptTitle = document.getElementById("receiptTitle");
     el.receiptBookingCode = document.getElementById("receiptBookingCode");
     el.receiptDate = document.getElementById("receiptDate");
     el.receiptTime = document.getElementById("receiptTime");
@@ -228,6 +231,11 @@
         el.receptionUserAvatar.textContent = initial;
       }
     }
+  }
+
+  function hasVerifiedBankPayment(booking) {
+    return booking.has_transferred ||
+      (booking.payment_method === "BANK_TRANSFER" && booking.payment_status === "SUCCESS");
   }
 
   // --- 2. Database Mapping: Backend BookingOut -> UI Booking Model ---
@@ -467,21 +475,27 @@
         } else if (b.status === "Completed") {
           statusBadge = `<span class="booking-status-tag status-tag-completed">Đã hoàn thành</span>`;
           actionBtn = `<button type="button" class="booking-action-btn btn-view-invoice" data-action="preview" data-id="${b.id}">Xem hóa đơn</button>`;
+        } else if (b.status === "Pending") {
+          statusBadge = '<span class="booking-status-tag status-tag-pending">Chờ xác nhận</span>';
+          actionBtn = `<button type="button" class="booking-action-btn btn-checkout" data-action="checkout" data-id="${b.id}">Chọn thanh toán</button>`;
         } else if (b.status === "NO_SHOW") {
           statusBadge = `<span class="booking-status-tag" style="background:#fee2e2;color:#991b1b;">Vắng mặt</span>`;
           actionBtn = `<button type="button" class="booking-action-btn" data-action="preview" data-id="${b.id}" style="background:#f1f5f9;color:#64748b;">Chi tiết</button>`;
-        } else {
+        } else if (b.status === "Confirmed") {
           statusBadge = `<span class="booking-status-tag status-tag-confirmed">Đã xác nhận</span>`;
           actionBtn = `<button type="button" class="booking-action-btn btn-checkin" data-action="checkin" data-id="${b.id}">Nhận sân</button>`;
+        } else {
+          statusBadge = '<span class="booking-status-tag">Không thể thanh toán</span>';
         }
 
-        const transferBadge = b.has_transferred
-          ? `<span class="booking-transfer-tag" title="Khách hàng đã chuyển khoản khi đặt sân">💳 ĐÃ CHUYỂN KHOẢN</span>`
+        const verifiedTransfer = hasVerifiedBankPayment(b);
+        const transferBadge = verifiedTransfer
+          ? `<span class="booking-transfer-tag" title="Thanh toán chuyển khoản đã được xác nhận">💳 ĐÃ CHUYỂN KHOẢN</span>`
           : "";
 
-        const transferNote = b.has_transferred || b.receipt_url
+        const transferNote = verifiedTransfer || b.receipt_url
           ? `<div style="margin-top: 3px; font-size: 11px; font-weight: 600; color: #0284c7; display: flex; align-items: center; gap: 6px;">
-               <span>${b.has_transferred ? "Đã chuyển khoản: " + formatMoney(b.paid_amount) + "đ" : "Có biên lai chờ đối soát"}</span>
+               <span>${verifiedTransfer ? "Thanh toán chuyển khoản đã xác nhận" : "Có biên lai chờ đối soát"}</span>
                ${b.receipt_url ? `<button type="button" class="btn-quick-receipt" data-receipt-url="${b.receipt_url}" style="background:none; border:none; padding:0; color:#0369a1; text-decoration:underline; cursor:pointer; font-size:11px; font-weight:600;">Xem biên lai</button>` : ""}
              </div>`
           : "";
@@ -513,8 +527,18 @@
   }
 
   // --- 7. Render Checkout Panel ---
+  function canSettle(booking) {
+    return ["Pending", "Confirmed", "CHECKED_IN"].includes(booking?.status);
+  }
+
   function renderCheckoutPanel() {
     const booking = getSelectedBooking();
+    const bookingId = booking?.id ?? null;
+    if (state.checkoutSelection !== bookingId) {
+      state.checkoutSelection = bookingId;
+      state.cashReceived = 0;
+      state.paymentMethod = booking?.payment_method === "BANK_TRANSFER" ? "BANK_TRANSFER" : "CASH";
+    }
 
     if (!booking) {
       if (el.checkoutStatus) {
@@ -554,7 +578,10 @@
       return;
     }
 
-    if (el.btnConfirmPayment) el.btnConfirmPayment.disabled = false;
+    if (el.btnConfirmPayment) {
+      el.btnConfirmPayment.disabled = state.isCheckingOut ||
+        (!canSettle(booking) && booking.status !== "Completed");
+    }
     if (el.btnPrintPreview) el.btnPrintPreview.disabled = false;
 
     const totals = calculateTotals(booking);
@@ -572,13 +599,14 @@
       el.checkoutStatus.style.color = "#15803d";
       el.checkoutStatus.innerHTML = "● Đang chơi · Chờ thanh toán";
       if (el.btnConfirmPayment) {
-        el.btnConfirmPayment.textContent = "Thanh toán & in hóa đơn";
+        el.btnConfirmPayment.textContent = "Xác nhận thanh toán";
       }
     } else {
       el.checkoutStatus.className = "checkout-status-badge pending";
-      el.checkoutStatus.innerHTML = "● Chờ nhận sân & thanh toán";
+      el.checkoutStatus.textContent = booking.status === "Pending" ? "● Chờ xác nhận đặt sân"
+        : canSettle(booking) ? "● Chờ nhận sân & thanh toán" : "● Không thể thanh toán";
       if (el.btnConfirmPayment) {
-        el.btnConfirmPayment.textContent = "Thanh toán & in hóa đơn";
+        el.btnConfirmPayment.textContent = "Xác nhận thanh toán";
       }
     }
 
@@ -592,21 +620,26 @@
 
     // Alert Box nếu khách đã chuyển khoản khi đặt sân
     if (el.checkoutTransferAlertBox) {
-      if (booking.has_transferred) {
+      const verifiedTransfer = hasVerifiedBankPayment(booking);
+      if (verifiedTransfer || booking.receipt_url) {
+        const title = booking.has_transferred ? "Khách đã chuyển khoản khi đặt sân"
+          : verifiedTransfer ? "Thanh toán chuyển khoản đã xác nhận" : "Biên lai chuyển khoản chờ đối soát";
+        const description = booking.has_transferred
+          ? `Đã ghi nhận tiền sân chuyển khoản: <strong>${formatMoney(booking.paid_amount)} VND</strong>.`
+          : verifiedTransfer
+            ? "Hệ thống đã ghi nhận thanh toán chuyển khoản cho lượt đặt này."
+            : "Khách đã gửi ảnh biên lai. Kiểm tra giao dịch trước khi ghi nhận đã thanh toán.";
         el.checkoutTransferAlertBox.style.display = "block";
         el.checkoutTransferAlertBox.innerHTML = `
           <div style="background: #f0f9ff; border: 1.5px solid #38bdf8; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(2, 132, 199, 0.08);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
               <span style="font-weight: 700; font-size: 13px; color: #0369a1; display: inline-flex; align-items: center; gap: 6px;">
-                <span style="font-size: 16px;">💳</span> KHÁCH ĐÃ CHUYỂN KHOẢN KHI ĐẶT SÂN
+                <span style="font-size: 16px;">💳</span> ${title}
               </span>
               <span style="background: #e0f2fe; color: #0284c7; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; border: 1px solid #bae6fd;">VIETQR / BANK</span>
             </div>
             <div style="font-size: 12px; color: #0c4a6e; line-height: 1.45;">
-              Khách hàng đã thanh toán chuyển khoản trước số tiền sân: <strong>${formatMoney(booking.paid_amount || booking.court_fee)} VND</strong>.
-              <div style="margin-top: 4px; color: #0369a1; font-weight: 600;">
-                ⚠️ Lưu ý lễ tân: KHÔNG thu tiền mặt cho tiền sân (chỉ thu thêm tiền dịch vụ phát sinh nếu có).
-              </div>
+              ${description}
             </div>
             ${booking.receipt_url ? `
               <div style="margin-top: 8px;">
@@ -663,14 +696,15 @@
     updateRacketRentalWarning(booking);
 
     // Đồng bộ phương thức thanh toán theo trạng thái chuyển khoản của booking
-    if (booking.has_transferred) {
-      state.paymentMethod = "BANK_TRANSFER";
+    if (booking.status === "Completed" || booking.has_transferred) {
+      state.paymentMethod = booking.payment_method === "BANK_TRANSFER" ? "BANK_TRANSFER" : "CASH";
+    }
+    if (state.paymentMethod === "BANK_TRANSFER") {
       if (el.paymentMethodCash) el.paymentMethodCash.classList.remove("active");
       if (el.paymentMethodBank) el.paymentMethodBank.classList.add("active");
       if (el.cashCalculatorBox) el.cashCalculatorBox.style.display = "none";
       if (el.bankTransferBox) el.bankTransferBox.style.display = "block";
     } else {
-      state.paymentMethod = "CASH";
       if (el.paymentMethodCash) el.paymentMethodCash.classList.add("active");
       if (el.paymentMethodBank) el.paymentMethodBank.classList.remove("active");
       if (el.cashCalculatorBox) el.cashCalculatorBox.style.display = "block";
@@ -880,15 +914,20 @@
   }
 
   // --- 9. Thermal Receipt Drawer ---
-  function renderThermalReceipt() {
-    const booking = getSelectedBooking();
+  function renderThermalReceipt(booking = getSelectedBooking()) {
     if (!booking) return;
 
-    const totals = calculateTotals(booking);
+    const result = booking.checkoutResult;
+    const totals = result ? {
+      courtTotal: result.total_court_amount,
+      grandTotal: result.grand_total,
+      discount: result.discount_amount,
+    } : calculateTotals(booking);
     const now = new Date();
     const dateStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
     const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
+    el.receiptTitle.textContent = booking.status === "Completed" ? "HÓA ĐƠN THANH TOÁN" : "XEM TRƯỚC THANH TOÁN";
     el.receiptBookingCode.textContent = booking.invoice_code || booking.booking_code;
     el.receiptDate.textContent = dateStr;
     el.receiptTime.textContent = timeStr;
@@ -932,20 +971,23 @@
 
     el.receiptItemsList.innerHTML = itemsHtml;
     el.receiptTotal.textContent = formatMoney(totals.grandTotal);
-    el.receiptTender.textContent = formatMoney(state.cashReceived);
+    const method = booking.status === "Completed" ? booking.payment_method : state.paymentMethod;
+    const tender = method === "BANK_TRANSFER" ? totals.grandTotal
+      : booking.checkoutCashReceived ?? state.cashReceived;
+    el.receiptTender.textContent = formatMoney(tender);
 
-    const change = Math.max(0, state.cashReceived - totals.grandTotal);
+    const change = Math.max(0, tender - totals.grandTotal);
     el.receiptChange.textContent = formatMoney(change);
 
     if (booking.status === "Completed") {
-      el.receiptPaymentStatus.textContent = `Hóa đơn đã được thanh toán (${state.paymentMethod === "BANK_TRANSFER" ? "Chuyển khoản VietQR" : "Tiền mặt"}).`;
+      el.receiptPaymentStatus.textContent = `Hóa đơn đã được thanh toán (${method === "BANK_TRANSFER" ? "Chuyển khoản VietQR" : "Tiền mặt"}).`;
     } else {
       el.receiptPaymentStatus.textContent = "Thanh toán chưa được xác nhận.";
     }
   }
 
-  function openReceiptDrawer() {
-    renderThermalReceipt();
+  function openReceiptDrawer(booking = getSelectedBooking()) {
+    renderThermalReceipt(booking);
     state.isReceiptOpen = true;
     el.modalOverlay.classList.add("open");
   }
@@ -1089,55 +1131,46 @@
   // --- 11. Checkout Action (POST /api/reception/bookings/{id}/checkout) ---
   async function handleConfirmPaymentAndPrint() {
     const booking = getSelectedBooking();
-    if (!booking) return;
-
+    if (!booking || state.isCheckingOut) return;
     if (booking.status === "Completed") {
-      showToast("Booking này đã được thanh toán hoàn thành.");
-      openReceiptDrawer();
+      openReceiptDrawer(booking);
+      return;
+    }
+    if (!canSettle(booking)) return;
+    if (!window.axiosClient) {
+      showToast("Không kết nối được hệ thống thanh toán.");
       return;
     }
 
-    const totals = calculateTotals(booking);
-
-    if (window.axiosClient) {
-      try {
-        const payload = {
-          payment_method: state.paymentMethod, // "CASH" | "BANK_TRANSFER"
+    const tender = state.cashReceived;
+    state.isCheckingOut = el.btnConfirmPayment.disabled = true;
+    try {
+      const { data } = await window.axiosClient.post(
+        `/reception/bookings/${booking.id}/checkout`,
+        {
+          payment_method: state.paymentMethod,
           discount_amount: Number(booking.discount_amount) || 0,
-          discount_reason:
-            booking.discount_reason ||
+          discount_reason: booking.discount_reason ||
             (booking.discount_amount > 0 ? "Chiết khấu lễ tân tại quầy" : null),
-        };
-
-        const res = await window.axiosClient.post(
-          `/reception/bookings/${booking.id}/checkout`,
-          payload
-        );
-
-        if (res.data) {
-          booking.status = "Completed";
-          if (res.data.invoice_code) {
-            booking.invoice_code = res.data.invoice_code;
-          }
         }
-      } catch (err) {
-        const msg = err.response?.data?.detail || err.message || "Thanh toán thất bại";
-        showToast(`✕ Lỗi thanh toán: ${msg}`);
-        return;
-      }
-    } else {
-      booking.status = "Completed";
+      );
+      booking.status = data.booking_status;
+      booking.invoice_code = data.invoice_code;
+      booking.payment_method = data.payment_method;
+      booking.payment_status = data.payment_status;
+      booking.checkoutResult = data;
+      booking.checkoutCashReceived = tender;
+      if (state.selectedId === booking.id) state.activeFilter = "all";
+      showToast(`✓ Đã ghi nhận thanh toán ${formatMoney(data.grand_total)} VND!`);
+      openReceiptDrawer(booking);
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || "Thanh toán thất bại";
+      showToast(`✕ Lỗi thanh toán: ${msg}`);
+    } finally {
+      state.isCheckingOut = false;
+      renderBookingsList();
+      renderCheckoutPanel();
     }
-
-    renderBookingsList();
-    renderCheckoutPanel();
-    renderThermalReceipt();
-    showToast(`✓ Đã ghi nhận thanh toán ${formatMoney(totals.grandTotal)} VND!`);
-
-    openReceiptDrawer();
-    setTimeout(() => {
-      window.print();
-    }, 450);
   }
 
   // --- 12. Event Listeners ---

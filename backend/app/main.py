@@ -14,7 +14,6 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect, select, text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
-from sqlalchemy import text
 from app import models  # noqa: F401 - import để SQLAlchemy biết các bảng
 from app.models import maintenance_block  # noqa: F401 - đăng ký bảng court_maintenance_blocks
 from app.core.config import BASE_DIR, settings
@@ -100,11 +99,6 @@ async def lifespan(app: FastAPI):
         added_courts = seed_courts()
         if added_courts:
             print(f"[SEED] Đã thêm {added_courts} sân mẫu vào database")
-        try:
-            with engine.begin() as conn:
-                conn.execute(text("ALTER TABLE invoices ADD COLUMN staff_id INT NULL;"))
-        except Exception:
-            pass
         print(f"[DB] Đã kết nối MySQL {settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
         # Đảm bảo cấu trúc cột cho các bảng booking_slots, bookings, invoices, payments, services
         with engine.begin() as conn:
@@ -161,13 +155,6 @@ async def lifespan(app: FastAPI):
                 if "service_order_id" not in pm_cols:
                     conn.execute(text("ALTER TABLE payments ADD COLUMN service_order_id INT NULL"))
 
-        # Tự động nạp toàn bộ dữ liệu mẫu demo phong phú (Sân, Đặt sân, Dịch vụ & Kho, Hóa đơn)
-        try:
-            from app.seeds.seed_full_demo import seed_all
-            seed_all()
-            print("[SEED] >>> Đã tự động nạp toàn bộ dữ liệu mẫu (seed_full_demo) thành công!")
-        except Exception as seed_err:
-            print(f"[SEED ERROR] Không thể nạp dữ liệu mẫu: {seed_err}")
     except OperationalError as error:
         print("[DB] KHÔNG kết nối được MySQL! Kiểm tra MySQL đã bật chưa và file .env.")
         if "Unknown database" in str(error.orig):
@@ -186,21 +173,19 @@ def court_image(filename: str):
         raise HTTPException(status_code=404, detail="Không tìm thấy ảnh sân.")
     return FileResponse(image, media_type=media_type, headers={"X-Content-Type-Options": "nosniff"})
 
-@app.get("/static/uploads/services/{filename}", include_in_schema=False)
+@app.get(services.SERVICE_IMAGE_URL + "/{filename}", include_in_schema=False)
 def service_image(filename: str):
-    from app.routers import services as services_router
-    media_type = services_router.IMAGE_TYPES.get(Path(filename).suffix.lower())
-    image = services_router.SERVICE_UPLOAD_DIR / filename
+    media_type = services.IMAGE_TYPES.get(Path(filename).suffix.lower())
+    image = services.SERVICE_UPLOAD_DIR / filename
     if not media_type or image.name != filename or not image.is_file():
         raise HTTPException(status_code=404, detail="Không tìm thấy ảnh dịch vụ.")
     return FileResponse(image, media_type=media_type, headers={"X-Content-Type-Options": "nosniff"})
 
 @app.exception_handler(SQLAlchemyError)
 async def database_error(request: Request, exc: SQLAlchemyError):
-    import traceback
-    print(f"\n[DB ERROR] {request.method} {request.url.path}: {exc}")
-    traceback.print_exc()
-    return JSONResponse(status_code=500, content={"detail": f"Database error: {str(exc)}"})
+    print(f"[DB] {request.method} {request.url.path}: {type(exc).__name__}")
+    return JSONResponse(status_code=500, content={"detail": "Máy chủ không xử lý được dữ liệu. Vui lòng thử lại."})
+
 
 # Global Exception Handler: in toàn bộ traceback ra terminal và trả về JSON
 @app.exception_handler(Exception)
@@ -251,15 +236,7 @@ app.include_router(maintenance_blocks.router, prefix="/api")
 app.include_router(notification.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(invoice.router, prefix="/api")
-@app.post("/api/seed-demo-data", include_in_schema=False)
-@app.get("/api/seed-demo-data", include_in_schema=False)
-def seed_demo_data():
-    try:
-        from app.seeds.seed_full_demo import seed_all
-        seed_all()
-        return {"status": "success", "message": "Đã nạp toàn bộ dữ liệu mẫu demo thành công!"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+
 
 @app.get("/")
 def root():

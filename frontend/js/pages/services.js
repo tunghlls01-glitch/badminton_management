@@ -354,9 +354,12 @@ function renderServicesTable(list) {
     }
 
     const resolvedImg = resolveImageUrl(s.image_url);
-    const avatarContent = resolvedImg
-      ? `<img src="${resolvedImg}" alt="${escapeHtml(s.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'service-avatar ${avatarType}\\\'>${avatarIcon}</div>';" style="width:40px; height:40px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb; display:block;">`
-      : `<div class="service-avatar ${avatarType}">${avatarIcon}</div>`;
+    const avatarContent = `
+      ${resolvedImg ? `<img src="${escapeHtml(resolvedImg)}" alt="${escapeHtml(s.name)}"
+        onerror="this.nextElementSibling.style.removeProperty('display'); this.remove();"
+        style="width:40px; height:40px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb; display:block;">` : ""}
+      <div class="service-avatar ${avatarType}"${resolvedImg ? ' style="display:none"' : ""}>${avatarIcon}</div>
+    `;
 
     return `
       <tr>
@@ -618,9 +621,12 @@ window.viewServiceDetail = function(id) {
   const code = `SVC-${String(service.id).padStart(3, "0")}`;
 
   const resolvedDetailImg = resolveImageUrl(service.image_url);
-  const detailAvatar = resolvedDetailImg
-    ? `<img src="${resolvedDetailImg}" alt="${escapeHtml(service.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'service-avatar ${getAvatarClass(service.category)}\\\' style=\\\'width:50px; height:50px; font-size:24px;\\\'>${getCategoryIcon(service.category)}</div>';" style="width:56px; height:56px; object-fit:cover; border-radius:10px; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.1);">`
-    : `<div class="service-avatar ${getAvatarClass(service.category)}" style="width:50px; height:50px; font-size:24px;">${getCategoryIcon(service.category)}</div>`;
+  const detailAvatar = `
+    ${resolvedDetailImg ? `<img src="${escapeHtml(resolvedDetailImg)}" alt="${escapeHtml(service.name)}"
+      onerror="this.nextElementSibling.style.removeProperty('display'); this.remove();"
+      style="width:56px; height:56px; object-fit:cover; border-radius:10px; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.1);">` : ""}
+    <div class="service-avatar ${getAvatarClass(service.category)}" style="width:50px; height:50px; font-size:24px;${resolvedDetailImg ? " display:none;" : ""}">${getCategoryIcon(service.category)}</div>
+  `;
 
   modalBody.innerHTML = `
     <div style="display:flex; gap:16px; align-items:center; margin-bottom:20px;">

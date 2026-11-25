@@ -63,6 +63,7 @@ def search_reception_bookings(
         .join(User, User.id == Booking.user_id)
         .where(
             BookingSlot.status == BookingSlotStatus.Active,
+            ~((Booking.status == BookingStatus.Pending) & Booking.hold_expires_at.is_not(None)),
             BookingSlot.start_at >= day_start,
             BookingSlot.start_at <= day_end,
         )
@@ -169,11 +170,20 @@ def checkout_booking(
                 "không thể thanh toán lần 2."
             )
 
-        if booking.status not in (BookingStatus.CHECKED_IN, BookingStatus.Confirmed):
-            raise ValueError(
-                f"Chỉ có thể thanh toán khi booking ở trạng thái CHECKED_IN hoặc Confirmed. "
-                f"Hiện tại: {booking.status.value}"
-            )
+        submitted_pending = booking.status == BookingStatus.Pending and booking.hold_expires_at is None and any(
+            slot.status == BookingSlotStatus.Active for slot in booking.booking_slots
+        )
+        if booking.status not in (BookingStatus.CHECKED_IN, BookingStatus.Confirmed) and not submitted_pending:
+            raise ValueError("Chỉ có thể thanh toán lượt đặt đã gửi và còn hiệu lực.")
+
+        prepaid = db.scalars(
+            select(Payment).where(
+                Payment.booking_id == booking.id,
+                Payment.payment_method == PaymentMethod.BANK_TRANSFER,
+                Payment.payment_status == PaymentStatus.SUCCESS,
+                Payment.invoice_id.is_(None),
+            ).order_by(Payment.id.desc()).limit(1).with_for_update()
+        ).first()
 
         # 1. Tiền sân
         total_court_amount = Decimal(str(booking.total_price or 0))
@@ -199,6 +209,10 @@ def checkout_booking(
             )
 
         grand_total = subtotal - discount
+        if prepaid is not None:
+            if prepaid.amount != grand_total:
+                raise ValueError("Khoản chuyển trước chưa khớp tổng hóa đơn. Vui lòng đối soát chênh lệch.")
+            payment_method_str = PaymentMethod.BANK_TRANSFER.value
 
         # 3. Tạo mã hóa đơn duy nhất
         now = datetime.now()
@@ -226,7 +240,7 @@ def checkout_booking(
 
         # Nếu khách đã gửi yêu cầu thanh toán online, cập nhật bản ghi Pending đó
         # thay vì tạo thêm một Payment trùng cho cùng lần thanh toán.
-        payment = (
+        payment = prepaid or (
             db.query(Payment)
             .filter(
                 Payment.booking_id == booking.id,
