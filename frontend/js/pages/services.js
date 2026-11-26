@@ -1246,7 +1246,15 @@ async function loadStockLogs() {
     }
 
     if (filterType) {
-      logs = logs.filter(l => (l.change_type || "").toLowerCase().includes(filterType.toLowerCase()));
+      const ft = filterType.toUpperCase();
+      logs = logs.filter(l => {
+        const ct = String(l.change_type || "").toUpperCase();
+        if (ft === "IMPORT") return ct.includes("NHẬP") || ct.includes("IMPORT");
+        if (ft === "SALE") return ct.includes("BÁN") || ct.includes("SALE");
+        if (ft === "ADJUSTMENT" || ft === "ADJUST") return ct.includes("ĐIỀU CHỈNH") || ct.includes("ADJUST");
+        if (ft === "EXPORT") return ct.includes("XUẤT") || ct.includes("EXPORT");
+        return ct.includes(ft);
+      });
     }
 
     if (!logs || logs.length === 0) {
@@ -1270,17 +1278,20 @@ async function loadStockLogs() {
       const changePrefix = isPositive ? "+" : "";
 
       let typePillClass = "in-stock";
-      let typeLabel = l.change_type || "Giao dịch";
+      let typeLabel = "Nhập kho";
+      const rawType = String(l.change_type || "").toUpperCase();
 
-      if (typeLabel.includes("Bán lẻ") || typeLabel.includes("EXPORT")) {
+      if (rawType.includes("BÁN") || rawType.includes("SALE") || rawType.includes("EXPORT") || rawType.includes("XUẤT")) {
         typePillClass = "low-stock";
         typeLabel = "Xuất kho / Bán";
-      } else if (typeLabel.includes("Nhập")) {
+      } else if (rawType.includes("NHẬP") || rawType.includes("IMPORT")) {
         typePillClass = "in-stock";
         typeLabel = "Nhập kho";
-      } else if (typeLabel.includes("Điều chỉnh")) {
+      } else if (rawType.includes("ĐIỀU CHỈNH") || rawType.includes("ADJUST")) {
         typePillClass = "inactive";
         typeLabel = "Điều chỉnh";
+      } else {
+        typeLabel = l.change_type || "Giao dịch";
       }
 
       const dateStr = l.created_at ? new Date(l.created_at).toLocaleString("vi-VN") : "Hôm nay";
